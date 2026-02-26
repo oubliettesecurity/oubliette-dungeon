@@ -17,7 +17,7 @@ Quick start::
     orch.print_summary(results)
 """
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 
 # --- Eager imports (core, always available) ---
 from oubliette_dungeon.core import (  # noqa: F401

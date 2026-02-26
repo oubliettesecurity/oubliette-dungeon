@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oubliette-dungeon"
-version = "1.0.0"
+version = "1.0.1"
 description = "Standalone AI Red Team Engine - automated adversarial testing for LLM applications"
 readme = "README.md"
 license = "Apache-2.0"
