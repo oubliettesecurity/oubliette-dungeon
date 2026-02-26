@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "oubliette-dungeon"
+version = "1.0.0"
+description = "Standalone AI Red Team Engine - automated adversarial testing for LLM applications"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.9"
+authors = [
+    {name = "Oubliette Security", email = "hello@oubliettesecurity.com"},
+]
+keywords = ["ai", "red-team", "llm", "security", "adversarial", "testing"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Topic :: Security",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "requests>=2.28",
+    "pyyaml>=6.0",
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+flask = ["flask>=2.3"]
+pdf = ["fpdf2>=2.8.0"]
+pyrit = ["pyrit-core>=0.11"]
+deepteam = ["deepteam>=1.0"]
+shield = ["oubliette-shield>=1.0"]
+all = [
+    "flask>=2.3",
+    "fpdf2>=2.8.0",
+    "oubliette-shield>=1.0",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1",
+    "build",
+    "twine",
+]
+
+[project.scripts]
+oubliette-dungeon = "oubliette_dungeon.cli.main:cli"
+
+[project.urls]
+Homepage = "https://oubliettesecurity.com"
+Repository = "https://github.com/oubliettesecurity/oubliette-dungeon"
+Documentation = "https://github.com/oubliettesecurity/oubliette-dungeon#readme"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+oubliette_dungeon = ["scenarios/*.yaml", "py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
