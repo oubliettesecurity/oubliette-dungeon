@@ -64,7 +64,7 @@ export default function ScenarioLibrary() {
               <td className="py-2 px-2">
                 <DifficultyBadge d={s.difficulty} />
               </td>
-              <td className="py-2 px-2">{s.is_multi_turn ? "Yes" : ""}</td>
+              <td className="py-2 px-2">{s.multi_turn ? "Yes" : ""}</td>
             </tr>
           ))}
         </tbody>

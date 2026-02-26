@@ -9,14 +9,16 @@ import {
 import { useApi } from "../hooks/useApi";
 import {
   getSessionResults,
-  getSessionSummary,
+  getSessionStats,
   getLatestSession,
+  SessionStats,
 } from "../api/client";
 
 const COLORS: Record<string, string> = {
   detected: "#22c55e",
   bypass: "#ef4444",
   partial: "#f59e0b",
+  error: "#6b7280",
 };
 
 export default function SessionDetail() {
@@ -24,14 +26,18 @@ export default function SessionDetail() {
   const isLatest = !id || id === "latest";
 
   const { data: latestSummary } = useApi(getLatestSession, []);
-  const sessionId = isLatest ? latestSummary?.session_id ?? "" : id!;
+  const latestStats = latestSummary as SessionStats | null;
+  const sessionId = isLatest ? latestStats?.session_id ?? "" : id!;
 
   const { data: results, loading } = useApi(
     () => (sessionId ? getSessionResults(sessionId) : Promise.resolve([])),
     [sessionId]
   );
   const { data: summary } = useApi(
-    () => (sessionId ? getSessionSummary(sessionId) : Promise.resolve(null)),
+    () =>
+      sessionId
+        ? getSessionStats(sessionId)
+        : Promise.resolve(null as SessionStats | null),
     [sessionId]
   );
 
@@ -39,13 +45,10 @@ export default function SessionDetail() {
   if (!results || results.length === 0)
     return <p className="text-gray-500">No results found.</p>;
 
-  const pieData = summary
-    ? [
-        { name: "Detected", value: summary.detected },
-        { name: "Bypassed", value: summary.bypassed },
-        { name: "Partial", value: summary.partial },
-      ].filter((d) => d.value > 0)
-    : [];
+  const byResult = summary?.by_result || {};
+  const pieData = Object.entries(byResult)
+    .map(([name, value]) => ({ name, value }))
+    .filter((d) => d.value > 0);
 
   return (
     <div className="space-y-6">
@@ -56,7 +59,10 @@ export default function SessionDetail() {
           <div className="bg-gray-900 rounded-lg p-4">
             <p className="text-sm text-gray-400 mb-1">Detection Rate</p>
             <p className="text-3xl font-bold">
-              {(summary.detection_rate * 100).toFixed(1)}%
+              {summary.detection_rate.toFixed(1)}%
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              {summary.total_tests} tests | Bypass rate: {summary.bypass_rate.toFixed(1)}%
             </p>
           </div>
           <div className="bg-gray-900 rounded-lg p-4 flex items-center justify-center">
@@ -68,11 +74,12 @@ export default function SessionDetail() {
                   cx="50%"
                   cy="50%"
                   outerRadius={70}
+                  label={({ name, value }) => `${name}: ${value}`}
                 >
                   {pieData.map((d, i) => (
                     <Cell
                       key={i}
-                      fill={COLORS[d.name.toLowerCase()] ?? "#6b7280"}
+                      fill={COLORS[d.name] ?? "#6b7280"}
                     />
                   ))}
                 </Pie>
@@ -95,9 +102,9 @@ export default function SessionDetail() {
           </tr>
         </thead>
         <tbody>
-          {results.map((r) => (
+          {results.map((r, i) => (
             <tr
-              key={r.scenario_id}
+              key={`${r.scenario_id}-${i}`}
               className={`border-b border-gray-800/50 ${
                 r.result === "bypass"
                   ? "bg-red-950/30"
@@ -132,6 +139,7 @@ function ResultBadge({ result }: { result: string }) {
     detected: "bg-green-900 text-green-300",
     bypass: "bg-red-900 text-red-300",
     partial: "bg-yellow-900 text-yellow-300",
+    error: "bg-gray-800 text-gray-400",
   };
   return (
     <span className={`px-2 py-0.5 rounded text-xs ${cls[result] ?? "bg-gray-800"}`}>

@@ -38,8 +38,8 @@ export default function Reports() {
           >
             <option value="">Select a session...</option>
             {sessions?.map((s) => (
-              <option key={s} value={s}>
-                {s}
+              <option key={s.session_id} value={s.session_id}>
+                {s.session_id} ({s.total_tests} tests)
               </option>
             ))}
           </select>

@@ -73,7 +73,7 @@ export default function Scheduler() {
           <tbody>
             {jobs.map((j) => (
               <tr
-                key={j.id}
+                key={j.job_id}
                 className="border-b border-gray-800/50 hover:bg-gray-900"
               >
                 <td className="py-2 px-2">{j.name}</td>
