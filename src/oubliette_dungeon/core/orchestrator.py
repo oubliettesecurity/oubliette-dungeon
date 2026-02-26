@@ -26,8 +26,8 @@ class RedTeamOrchestrator:
 
     def __init__(
         self,
-        scenario_file: str,
         target_url: str,
+        scenario_file: Optional[str] = None,
         results_db=None,
         timeout: int = 30
     ):

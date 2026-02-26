@@ -16,7 +16,10 @@ class ScenarioLoader:
     Supports filtering by category, difficulty, and compliance requirements.
     """
 
-    def __init__(self, scenario_file: str):
+    def __init__(self, scenario_file: Optional[str] = None):
+        if scenario_file is None:
+            from oubliette_dungeon.core import _default_scenarios_path
+            scenario_file = _default_scenarios_path()
         self.scenario_file = scenario_file
         self.scenarios: List[AttackScenario] = []
         self.load_scenarios()
