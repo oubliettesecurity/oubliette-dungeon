@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  dungeon:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8666:8666"
+    volumes:
+      - dungeon-results:/app/redteam_results
+    environment:
+      - DUNGEON_DB_DIR=/app/redteam_results
+      - DUNGEON_TIMEOUT=30
+    restart: unless-stopped
+
+  # Optional: mock target for testing
+  mock-target:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: ["demo"]
+    ports:
+      - "9999:9999"
+    profiles:
+      - demo
+
+volumes:
+  dungeon-results:
