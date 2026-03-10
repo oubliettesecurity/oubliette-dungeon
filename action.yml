@@ -1,0 +1,211 @@
+name: "Oubliette Dungeon - AI Red Team"
+description: "Run adversarial AI security tests against your LLM endpoint using Oubliette Dungeon"
+branding:
+  icon: "shield"
+  color: "red"
+
+inputs:
+  target-url:
+    description: "LLM API endpoint URL to test"
+    required: true
+  category:
+    description: "Attack category filter (e.g., prompt-injection, jailbreak)"
+    required: false
+  difficulty:
+    description: "Difficulty filter (basic, intermediate, advanced, expert)"
+    required: false
+  scenario-id:
+    description: "Specific scenario ID to run (e.g., ATK-006)"
+    required: false
+  fail-on-bypass:
+    description: "Fail the workflow if any bypass is detected"
+    required: false
+    default: "true"
+  bypass-threshold:
+    description: "Maximum acceptable bypass rate percentage (0-100)"
+    required: false
+    default: "0"
+  python-version:
+    description: "Python version to use"
+    required: false
+    default: "3.12"
+  dungeon-version:
+    description: "Oubliette Dungeon package version specifier"
+    required: false
+    default: "oubliette-dungeon>=1.0"
+  output-file:
+    description: "Output file path for results JSON"
+    required: false
+    default: "dungeon-results.json"
+  comment-on-pr:
+    description: "Post a comment on the PR with results"
+    required: false
+    default: "true"
+
+outputs:
+  detection-rate:
+    description: "Detection rate percentage"
+    value: ${{ steps.parse.outputs.detection_rate }}
+  bypass-rate:
+    description: "Bypass rate percentage"
+    value: ${{ steps.parse.outputs.bypass_rate }}
+  total-tests:
+    description: "Total number of tests run"
+    value: ${{ steps.parse.outputs.total_tests }}
+  results-file:
+    description: "Path to the results JSON file"
+    value: ${{ inputs.output-file }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install Oubliette Dungeon
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        pip install '${{ inputs.dungeon-version }}'
+
+    - name: Run Dungeon
+      id: run
+      shell: bash
+      env:
+        TARGET_URL: ${{ inputs.target-url }}
+        OUTPUT_FILE: ${{ inputs.output-file }}
+        CATEGORY: ${{ inputs.category }}
+        DIFFICULTY: ${{ inputs.difficulty }}
+        SCENARIO_ID: ${{ inputs.scenario-id }}
+      run: |
+        ARGS="--target ${TARGET_URL} --output ${OUTPUT_FILE}"
+
+        if [ -n "${CATEGORY}" ]; then
+          ARGS="${ARGS} --category ${CATEGORY}"
+        fi
+
+        if [ -n "${DIFFICULTY}" ]; then
+          ARGS="${ARGS} --difficulty ${DIFFICULTY}"
+        fi
+
+        if [ -n "${SCENARIO_ID}" ]; then
+          ARGS="${ARGS} --scenario ${SCENARIO_ID}"
+        fi
+
+        echo "Running: oubliette-dungeon run ${ARGS}"
+        oubliette-dungeon run ${ARGS} || true
+
+    - name: Parse results
+      id: parse
+      shell: python
+      env:
+        OUTPUT_FILE: ${{ inputs.output-file }}
+      run: |
+        import json
+        import os
+
+        output_file = os.environ["OUTPUT_FILE"]
+        gh_output = os.environ["GITHUB_OUTPUT"]
+
+        try:
+            with open(output_file, "r") as f:
+                data = json.load(f)
+
+            aggregate = data.get("aggregate", {})
+            detection_rate = aggregate.get("detection_rate", 0.0)
+            bypass_rate = aggregate.get("bypass_rate", 0.0)
+            total_tests = aggregate.get("total_tests", 0)
+
+        except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+            print(f"Warning: Could not parse results: {e}")
+            detection_rate = 0.0
+            bypass_rate = 100.0
+            total_tests = 0
+
+        with open(gh_output, "a") as f:
+            f.write(f"detection_rate={detection_rate:.1f}\n")
+            f.write(f"bypass_rate={bypass_rate:.1f}\n")
+            f.write(f"total_tests={total_tests}\n")
+
+        print(f"Detection rate: {detection_rate:.1f}%")
+        print(f"Bypass rate: {bypass_rate:.1f}%")
+        print(f"Total tests: {total_tests}")
+
+    - name: Upload results artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: dungeon-results
+        path: ${{ inputs.output-file }}
+        retention-days: 30
+
+    - name: Comment on PR
+      if: github.event_name == 'pull_request' && inputs.comment-on-pr == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          let detection_rate = '${{ steps.parse.outputs.detection_rate }}';
+          let bypass_rate = '${{ steps.parse.outputs.bypass_rate }}';
+          let total_tests = '${{ steps.parse.outputs.total_tests }}';
+          let threshold = '${{ inputs.bypass-threshold }}';
+
+          let status = parseFloat(bypass_rate) <= parseFloat(threshold) ? 'PASS' : 'FAIL';
+          let statusIcon = status === 'PASS' ? ':white_check_mark:' : ':x:';
+
+          // Build by-category breakdown if available
+          let categoryTable = '';
+          try {
+            const data = JSON.parse(fs.readFileSync('${{ inputs.output-file }}', 'utf8'));
+            const byCategory = data.aggregate?.by_category || {};
+            if (Object.keys(byCategory).length > 0) {
+              categoryTable = '\n\n| Category | Tests | Detected | Bypassed |\n|----------|------:|--------:|---------:|\n';
+              for (const [cat, stats] of Object.entries(byCategory)) {
+                categoryTable += `| ${cat} | ${stats.total || 0} | ${stats.detected || 0} | ${stats.bypassed || 0} |\n`;
+              }
+            }
+          } catch (e) {
+            // Skip category table on parse failure
+          }
+
+          const body = `## ${statusIcon} Oubliette Dungeon AI Security Report
+
+          | Metric | Value |
+          |--------|------:|
+          | Total Tests | ${total_tests} |
+          | Detection Rate | ${detection_rate}% |
+          | Bypass Rate | ${bypass_rate}% |
+          | Threshold | ${threshold}% |
+          | Status | **${status}** |
+          ${categoryTable}
+
+          <sub>Generated by [Oubliette Dungeon](https://github.com/oubliettesecurity/oubliette-dungeon) GitHub Action</sub>`;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: body
+          });
+
+    - name: Check bypass threshold
+      shell: python
+      env:
+        BYPASS_RATE: ${{ steps.parse.outputs.bypass_rate }}
+        THRESHOLD: ${{ inputs.bypass-threshold }}
+        FAIL_ON_BYPASS: ${{ inputs.fail-on-bypass }}
+      run: |
+        import os
+        import sys
+
+        bypass_rate = float(os.environ.get("BYPASS_RATE", "100"))
+        threshold = float(os.environ.get("THRESHOLD", "0"))
+        fail_on_bypass = os.environ.get("FAIL_ON_BYPASS", "true").lower() == "true"
+
+        if fail_on_bypass and bypass_rate > threshold:
+            print(f"FAIL: Bypass rate {bypass_rate:.1f}% exceeds threshold {threshold:.1f}%")
+            sys.exit(1)
+        else:
+            print(f"PASS: Bypass rate {bypass_rate:.1f}% within threshold {threshold:.1f}%")

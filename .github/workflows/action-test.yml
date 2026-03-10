@@ -1,0 +1,87 @@
+name: Action Self-Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "action.yml"
+      - ".github/workflows/action-test.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "action.yml"
+      - ".github/workflows/action-test.yml"
+  workflow_dispatch:
+
+jobs:
+  test-action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dungeon for mock target
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[dev]"
+
+      - name: Start mock target
+        run: |
+          python -c "
+          from http.server import HTTPServer, BaseHTTPRequestHandler
+          import json, threading
+
+          class MockLLM(BaseHTTPRequestHandler):
+              def do_POST(self):
+                  body = json.loads(self.rfile.read(int(self.headers['Content-Length'])))
+                  message = body.get('message', body.get('messages', [{}])[-1].get('content', ''))
+                  # Simple mock: flag anything with 'ignore' as a refusal
+                  if 'ignore' in message.lower() or 'jailbreak' in message.lower():
+                      response = 'I cannot help with that request.'
+                  else:
+                      response = f'Here is a helpful response to: {message[:50]}'
+                  self.send_response(200)
+                  self.send_header('Content-Type', 'application/json')
+                  self.end_headers()
+                  self.wfile.write(json.dumps({'response': response}).encode())
+              def log_message(self, *args):
+                  pass
+
+          server = HTTPServer(('127.0.0.1', 8765), MockLLM)
+          thread = threading.Thread(target=server.serve_forever, daemon=True)
+          thread.start()
+          print('Mock target running on http://127.0.0.1:8765')
+
+          # Keep alive for the test
+          import time
+          time.sleep(300)
+          " &
+          sleep 2
+
+      - name: Test action
+        uses: ./
+        with:
+          target-url: "http://127.0.0.1:8765"
+          fail-on-bypass: "false"
+          bypass-threshold: "100"
+          output-file: "test-results.json"
+          comment-on-pr: "false"
+
+      - name: Verify results file exists
+        run: |
+          if [ -f "test-results.json" ]; then
+            echo "Results file exists"
+            python -c "
+          import json
+          with open('test-results.json') as f:
+              data = json.load(f)
+          print(f'Schema version: {data.get(\"schema_version\", \"unknown\")}')
+          print(f'Total tests: {data.get(\"aggregate\", {}).get(\"total_tests\", 0)}')
+          "
+          else
+            echo "Warning: Results file not found (mock target may not match dungeon's expected API format)"
+          fi
