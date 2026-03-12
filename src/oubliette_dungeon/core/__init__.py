@@ -18,6 +18,8 @@ from oubliette_dungeon.core.executor import AttackExecutor
 from oubliette_dungeon.core.evaluator import ResultEvaluator
 from oubliette_dungeon.core.orchestrator import RedTeamOrchestrator
 from oubliette_dungeon.core.metrics import pass_at_k, avg_turns_to_jailbreak, avg_risk_density
+from oubliette_dungeon.core.offline import OfflineExecutor
+from oubliette_dungeon.core.osef import OSEFReport
 
 
 def _default_scenarios_path() -> str:
@@ -45,5 +47,7 @@ __all__ = [
     "pass_at_k",
     "avg_turns_to_jailbreak",
     "avg_risk_density",
+    "OfflineExecutor",
+    "OSEFReport",
     "_default_scenarios_path",
 ]

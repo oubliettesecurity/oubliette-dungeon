@@ -36,6 +36,7 @@ flask = ["flask>=2.3"]
 pdf = ["fpdf2>=2.8.0"]
 pyrit = ["pyrit-core>=0.11"]
 deepteam = ["deepteam>=1.0"]
+inspect = ["inspect-ai>=0.3"]
 shield = ["oubliette-shield>=1.0"]
 all = [
     "flask>=2.3",

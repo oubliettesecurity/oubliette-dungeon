@@ -321,4 +321,7 @@ import oubliette_dungeon.api.routes.execution  # noqa: E402, F401
 import oubliette_dungeon.api.routes.sessions   # noqa: E402, F401
 import oubliette_dungeon.api.routes.scheduler  # noqa: E402, F401
 import oubliette_dungeon.api.routes.tools      # noqa: E402, F401
-import oubliette_dungeon.api.routes.reports    # noqa: E402, F401
+import oubliette_dungeon.api.routes.reports      # noqa: E402, F401
+import oubliette_dungeon.api.routes.reviews     # noqa: E402, F401
+import oubliette_dungeon.api.routes.comparisons # noqa: E402, F401
+import oubliette_dungeon.api.routes.osef        # noqa: E402, F401

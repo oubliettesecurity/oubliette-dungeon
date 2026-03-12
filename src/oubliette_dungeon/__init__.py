@@ -50,6 +50,9 @@ _LAZY_MODULES = {
     "OubliettePDF": "oubliette_dungeon.report",
     "RedTeamToolAdapter": "oubliette_dungeon.tools.base",
     "ToolManager": "oubliette_dungeon.tools.tool_manager",
+    "oubliette_attacks": "oubliette_dungeon.tools.inspect_adapter",
+    "oubliette_full_suite": "oubliette_dungeon.tools.inspect_adapter",
+    "oubliette_scorer": "oubliette_dungeon.tools.inspect_adapter",
 }
 
 
@@ -92,4 +95,8 @@ __all__ = [
     "OubliettePDF",
     "RedTeamToolAdapter",
     "ToolManager",
+    # Inspect AI integration (lazy)
+    "oubliette_attacks",
+    "oubliette_full_suite",
+    "oubliette_scorer",
 ]

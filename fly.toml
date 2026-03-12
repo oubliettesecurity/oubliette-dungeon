@@ -1,0 +1,44 @@
+# Oubliette Dungeon - Fly.io deployment configuration
+# Deploy: fly deploy --dockerfile docker/Dockerfile
+# Region: iad (Virginia) for DoD/federal proximity
+
+app = "oubliette-dungeon-demo"
+primary_region = "iad"
+
+[build]
+  dockerfile = "docker/Dockerfile"
+
+[env]
+  DUNGEON_DB_DIR = "/data/redteam_results"
+  DUNGEON_RATE_LIMIT_MAX = "60"
+  DUNGEON_TIMEOUT = "30"
+
+[http_service]
+  internal_port = 8666
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 50
+    soft_limit = 25
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = 512
+
+[checks]
+  [checks.health]
+    type = "http"
+    port = 8666
+    path = "/api/dungeon/status"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+
+[mounts]
+  source = "dungeon_results"
+  destination = "/data/redteam_results"

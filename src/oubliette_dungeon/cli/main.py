@@ -42,17 +42,69 @@ def cli():
 @click.option("--scenario-id", default=None, help="Run a specific scenario by ID")
 @click.option("--db-dir", default="redteam_results", help="Results database directory")
 @click.option("--output", default=None, help="Export benchmark JSON to this path")
-def run(target, scenarios, timeout, category, difficulty, scenario_id, db_dir, output):
+@click.option("--offline", is_flag=True, help="Air-gap mode: use local Ollama, zero network")
+@click.option("--model", default="llama3", help="Local model for offline mode (default: llama3)")
+@click.option("--ollama-url", default="http://localhost:11434", help="Ollama API URL")
+@click.option("--ddil-latency", default=0, type=int, help="DDIL: simulated latency in ms")
+@click.option("--ddil-drop-rate", default=0.0, type=float, help="DDIL: packet drop rate 0.0-1.0")
+@click.option("--ddil-bandwidth", default=0, type=int, help="DDIL: bandwidth limit in kbps")
+@click.option("--osef", default=None, help="Export OSEF-format report to this path")
+@click.option("--osef-model-id", default=None, help="Model identifier for OSEF report")
+def run(target, scenarios, timeout, category, difficulty, scenario_id, db_dir,
+        output, offline, model, ollama_url, ddil_latency, ddil_drop_rate,
+        ddil_bandwidth, osef, osef_model_id):
     """Run red team attack scenarios against a target."""
     scenarios_file = scenarios or _default_scenarios_path()
     results_db = RedTeamResultsDB(db_dir)
 
-    orchestrator = RedTeamOrchestrator(
-        scenario_file=scenarios_file,
-        target_url=target,
-        results_db=results_db,
-        timeout=timeout,
-    )
+    is_ddil = ddil_latency > 0 or ddil_drop_rate > 0 or ddil_bandwidth > 0
+
+    if offline or is_ddil:
+        from oubliette_dungeon.core.offline import OfflineExecutor
+
+        click.echo(f"[OFFLINE] Air-gap mode: using local model '{model}' via Ollama")
+        if is_ddil:
+            click.echo(
+                f"[DDIL] Simulating degraded conditions: "
+                f"latency={ddil_latency}ms, drop_rate={ddil_drop_rate}, "
+                f"bandwidth={ddil_bandwidth}kbps"
+            )
+
+        offline_exec = OfflineExecutor(
+            model=model,
+            ollama_url=ollama_url,
+            timeout=timeout,
+            ddil_latency_ms=ddil_latency,
+            ddil_drop_rate=ddil_drop_rate,
+            ddil_bandwidth_kbps=ddil_bandwidth,
+        )
+
+        # Check Ollama availability
+        available, msg = offline_exec.check_availability()
+        if not available:
+            click.echo(f"[OFFLINE] ERROR: {msg}")
+            sys.exit(1)
+        click.echo(f"[OFFLINE] Ollama connected, model '{model}' ready")
+
+        # Run using offline executor with orchestrator
+        orchestrator = RedTeamOrchestrator(
+            scenario_file=scenarios_file,
+            target_url=target,
+            results_db=results_db,
+            timeout=timeout,
+        )
+        # Swap in the offline executor
+        orchestrator.executor = offline_exec
+
+        effective_model_id = osef_model_id or f"ollama/{model}"
+    else:
+        orchestrator = RedTeamOrchestrator(
+            scenario_file=scenarios_file,
+            target_url=target,
+            results_db=results_db,
+            timeout=timeout,
+        )
+        effective_model_id = osef_model_id or target
 
     if scenario_id:
         results = [orchestrator.run_single_scenario(scenario_id)]
@@ -68,6 +120,30 @@ def run(target, scenarios, timeout, category, difficulty, scenario_id, db_dir, o
     if output:
         orchestrator.export_benchmark(results, output)
         click.echo(f"Benchmark exported to {output}")
+
+    if osef:
+        from oubliette_dungeon.core.osef import OSEFReport
+
+        context = {
+            "evaluation_type": "adversarial_robustness",
+            "scorer": "refusal_aware",
+            "environment": "air_gapped" if offline else "unclassified",
+        }
+        if is_ddil:
+            context["ddil"] = {
+                "latency_ms": ddil_latency,
+                "drop_rate": ddil_drop_rate,
+                "bandwidth_kbps": ddil_bandwidth,
+            }
+
+        report = OSEFReport.from_results(
+            results,
+            model_id=effective_model_id,
+            session_id=orchestrator.current_session_id,
+            context=context,
+        )
+        report.save(osef)
+        click.echo(f"OSEF report exported to {osef}")
 
 
 @cli.command()
@@ -183,6 +259,83 @@ def export(fmt, session, output, db_dir):
         db.export_to_csv(output, session)
 
     click.echo(f"Exported to {output}")
+
+
+@cli.command()
+@click.option("--models", required=True, help="Comma-separated Ollama model names")
+@click.option("--scenarios", default=None, help="Path to scenarios YAML file")
+@click.option("--timeout", default=120, type=int, help="Request timeout per model")
+@click.option("--category", default=None, help="Only run scenarios in this category")
+@click.option("--difficulty", default=None, help="Only run scenarios at this difficulty")
+@click.option("--ollama-url", default="http://localhost:11434", help="Ollama API URL")
+@click.option("--output-json", default=None, help="Save comparison as JSON")
+@click.option("--output-html", default=None, help="Save comparison as HTML")
+@click.option("--db-dir", default="redteam_results", help="Results database directory")
+def compare(models, scenarios, timeout, category, difficulty, ollama_url,
+            output_json, output_html, db_dir):
+    """Compare adversarial resilience across multiple local models."""
+    from oubliette_dungeon.core.comparison import ModelComparison
+    from oubliette_dungeon.core.offline import OfflineExecutor
+
+    model_list = [m.strip() for m in models.split(",") if m.strip()]
+    if len(model_list) < 2:
+        click.echo("ERROR: Provide at least 2 models to compare (comma-separated).")
+        sys.exit(1)
+
+    scenarios_file = scenarios or _default_scenarios_path()
+    results_db = RedTeamResultsDB(db_dir)
+    comparison = ModelComparison()
+
+    for model_name in model_list:
+        click.echo(f"\n[{model_name}] Running evaluation...")
+
+        executor = OfflineExecutor(
+            model=model_name,
+            ollama_url=ollama_url,
+            timeout=timeout,
+        )
+
+        available, msg = executor.check_availability()
+        if not available:
+            click.echo(f"[{model_name}] SKIPPED: {msg}")
+            continue
+
+        orchestrator = RedTeamOrchestrator(
+            scenario_file=scenarios_file,
+            target_url="offline",
+            results_db=results_db,
+            timeout=timeout,
+        )
+        orchestrator.executor = executor
+
+        if category:
+            results = orchestrator.run_by_category(category)
+        elif difficulty:
+            results = orchestrator.run_by_difficulty(difficulty)
+        else:
+            results = orchestrator.run_all_scenarios()
+
+        comparison.add_results(f"ollama/{model_name}", results)
+        click.echo(f"[{model_name}] Done: {len(results)} scenarios evaluated.")
+
+    if not comparison.model_ids:
+        click.echo("ERROR: No models were successfully evaluated.")
+        sys.exit(1)
+
+    comparison.print_summary()
+
+    if output_json:
+        comparison.save_json(output_json)
+        click.echo(f"JSON comparison saved to {output_json}")
+
+    if output_html:
+        comparison.save_html(output_html)
+        click.echo(f"HTML comparison saved to {output_html}")
+
+    if not output_json and not output_html:
+        default_path = f"comparison_{RedTeamOrchestrator.__name__}.json"
+        comparison.save_json(default_path)
+        click.echo(f"Comparison saved to {default_path}")
 
 
 if __name__ == "__main__":
