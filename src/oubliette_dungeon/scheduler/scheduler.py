@@ -396,8 +396,15 @@ class RedTeamScheduler:
                     print(f"[SCHEDULER-NOTIFY] Webhook error: {e}")
         elif ntype == "file":
             filepath = notification.get("path", "dungeon_notification.json")
+            # Validate file path to prevent arbitrary file writes
+            resolved = os.path.realpath(filepath)
+            allowed_dir = os.path.realpath(os.getenv("DUNGEON_NOTIFICATION_DIR", "redteam_results"))
+            if not (resolved.startswith(allowed_dir + os.sep) or resolved == allowed_dir):
+                print(f"[SCHEDULER-NOTIFY] File path blocked: {filepath}")
+                return
             try:
-                with open(filepath, "a", encoding="utf-8") as f:
+                os.makedirs(os.path.dirname(resolved) or ".", exist_ok=True)
+                with open(resolved, "a", encoding="utf-8") as f:
                     f.write(json.dumps(result) + "\n")
             except Exception as e:
                 print(f"[SCHEDULER-NOTIFY] File write error: {e}")
@@ -405,6 +412,7 @@ class RedTeamScheduler:
     @staticmethod
     def _is_safe_webhook_url(url: str) -> bool:
         import ipaddress
+        import socket as _socket
         from urllib.parse import urlparse
         try:
             parsed = urlparse(url)
@@ -418,14 +426,38 @@ class RedTeamScheduler:
         blocked = {"localhost", "localhost.localdomain", "metadata.google.internal", "169.254.169.254"}
         if hostname.lower() in blocked:
             return False
+        lower = hostname.lower()
+        if lower.endswith((".local", ".internal", ".corp", ".lan")):
+            return False
+
+        def _is_ip_safe(addr_str):
+            ip = ipaddress.ip_address(addr_str)
+            if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
+                ip = ip.ipv4_mapped
+            return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved)
+
+        # Check if hostname is an IP literal
         try:
-            addr = ipaddress.ip_address(hostname)
-            if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+            if not _is_ip_safe(hostname):
                 return False
         except ValueError:
-            lower = hostname.lower()
-            if lower.endswith((".local", ".internal", ".corp", ".lan")):
-                return False
+            pass  # Not an IP literal
+
+        # DNS resolution check: resolve and verify all IPs are safe
+        try:
+            addrinfos = _socket.getaddrinfo(hostname, None, _socket.AF_UNSPEC, _socket.SOCK_STREAM)
+            for family, _type, _proto, _canonname, sockaddr in addrinfos:
+                ip_str = sockaddr[0]
+                try:
+                    if not _is_ip_safe(ip_str):
+                        return False
+                except ValueError:
+                    return False
+        except _socket.gaierror:
+            return False
+        except Exception:
+            return False
+
         return True
 
     def start(self):

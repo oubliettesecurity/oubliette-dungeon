@@ -1067,9 +1067,13 @@ class TestDungeonAPITools:
     """Test the tool endpoints in oubliette_dungeon.api."""
 
     @pytest.fixture
-    def client(self):
+    def client(self, monkeypatch):
+        import os
         from flask import Flask
         from oubliette_dungeon.api import dungeon_bp
+
+        monkeypatch.setenv("FLASK_ENV", "development")
+        monkeypatch.setenv("DUNGEON_ALLOW_PRIVATE_TARGETS", "true")
 
         app = Flask(__name__)
         app.register_blueprint(dungeon_bp)

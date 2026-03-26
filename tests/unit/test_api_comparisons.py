@@ -17,6 +17,7 @@ import oubliette_dungeon.api.routes.comparisons as comp_mod
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     """Create a Flask test client with isolated DB directory."""
+    monkeypatch.setenv("FLASK_ENV", "development")
     monkeypatch.setattr(mw, "RESULTS_DB_DIR", str(tmp_path))
     monkeypatch.setattr(comp_mod, "RESULTS_DB_DIR", str(tmp_path))
     monkeypatch.setattr(mw, "_running_session", None)

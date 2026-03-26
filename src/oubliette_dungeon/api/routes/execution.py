@@ -21,6 +21,7 @@ from oubliette_dungeon.api.middleware import (
     _get_loader,
     _get_results_db,
     _result_to_dict,
+    _validate_target_url,
     _running_session,
     _session_lock,
     SCENARIOS_FILE,
@@ -55,6 +56,11 @@ def start_session():
     timeout = data.get("timeout", DEFAULT_TIMEOUT)
     category = data.get("category")
     difficulty = data.get("difficulty")
+
+    # SSRF validation
+    is_safe, error_msg = _validate_target_url(target_url)
+    if not is_safe:
+        return jsonify({"error": f"Blocked target URL: {error_msg}"}), 400
 
     results_db = _get_results_db()
     orchestrator = RedTeamOrchestrator(
@@ -112,6 +118,11 @@ def execute_scenario(scenario_id):
     target_url = data.get("target_url", DEFAULT_TARGET_URL)
     timeout = data.get("timeout", DEFAULT_TIMEOUT)
 
+    # SSRF validation
+    is_safe, error_msg = _validate_target_url(target_url)
+    if not is_safe:
+        return jsonify({"error": f"Blocked target URL: {error_msg}"}), 400
+
     _audit("execute_scenario", f"scenario={scenario_id} target={target_url}")
 
     results_db = _get_results_db()
@@ -154,6 +165,11 @@ def execute_category(category):
     data = request.get_json(silent=True) or {}
     target_url = data.get("target_url", DEFAULT_TARGET_URL)
     timeout = data.get("timeout", DEFAULT_TIMEOUT)
+
+    # SSRF validation
+    is_safe, error_msg = _validate_target_url(target_url)
+    if not is_safe:
+        return jsonify({"error": f"Blocked target URL: {error_msg}"}), 400
 
     results_db = _get_results_db()
     orchestrator = RedTeamOrchestrator(

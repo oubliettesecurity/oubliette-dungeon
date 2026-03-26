@@ -20,6 +20,7 @@ from oubliette_dungeon.api.middleware import (
     _require_api_key,
     _audit,
     _get_results_db,
+    _validate_target_url,
     _session_lock,
     RESULTS_DB_DIR,
     SCENARIOS_FILE,
@@ -145,6 +146,12 @@ def run_comparison():
     target_url = data.get("target_url")
     timeout = data.get("timeout", DEFAULT_TIMEOUT)
     category = data.get("category")
+
+    # SSRF validation (when target_url is explicitly provided)
+    if target_url:
+        is_safe, error_msg = _validate_target_url(target_url)
+        if not is_safe:
+            return jsonify({"error": f"Blocked target URL: {error_msg}"}), 400
 
     comparison_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 

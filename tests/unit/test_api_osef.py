@@ -14,6 +14,7 @@ import oubliette_dungeon.api.middleware as mw
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     """Create a Flask test client with isolated DB directory."""
+    monkeypatch.setenv("FLASK_ENV", "development")
     monkeypatch.setattr(mw, "RESULTS_DB_DIR", str(tmp_path))
     monkeypatch.setattr(mw, "_results_db", None)
     monkeypatch.setattr(mw, "_unified_storage", None)

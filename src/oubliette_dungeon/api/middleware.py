@@ -11,9 +11,10 @@ import logging
 import os
 import hmac
 import functools
+import socket
 import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from flask import Blueprint, request, jsonify, Response
@@ -201,6 +202,44 @@ class _UnifiedStorageAdapter:
         return self._b.cleanup_old_redteam_sessions(keep_latest)
 
 
+def _is_ip_safe(addr) -> bool:
+    """Check if an IP address is safe (not private/loopback/link-local/reserved).
+
+    Handles IPv6-mapped IPv4 addresses (e.g., ::ffff:127.0.0.1).
+    """
+    ip = ipaddress.ip_address(addr)
+    # Handle IPv6-mapped IPv4 (::ffff:x.x.x.x)
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
+        ip = ip.ipv4_mapped
+    return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved)
+
+
+def _resolve_and_check(hostname: str) -> Tuple[bool, str]:
+    """Resolve a hostname via DNS and verify all resolved IPs are safe.
+
+    Returns (is_safe, error_message).
+    """
+    try:
+        addrinfos = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
+    except socket.gaierror as e:
+        return False, f"DNS resolution failed for {hostname}: {e}"
+    except Exception as e:
+        return False, f"DNS resolution error for {hostname}: {e}"
+
+    if not addrinfos:
+        return False, f"No DNS results for {hostname}"
+
+    for family, _type, _proto, _canonname, sockaddr in addrinfos:
+        ip_str = sockaddr[0]
+        try:
+            if not _is_ip_safe(ip_str):
+                return False, f"Hostname {hostname} resolves to private/reserved IP {ip_str}"
+        except ValueError:
+            return False, f"Invalid resolved IP: {ip_str}"
+
+    return True, ""
+
+
 def _is_safe_webhook_url(url: str) -> bool:
     """Validate a webhook URL to prevent SSRF attacks.
 
@@ -208,6 +247,7 @@ def _is_safe_webhook_url(url: str) -> bool:
     - Non-HTTP(S) schemes
     - Private/internal IP ranges (RFC 1918, loopback, link-local)
     - Common internal hostnames
+    - DNS names that resolve to private IPs (rebinding protection)
     """
     try:
         parsed = urlparse(url)
@@ -230,33 +270,116 @@ def _is_safe_webhook_url(url: str) -> bool:
     if hostname.lower() in blocked_hostnames:
         return False
 
-    # Check if the hostname resolves to a private IP
+    # Block obvious internal domain patterns
+    lower = hostname.lower()
+    if lower.endswith((".local", ".internal", ".corp", ".lan")):
+        return False
+
+    # Check if the hostname is an IP literal
     try:
-        addr = ipaddress.ip_address(hostname)
-        if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_reserved:
+        if not _is_ip_safe(hostname):
             return False
     except ValueError:
-        # Not an IP literal -- could still resolve to private.
-        # We allow DNS names but block obvious internal patterns.
-        lower = hostname.lower()
-        if lower.endswith((".local", ".internal", ".corp", ".lan")):
-            return False
+        pass  # Not an IP literal, continue to DNS resolution
 
-    return True
+    # DNS resolution check: resolve hostname and verify all IPs are safe
+    is_safe, _error = _resolve_and_check(hostname)
+    return is_safe
+
+
+def _validate_target_url(url: str) -> Tuple[bool, str]:
+    """Validate a target URL to prevent SSRF attacks.
+
+    Similar to _is_safe_webhook_url but returns (is_safe, error_message)
+    for use in API endpoint validation.
+
+    Set DUNGEON_ALLOW_PRIVATE_TARGETS=true to allow private IPs (local dev).
+    """
+    # Allow private targets for local development
+    if os.getenv("DUNGEON_ALLOW_PRIVATE_TARGETS", "").lower() == "true":
+        return True, ""
+
+    if not url:
+        return False, "target_url is required"
+
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return False, "Invalid URL format"
+
+    if parsed.scheme not in ("http", "https"):
+        return False, f"Invalid URL scheme: {parsed.scheme}. Only http/https allowed."
+
+    hostname = parsed.hostname
+    if not hostname:
+        return False, "URL has no hostname"
+
+    # Block known internal hostnames
+    blocked_hostnames = {
+        "localhost", "localhost.localdomain",
+        "metadata.google.internal", "169.254.169.254",
+    }
+    if hostname.lower() in blocked_hostnames:
+        return False, f"Blocked internal hostname: {hostname}"
+
+    # Block obvious internal domain patterns
+    lower = hostname.lower()
+    if lower.endswith((".local", ".internal", ".corp", ".lan")):
+        return False, f"Blocked internal domain: {hostname}"
+
+    # Check if the hostname is an IP literal
+    try:
+        if not _is_ip_safe(hostname):
+            return False, f"Blocked private/reserved IP: {hostname}"
+    except ValueError:
+        pass  # Not an IP literal, continue to DNS resolution
+
+    # DNS resolution check
+    is_safe, error = _resolve_and_check(hostname)
+    if not is_safe:
+        return False, error
+
+    return True, ""
 
 
 def _require_api_key(f):
-    """Same auth pattern as main app."""
+    """Require API key authentication.
+
+    When OUBLIETTE_API_KEY is not set:
+    - In development (FLASK_ENV=development): allow unauthenticated access
+    - In production: return 401 with helpful error message
+    """
     @functools.wraps(f)
     def decorated(*args, **kwargs):
         api_key = os.getenv("OUBLIETTE_API_KEY", "")
         if not api_key:
-            return f(*args, **kwargs)
+            flask_env = os.getenv("FLASK_ENV", "production")
+            if flask_env == "development":
+                return f(*args, **kwargs)
+            return jsonify({
+                "error": "API key not configured. Set OUBLIETTE_API_KEY environment variable.",
+            }), 401
         key = request.headers.get("X-API-Key", "")
         if not key or not hmac.compare_digest(key.encode(), api_key.encode()):
             return jsonify({"error": "Unauthorized"}), 401
         return f(*args, **kwargs)
     return decorated
+
+
+def _warn_no_api_key():
+    """Log a warning at startup if no API key is configured in production."""
+    api_key = os.getenv("OUBLIETTE_API_KEY", "")
+    flask_env = os.getenv("FLASK_ENV", "production")
+    if not api_key and flask_env != "development":
+        logging.getLogger("oubliette.dungeon").warning(
+            "SECURITY WARNING: No OUBLIETTE_API_KEY set in non-development mode. "
+            "All API endpoints will reject requests. "
+            "Set OUBLIETTE_API_KEY or FLASK_ENV=development."
+        )
+
+
+# Emit startup warning
+_warn_no_api_key()
 
 
 def _scenario_to_dict(scenario) -> Dict[str, Any]:

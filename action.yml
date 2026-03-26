@@ -80,22 +80,22 @@ runs:
         DIFFICULTY: ${{ inputs.difficulty }}
         SCENARIO_ID: ${{ inputs.scenario-id }}
       run: |
-        ARGS="--target ${TARGET_URL} --output ${OUTPUT_FILE}"
+        ARGS=("--target" "${TARGET_URL}" "--output" "${OUTPUT_FILE}")
 
         if [ -n "${CATEGORY}" ]; then
-          ARGS="${ARGS} --category ${CATEGORY}"
+          ARGS+=("--category" "${CATEGORY}")
         fi
 
         if [ -n "${DIFFICULTY}" ]; then
-          ARGS="${ARGS} --difficulty ${DIFFICULTY}"
+          ARGS+=("--difficulty" "${DIFFICULTY}")
         fi
 
         if [ -n "${SCENARIO_ID}" ]; then
-          ARGS="${ARGS} --scenario ${SCENARIO_ID}"
+          ARGS+=("--scenario" "${SCENARIO_ID}")
         fi
 
-        echo "Running: oubliette-dungeon run ${ARGS}"
-        oubliette-dungeon run ${ARGS} || true
+        echo "Running: oubliette-dungeon run ${ARGS[*]}"
+        oubliette-dungeon run "${ARGS[@]}" || true
 
     - name: Parse results
       id: parse

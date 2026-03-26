@@ -11,6 +11,8 @@ Routes:
     GET  /api/dungeon/tools/compare             - Compare results across tools
 """
 
+import os
+
 from flask import request, jsonify
 
 from oubliette_dungeon.core import DEFAULT_TARGET_URL
@@ -21,6 +23,7 @@ from oubliette_dungeon.api.middleware import (
     _get_results_db,
     _get_tool_manager,
     _result_to_dict,
+    _validate_target_url,
     SCENARIOS_FILE,
 )
 
@@ -47,6 +50,11 @@ def run_tool_campaign(tool_name):
     target_url = data.get("target_url", DEFAULT_TARGET_URL)
     scenario_ids = data.get("scenario_ids")
     category = data.get("category")
+
+    # SSRF validation
+    is_safe, error_msg = _validate_target_url(target_url)
+    if not is_safe:
+        return jsonify({"error": f"Blocked target URL: {error_msg}"}), 400
 
     loader = _get_loader()
     if scenario_ids:
@@ -92,6 +100,11 @@ def pyrit_crescendo():
 
     target_url = data.get("target_url", DEFAULT_TARGET_URL)
     max_turns = data.get("max_turns", 10)
+
+    # SSRF validation
+    is_safe, error_msg = _validate_target_url(target_url)
+    if not is_safe:
+        return jsonify({"error": f"Blocked target URL: {error_msg}"}), 400
 
     tm = _get_tool_manager()
     adapter = tm.get_tool("pyrit")
@@ -162,6 +175,11 @@ def deepteam_scan():
     vulns = data.get("vulnerabilities")
     attacks_per_vuln = data.get("attacks_per_vuln", 5)
 
+    # SSRF validation
+    is_safe, error_msg = _validate_target_url(target_url)
+    if not is_safe:
+        return jsonify({"error": f"Blocked target URL: {error_msg}"}), 400
+
     tm = _get_tool_manager()
     adapter = tm.get_tool("deepteam")
     if not adapter:
@@ -200,6 +218,16 @@ def garak_import():
     garak_path = data.get("garak_path")
     probe_categories = data.get("probe_categories")
     merge = data.get("merge", False)
+
+    # Path traversal validation for garak_path
+    if garak_path:
+        resolved = os.path.realpath(garak_path)
+        allowed_roots = [
+            os.path.realpath(os.getenv("DUNGEON_GARAK_DIR", os.path.join(os.getcwd(), "garak"))),
+            os.path.realpath(os.getcwd()),
+        ]
+        if not any(resolved.startswith(root + os.sep) or resolved == root for root in allowed_roots):
+            return jsonify({"error": "garak_path outside allowed directories"}), 400
 
     from oubliette_dungeon.tools.garak_importer import GarakImporter
 
