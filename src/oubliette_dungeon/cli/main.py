@@ -338,5 +338,52 @@ def compare(models, scenarios, timeout, category, difficulty, ollama_url,
         click.echo(f"Comparison saved to {default_path}")
 
 
+@cli.command("nist-rmf")
+@click.option("--scenarios", default=None, help="Path to scenarios YAML file")
+@click.option("--session", default=None, help="Session ID for test results")
+@click.option("--db-dir", default="redteam_results", help="Results database directory")
+@click.option("--output", default=None, help="Output file path (default: stdout)")
+@click.option("--organization", default="Oubliette Security", help="Organization name")
+def nist_rmf(scenarios, session, db_dir, output, organization):
+    """Generate a NIST AI RMF compliance report.
+
+    Maps attack scenarios and test results to NIST AI Risk Management
+    Framework functions (GOVERN, MAP, MEASURE, MANAGE) and outputs a
+    markdown compliance report suitable for federal documentation.
+    """
+    from oubliette_dungeon.core import ScenarioLoader
+    from oubliette_dungeon.report.nist_rmf import NISTRMFReport
+
+    scenarios_file = scenarios or _default_scenarios_path()
+    loader = ScenarioLoader(scenarios_file)
+    all_scenarios = loader.get_all_scenarios()
+
+    results = None
+    session_id = session
+
+    if session:
+        results_db = RedTeamResultsDB(db_dir)
+        session_data = results_db.get_session(session)
+        if session_data:
+            results = session_data.get("results", [])
+        else:
+            click.echo(f"Warning: Session '{session}' not found. Generating report without results.")
+
+    report = NISTRMFReport()
+    md = report.generate(
+        scenarios=all_scenarios,
+        results=results,
+        session_id=session_id,
+        organization=organization,
+    )
+
+    if output:
+        with open(output, "w", encoding="utf-8") as f:
+            f.write(md)
+        click.echo(f"NIST AI RMF report written to {output}")
+    else:
+        click.echo(md)
+
+
 if __name__ == "__main__":
     cli()

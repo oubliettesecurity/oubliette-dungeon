@@ -257,6 +257,62 @@ def garak_import():
     return jsonify(result)
 
 
+@dungeon_bp.route("/api/dungeon/tools/promptfoo/import", methods=["POST"])
+@_require_api_key
+def promptfoo_import():
+    """Import Promptfoo YAML config and convert to Dungeon scenarios.
+
+    JSON body:
+        config_yaml: Promptfoo YAML config as a string (required, unless config is given)
+        config: Promptfoo config as a JSON dict (optional, alternative to config_yaml)
+        merge: Whether to merge with existing scenario file (default=false)
+    """
+    data = request.get_json(silent=True) or {}
+    config_yaml = data.get("config_yaml", "")
+    config_dict = data.get("config")
+
+    if not config_yaml and not config_dict:
+        return jsonify({"error": "config_yaml (string) or config (dict) is required"}), 400
+
+    from oubliette_dungeon.compat.promptfoo import PromptfooImporter
+
+    importer = PromptfooImporter()
+
+    try:
+        if config_dict and isinstance(config_dict, dict):
+            scenarios = importer.import_dict(config_dict)
+        else:
+            scenarios = importer.import_yaml_string(config_yaml)
+    except Exception as e:
+        return jsonify({"error": f"Failed to parse Promptfoo config: {e}"}), 400
+
+    result = {
+        "tool": "promptfoo",
+        "imported_count": len(scenarios),
+        "scenarios": [
+            {
+                "id": s.id,
+                "name": s.name,
+                "category": s.category,
+                "difficulty": s.difficulty,
+                "description": s.description[:200],
+                "prompt": s.prompt[:200] + "..." if len(s.prompt) > 200 else s.prompt,
+                "bypass_indicators": s.bypass_indicators,
+            }
+            for s in scenarios
+        ],
+    }
+
+    if data.get("merge", False):
+        from oubliette_dungeon.tools.garak_importer import GarakImporter
+        garak = GarakImporter()
+        merged_yaml = garak.merge_with_existing(SCENARIOS_FILE, scenarios)
+        result["merged_yaml_length"] = len(merged_yaml)
+        result["note"] = "Merged YAML generated but not written to disk."
+
+    return jsonify(result)
+
+
 @dungeon_bp.route("/api/dungeon/tools/compare")
 @_require_api_key
 def compare_tools():

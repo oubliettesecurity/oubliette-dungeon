@@ -1,5 +1,6 @@
-"""oubliette_dungeon.report - PDF report generation."""
+"""oubliette_dungeon.report - PDF and compliance report generation."""
 
 from oubliette_dungeon.report.pdf import ReportGenerator, OubliettePDF
+from oubliette_dungeon.report.nist_rmf import NISTRMFReport, map_scenario_to_subcategories
 
-__all__ = ["ReportGenerator", "OubliettePDF"]
+__all__ = ["ReportGenerator", "OubliettePDF", "NISTRMFReport", "map_scenario_to_subcategories"]

@@ -48,6 +48,8 @@ _LAZY_MODULES = {
     "set_unified_storage": "oubliette_dungeon.api",
     "ReportGenerator": "oubliette_dungeon.report",
     "OubliettePDF": "oubliette_dungeon.report",
+    "NISTRMFReport": "oubliette_dungeon.report",
+    "PromptfooImporter": "oubliette_dungeon.compat",
     "RedTeamToolAdapter": "oubliette_dungeon.tools.base",
     "ToolManager": "oubliette_dungeon.tools.tool_manager",
     "oubliette_attacks": "oubliette_dungeon.tools.inspect_adapter",
@@ -93,6 +95,8 @@ __all__ = [
     "set_unified_storage",
     "ReportGenerator",
     "OubliettePDF",
+    "NISTRMFReport",
+    "PromptfooImporter",
     "RedTeamToolAdapter",
     "ToolManager",
     # Inspect AI integration (lazy)
