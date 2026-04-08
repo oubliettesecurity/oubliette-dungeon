@@ -16,6 +16,15 @@ from typing import List, Dict, Optional
 from datetime import datetime
 from pathlib import Path
 import csv
+import re
+
+_SAFE_SESSION_ID = re.compile(r"^[a-zA-Z0-9_\-]{1,128}$")
+
+
+def _validate_session_id(session_id: str) -> None:
+    """Reject session IDs that could cause path traversal."""
+    if not _SAFE_SESSION_ID.match(session_id):
+        raise ValueError(f"Invalid session_id: must be alphanumeric/dash/underscore, 1-128 chars")
 
 
 def _restrict_permissions(path: Path) -> None:
@@ -52,6 +61,7 @@ class RedTeamResultsDB:
         _restrict_permissions(self.index_file)
 
     def save_result(self, result, session_id: str) -> None:
+        _validate_session_id(session_id)
         if hasattr(result, '__dict__'):
             result_dict = vars(result)
         else:
@@ -88,6 +98,7 @@ class RedTeamResultsDB:
         self._save_index()
 
     def get_session(self, session_id: str) -> Optional[Dict]:
+        _validate_session_id(session_id)
         session_file = self.db_dir / f"{session_id}.json"
         if session_file.exists():
             with open(session_file, 'r') as f:
@@ -248,6 +259,7 @@ class RedTeamResultsDB:
         print(f"Report saved to {output_file}")
 
     def delete_session(self, session_id: str) -> bool:
+        _validate_session_id(session_id)
         session_file = self.db_dir / f"{session_id}.json"
         if session_file.exists():
             session_file.unlink()

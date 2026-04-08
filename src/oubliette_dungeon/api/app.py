@@ -19,9 +19,10 @@ def create_app(config=None):
     @app.after_request
     def add_security_headers(response):
         # CORS - restrict to same origin by default
-        allowed_origins = os.getenv("DUNGEON_CORS_ORIGINS", "").split(",")
+        cors_env = os.getenv("DUNGEON_CORS_ORIGINS", "")
+        allowed_origins = [o.strip() for o in cors_env.split(",") if o.strip()]
         origin = request.headers.get("Origin", "")
-        if origin and (origin in allowed_origins or not allowed_origins[0]):
+        if origin and allowed_origins and origin in allowed_origins:
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Headers"] = "Content-Type, X-API-Key"
             response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
