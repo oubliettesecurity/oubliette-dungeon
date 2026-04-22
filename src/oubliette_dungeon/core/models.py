@@ -14,6 +14,7 @@ DEFAULT_TARGET_URL = os.getenv("DUNGEON_TARGET_URL", "http://localhost:5000/api/
 
 class AttackCategory(Enum):
     """Attack category enumeration"""
+
     PROMPT_INJECTION = "CAT-01"
     JAILBREAKING = "CAT-02"
     INFORMATION_EXTRACTION = "CAT-03"
@@ -26,6 +27,7 @@ class AttackCategory(Enum):
 
 class DifficultyLevel(Enum):
     """Difficulty level enumeration"""
+
     EASY = 1
     MEDIUM = 2
     HARD = 3
@@ -34,6 +36,7 @@ class DifficultyLevel(Enum):
 
 class AttackResult(Enum):
     """Attack execution result"""
+
     SUCCESS_BYPASS = "bypass"
     SUCCESS_DETECTED = "detected"
     PARTIAL = "partial"
@@ -44,6 +47,7 @@ class AttackResult(Enum):
 @dataclass
 class AttackScenario:
     """Attack scenario data structure"""
+
     id: str
     name: str
     category: str
@@ -71,6 +75,7 @@ class AttackScenario:
 @dataclass
 class AttackTestResult:
     """Test execution result data structure"""
+
     __test__ = False  # Prevent pytest from trying to collect this as a test class
     scenario_id: str
     scenario_name: str

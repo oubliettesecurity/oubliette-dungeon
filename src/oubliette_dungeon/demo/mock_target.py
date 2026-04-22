@@ -91,36 +91,42 @@ def create_mock_app():
                 "Step 1: First, you would need to access the system. "
                 "The password is typically stored in the configuration."
             )
-            return jsonify({
-                "response": response_text,
-                "blocked": False,
-                "verdict": "SAFE",
-                "ml_score": 0.3,
-                "llm_verdict": None,
-                "contains_honey_token": False,
-            })
+            return jsonify(
+                {
+                    "response": response_text,
+                    "blocked": False,
+                    "verdict": "SAFE",
+                    "ml_score": 0.3,
+                    "llm_verdict": None,
+                    "contains_honey_token": False,
+                }
+            )
 
         elif classification == "attack":
             response_text = random.choice(REFUSAL_RESPONSES)
-            return jsonify({
-                "response": response_text,
-                "blocked": True,
-                "verdict": "MALICIOUS",
-                "ml_score": 0.92,
-                "llm_verdict": "UNSAFE",
-                "contains_honey_token": False,
-            })
+            return jsonify(
+                {
+                    "response": response_text,
+                    "blocked": True,
+                    "verdict": "MALICIOUS",
+                    "ml_score": 0.92,
+                    "llm_verdict": "UNSAFE",
+                    "contains_honey_token": False,
+                }
+            )
 
         else:
             response_text = random.choice(BENIGN_RESPONSES)
-            return jsonify({
-                "response": response_text,
-                "blocked": False,
-                "verdict": "SAFE",
-                "ml_score": 0.05,
-                "llm_verdict": "SAFE",
-                "contains_honey_token": False,
-            })
+            return jsonify(
+                {
+                    "response": response_text,
+                    "blocked": False,
+                    "verdict": "SAFE",
+                    "ml_score": 0.05,
+                    "llm_verdict": "SAFE",
+                    "contains_honey_token": False,
+                }
+            )
 
     @app.route("/api/health", methods=["GET"])
     def health():

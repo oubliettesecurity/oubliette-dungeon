@@ -49,6 +49,7 @@ PROVIDER_MAP: dict[str, dict[str, str]] = {
 # Assertion -> Dungeon mapping
 # ---------------------------------------------------------------------------
 
+
 def _assertion_to_bypass_indicators(assertion: dict) -> list[str]:
     """Convert a single Promptfoo assertion to bypass indicator strings."""
     atype = assertion.get("type", "")
@@ -142,6 +143,7 @@ def _render_template(template: str, variables: dict[str, Any]) -> str:
 # PromptfooImporter
 # ---------------------------------------------------------------------------
 
+
 class PromptfooImporter:
     """Import Promptfoo YAML configs and convert to Dungeon scenarios."""
 
@@ -200,9 +202,7 @@ class PromptfooImporter:
             safe_indicators: list[str] = []
 
             for assertion in assertions:
-                bypass_indicators.extend(
-                    _assertion_to_bypass_indicators(assertion)
-                )
+                bypass_indicators.extend(_assertion_to_bypass_indicators(assertion))
                 desc = _assertion_to_description(assertion)
                 if desc:
                     descriptions.append(desc)
@@ -222,8 +222,11 @@ class PromptfooImporter:
                 difficulty = _infer_difficulty(prompt_text, len(assertions))
 
                 # Build description
-                full_desc = test_description or " | ".join(descriptions) or \
-                    f"Imported from Promptfoo config (test #{counter})"
+                full_desc = (
+                    test_description
+                    or " | ".join(descriptions)
+                    or f"Imported from Promptfoo config (test #{counter})"
+                )
 
                 scenario = AttackScenario(
                     id=f"PF-{counter:03d}",
@@ -234,12 +237,10 @@ class PromptfooImporter:
                     owasp_mapping=self._owasp_for_category(category),
                     mitre_mapping=["T1059"],
                     prompt=prompt_text,
-                    bypass_indicators=list(set(bypass_indicators)) or [
-                        "here's how", "certainly", "sure"
-                    ],
-                    safe_indicators=list(set(safe_indicators)) or [
-                        "i cannot", "i can't", "i'm sorry", "inappropriate"
-                    ],
+                    bypass_indicators=list(set(bypass_indicators))
+                    or ["here's how", "certainly", "sure"],
+                    safe_indicators=list(set(safe_indicators))
+                    or ["i cannot", "i can't", "i'm sorry", "inappropriate"],
                     metadata={
                         "source": "promptfoo",
                         "providers": providers,

@@ -52,56 +52,56 @@ Provider = Literal[
 MODELS: dict[Provider, dict[Tier, str]] = {
     "anthropic": {
         "flagship": "claude-opus-4-7",
-        "default":  "claude-sonnet-4-6",
-        "small":    "claude-haiku-4-5-20251001",
+        "default": "claude-sonnet-4-6",
+        "small": "claude-haiku-4-5-20251001",
     },
     "openai": {
         "flagship": "gpt-5.4",
-        "default":  "gpt-5.4-mini",
-        "small":    "gpt-5.4-nano",
+        "default": "gpt-5.4-mini",
+        "small": "gpt-5.4-nano",
     },
     "azure_openai": {
         "flagship": "gpt-5.4",
-        "default":  "gpt-5.4-mini",
-        "small":    "gpt-5.4-nano",
+        "default": "gpt-5.4-mini",
+        "small": "gpt-5.4-nano",
     },
     "bedrock_anthropic": {
         "flagship": "anthropic.claude-opus-4-7",
-        "default":  "anthropic.claude-sonnet-4-6",
-        "small":    "anthropic.claude-haiku-4-5",
+        "default": "anthropic.claude-sonnet-4-6",
+        "small": "anthropic.claude-haiku-4-5",
     },
     "google_gemini": {
         "flagship": "gemini-3.1-pro-preview",
-        "default":  "gemini-3.1-flash",
-        "small":    "gemini-3.1-flash-lite-preview",
+        "default": "gemini-3.1-flash",
+        "small": "gemini-3.1-flash-lite-preview",
     },
     "google_vertex": {
         "flagship": "gemini-3.1-pro-preview",
-        "default":  "gemini-3.1-flash",
-        "small":    "gemini-3.1-flash-lite-preview",
+        "default": "gemini-3.1-flash",
+        "small": "gemini-3.1-flash-lite-preview",
     },
     "google_gemma": {
         "flagship": "gemma4:27b",
-        "default":  "gemma3:12b",
-        "small":    "gemma3:1b",
+        "default": "gemma3:12b",
+        "small": "gemma3:1b",
     },
     "ollama_llama": {
         "flagship": "llama4:maverick",
-        "default":  "llama4",
-        "small":    "llama3.3",
+        "default": "llama4",
+        "small": "llama3.3",
     },
 }
 
 
 _ENV_OVERRIDE: dict[Provider, str] = {
-    "anthropic":          "DUNGEON_ANTHROPIC_MODEL",
-    "openai":             "DUNGEON_OPENAI_MODEL",
-    "azure_openai":       "DUNGEON_AZURE_MODEL",
-    "bedrock_anthropic":  "DUNGEON_BEDROCK_MODEL",
-    "google_gemini":      "DUNGEON_GEMINI_MODEL",
-    "google_vertex":      "DUNGEON_VERTEX_MODEL",
-    "google_gemma":       "DUNGEON_GEMMA_MODEL",
-    "ollama_llama":       "DUNGEON_LLAMA_MODEL",
+    "anthropic": "DUNGEON_ANTHROPIC_MODEL",
+    "openai": "DUNGEON_OPENAI_MODEL",
+    "azure_openai": "DUNGEON_AZURE_MODEL",
+    "bedrock_anthropic": "DUNGEON_BEDROCK_MODEL",
+    "google_gemini": "DUNGEON_GEMINI_MODEL",
+    "google_vertex": "DUNGEON_VERTEX_MODEL",
+    "google_gemma": "DUNGEON_GEMMA_MODEL",
+    "ollama_llama": "DUNGEON_LLAMA_MODEL",
 }
 
 

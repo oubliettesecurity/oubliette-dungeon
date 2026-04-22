@@ -33,10 +33,12 @@ def list_scenarios():
     else:
         scenarios = loader.get_all_scenarios()
 
-    return jsonify({
-        "scenarios": [_scenario_to_dict(s) for s in scenarios],
-        "count": len(scenarios),
-    })
+    return jsonify(
+        {
+            "scenarios": [_scenario_to_dict(s) for s in scenarios],
+            "count": len(scenarios),
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/scenarios/stats")

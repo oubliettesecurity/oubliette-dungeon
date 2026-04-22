@@ -56,28 +56,32 @@ def list_comparisons():
         try:
             with open(fpath, encoding="utf-8") as f:
                 data = json.load(f)
-            comparisons.append({
-                "comparison_id": cid,
-                "timestamp": data.get("timestamp", ""),
-                "model_count": data.get("model_count", 0),
-                "models": [
-                    r.get("model_id", "") for r in data.get("ranking", [])
-                ],
-                "status": data.get("status", "complete"),
-            })
+            comparisons.append(
+                {
+                    "comparison_id": cid,
+                    "timestamp": data.get("timestamp", ""),
+                    "model_count": data.get("model_count", 0),
+                    "models": [r.get("model_id", "") for r in data.get("ranking", [])],
+                    "status": data.get("status", "complete"),
+                }
+            )
         except (json.JSONDecodeError, OSError):
-            comparisons.append({
-                "comparison_id": cid,
-                "timestamp": "",
-                "model_count": 0,
-                "models": [],
-                "status": "error",
-            })
+            comparisons.append(
+                {
+                    "comparison_id": cid,
+                    "timestamp": "",
+                    "model_count": 0,
+                    "models": [],
+                    "status": "error",
+                }
+            )
 
-    return jsonify({
-        "comparisons": comparisons,
-        "count": len(comparisons),
-    })
+    return jsonify(
+        {
+            "comparisons": comparisons,
+            "count": len(comparisons),
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/comparisons/<comparison_id>")
@@ -123,9 +127,7 @@ def run_comparison():
 
     models = data.get("models")
     if not models or not isinstance(models, list) or len(models) < 2:
-        return jsonify({
-            "error": "At least 2 model IDs required in 'models' list"
-        }), 400
+        return jsonify({"error": "At least 2 model IDs required in 'models' list"}), 400
 
     if len(models) > 10:
         return jsonify({"error": "Maximum 10 models per comparison"}), 400
@@ -138,10 +140,12 @@ def run_comparison():
     # Check no session is already running
     with _session_lock:
         if mw._running_session is not None:
-            return jsonify({
-                "error": "A session is already running",
-                "running_session": mw._running_session,
-            }), 409
+            return jsonify(
+                {
+                    "error": "A session is already running",
+                    "running_session": mw._running_session,
+                }
+            ), 409
 
     target_url = data.get("target_url")
     timeout = data.get("timeout", DEFAULT_TIMEOUT)
@@ -208,21 +212,23 @@ def run_comparison():
                 results = []
                 if session_data and "results" in session_data:
                     for r in session_data["results"]:
-                        results.append(AttackTestResult(
-                            scenario_id=r.get("scenario_id", ""),
-                            scenario_name=r.get("scenario_name", ""),
-                            category=r.get("category", ""),
-                            difficulty=r.get("difficulty", ""),
-                            result=r.get("result", ""),
-                            confidence=r.get("confidence", 0),
-                            response=r.get("response", ""),
-                            execution_time_ms=r.get("execution_time_ms", 0),
-                            bypass_indicators_found=r.get("bypass_indicators_found", []),
-                            safe_indicators_found=r.get("safe_indicators_found", []),
-                            ml_score=r.get("ml_score"),
-                            llm_verdict=r.get("llm_verdict"),
-                            notes=r.get("notes", ""),
-                        ))
+                        results.append(
+                            AttackTestResult(
+                                scenario_id=r.get("scenario_id", ""),
+                                scenario_name=r.get("scenario_name", ""),
+                                category=r.get("category", ""),
+                                difficulty=r.get("difficulty", ""),
+                                result=r.get("result", ""),
+                                confidence=r.get("confidence", 0),
+                                response=r.get("response", ""),
+                                execution_time_ms=r.get("execution_time_ms", 0),
+                                bypass_indicators_found=r.get("bypass_indicators_found", []),
+                                safe_indicators_found=r.get("safe_indicators_found", []),
+                                ml_score=r.get("ml_score"),
+                                llm_verdict=r.get("llm_verdict"),
+                                notes=r.get("notes", ""),
+                            )
+                        )
 
                 comp.add_results(model_id, results)
 
@@ -257,9 +263,11 @@ def run_comparison():
     t = threading.Thread(target=_run, daemon=True)
     t.start()
 
-    return jsonify({
-        "comparison_id": comparison_id,
-        "status": "started",
-        "models": models,
-        "category": category,
-    })
+    return jsonify(
+        {
+            "comparison_id": comparison_id,
+            "status": "started",
+            "models": models,
+            "category": category,
+        }
+    )

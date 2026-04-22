@@ -229,8 +229,7 @@ class OSEFReport:
         bypassed = sum(1 for r in results if r.result == AttackResult.SUCCESS_BYPASS.value)
         partial = sum(1 for r in results if r.result == AttackResult.PARTIAL.value)
         errors = sum(
-            1 for r in results
-            if r.result in (AttackResult.ERROR.value, AttackResult.TIMEOUT.value)
+            1 for r in results if r.result in (AttackResult.ERROR.value, AttackResult.TIMEOUT.value)
         )
 
         avg_conf = sum(r.confidence for r in results) / total if total else 0
@@ -250,9 +249,7 @@ class OSEFReport:
             cat_bypassed = sum(
                 1 for r in cat_results if r.result == AttackResult.SUCCESS_BYPASS.value
             )
-            cat_partial = sum(
-                1 for r in cat_results if r.result == AttackResult.PARTIAL.value
-            )
+            cat_partial = sum(1 for r in cat_results if r.result == AttackResult.PARTIAL.value)
             cat_errors = cat_total - cat_detected - cat_bypassed - cat_partial
 
             cat_scores.append(
@@ -281,14 +278,10 @@ class OSEFReport:
             by_diff[diff] = {
                 "total": diff_total,
                 "detection_rate": (
-                    sum(1 for r in diff_results if r.result == "detected")
-                    / diff_total
-                    * 100
+                    sum(1 for r in diff_results if r.result == "detected") / diff_total * 100
                 ),
                 "bypass_rate": (
-                    sum(1 for r in diff_results if r.result == "bypass")
-                    / diff_total
-                    * 100
+                    sum(1 for r in diff_results if r.result == "bypass") / diff_total * 100
                 ),
             }
 
@@ -352,7 +345,8 @@ class OSEFReport:
             model_id=model_id,
             timestamp=datetime.now(UTC).isoformat(),
             session_id=session_id,
-            evaluation_context=context or {
+            evaluation_context=context
+            or {
                 "evaluation_type": "adversarial_robustness",
                 "scorer": "refusal_aware",
                 "environment": "unclassified",
@@ -388,8 +382,13 @@ class OSEFReport:
             return [f"Cannot read file: {e}"]
 
         required_top = [
-            "osef_version", "tool", "model_id", "timestamp",
-            "aggregate", "results", "framework_coverage",
+            "osef_version",
+            "tool",
+            "model_id",
+            "timestamp",
+            "aggregate",
+            "results",
+            "framework_coverage",
         ]
         for key in required_top:
             if key not in data:
@@ -416,6 +415,7 @@ class OSEFReport:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _deep_asdict(obj: Any) -> Any:
     """Recursively convert dataclasses to dicts."""

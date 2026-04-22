@@ -33,21 +33,23 @@ def _get_or_create_queue():
         if session and "results" in session:
             results = []
             for r in session["results"]:
-                results.append(AttackTestResult(
-                    scenario_id=r.get("scenario_id", ""),
-                    scenario_name=r.get("scenario_name", ""),
-                    category=r.get("category", ""),
-                    difficulty=r.get("difficulty", ""),
-                    result=r.get("result", ""),
-                    confidence=r.get("confidence", 0),
-                    response=r.get("response", ""),
-                    execution_time_ms=r.get("execution_time_ms", 0),
-                    bypass_indicators_found=r.get("bypass_indicators_found", []),
-                    safe_indicators_found=r.get("safe_indicators_found", []),
-                    ml_score=r.get("ml_score"),
-                    llm_verdict=r.get("llm_verdict"),
-                    notes=r.get("notes", ""),
-                ))
+                results.append(
+                    AttackTestResult(
+                        scenario_id=r.get("scenario_id", ""),
+                        scenario_name=r.get("scenario_name", ""),
+                        category=r.get("category", ""),
+                        difficulty=r.get("difficulty", ""),
+                        result=r.get("result", ""),
+                        confidence=r.get("confidence", 0),
+                        response=r.get("response", ""),
+                        execution_time_ms=r.get("execution_time_ms", 0),
+                        bypass_indicators_found=r.get("bypass_indicators_found", []),
+                        safe_indicators_found=r.get("safe_indicators_found", []),
+                        ml_score=r.get("ml_score"),
+                        llm_verdict=r.get("llm_verdict"),
+                        notes=r.get("notes", ""),
+                    )
+                )
             _review_queue = ReviewQueue.from_results(results)
         else:
             _review_queue = ReviewQueue()
@@ -68,24 +70,26 @@ def pending_reviews():
     """Get items pending human review."""
     queue = _get_or_create_queue()
     pending = queue.pending_review
-    return jsonify({
-        "count": len(pending),
-        "items": [
-            {
-                "scenario_id": item.scenario_id,
-                "scenario_name": item.scenario_name,
-                "category": item.category,
-                "difficulty": item.difficulty,
-                "automated_result": item.automated_result,
-                "automated_confidence": item.automated_confidence,
-                "response_snippet": item.response_snippet[:300],
-                "review_reason": item.review_reason,
-                "bypass_indicators_found": item.bypass_indicators_found,
-                "safe_indicators_found": item.safe_indicators_found,
-            }
-            for item in pending
-        ],
-    })
+    return jsonify(
+        {
+            "count": len(pending),
+            "items": [
+                {
+                    "scenario_id": item.scenario_id,
+                    "scenario_name": item.scenario_name,
+                    "category": item.category,
+                    "difficulty": item.difficulty,
+                    "automated_result": item.automated_result,
+                    "automated_confidence": item.automated_confidence,
+                    "response_snippet": item.response_snippet[:300],
+                    "review_reason": item.review_reason,
+                    "bypass_indicators_found": item.bypass_indicators_found,
+                    "safe_indicators_found": item.safe_indicators_found,
+                }
+                for item in pending
+            ],
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/reviews/items/<scenario_id>")
@@ -101,6 +105,7 @@ def get_review_item(scenario_id):
         return jsonify({"error": f"Scenario not found: {scenario_id}"}), 404
 
     from dataclasses import asdict
+
     return jsonify(asdict(item))
 
 
@@ -123,11 +128,13 @@ def flag_for_review():
         flag_categories=flag_categories,
     )
 
-    return jsonify({
-        "flagged": flagged,
-        "total": queue.total,
-        "pending_review": len(queue.pending_review),
-    })
+    return jsonify(
+        {
+            "flagged": flagged,
+            "total": queue.total,
+            "pending_review": len(queue.pending_review),
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/reviews/submit", methods=["POST"])
@@ -145,9 +152,7 @@ def submit_review():
 
     valid_results = ("detected", "bypass", "partial")
     if data["override_result"] not in valid_results:
-        return jsonify({
-            "error": f"override_result must be one of: {valid_results}"
-        }), 400
+        return jsonify({"error": f"override_result must be one of: {valid_results}"}), 400
 
     queue = _get_or_create_queue()
     success = queue.submit_review(
@@ -163,13 +168,15 @@ def submit_review():
         return jsonify({"error": f"Scenario not found: {data['scenario_id']}"}), 404
 
     item = queue.get_item(data["scenario_id"])
-    return jsonify({
-        "success": True,
-        "scenario_id": data["scenario_id"],
-        "final_result": item.final_result,
-        "final_confidence": item.final_confidence,
-        "total_reviews": len(item.reviews),
-    })
+    return jsonify(
+        {
+            "success": True,
+            "scenario_id": data["scenario_id"],
+            "final_result": item.final_result,
+            "final_confidence": item.final_confidence,
+            "total_reviews": len(item.reviews),
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/reviews/export")

@@ -27,6 +27,7 @@ from datetime import datetime
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -114,11 +115,13 @@ SWEEP_ATTACKS = [
 # Provider Detection
 # ===================================================================
 
+
 def detect_providers():
     """Detect which LLM providers have API keys configured."""
     available = {}
 
     from oubliette_dungeon.model_config import get_model
+
     if os.getenv("ANTHROPIC_API_KEY"):
         available["anthropic"] = get_model("anthropic")
     if os.getenv("OPENAI_API_KEY"):
@@ -129,6 +132,7 @@ def detect_providers():
     # Check Ollama availability
     try:
         import requests
+
         r = requests.get("http://localhost:11434/api/tags", timeout=3)
         if r.status_code == 200:
             models = [m["name"] for m in r.json().get("models", [])]
@@ -143,6 +147,7 @@ def detect_providers():
 # ===================================================================
 # Attack Runner
 # ===================================================================
+
 
 def run_attacks_with_provider(provider_name, attacks):
     """Run all attack scenarios against Shield with a specific LLM provider.
@@ -168,34 +173,38 @@ def run_attacks_with_provider(provider_name, attacks):
             result = shield.analyze(attack["prompt"])
             elapsed_ms = (time.time() - start) * 1000
 
-            results.append({
-                "id": attack["id"],
-                "name": attack["name"],
-                "category": attack["category"],
-                "expect_blocked": attack["expect_blocked"],
-                "verdict": result.verdict,
-                "blocked": result.blocked,
-                "detection_method": result.detection_method,
-                "ml_score": result.ml_result.get("score") if result.ml_result else None,
-                "llm_verdict": result.llm_verdict,
-                "elapsed_ms": round(elapsed_ms, 1),
-                "correct": result.blocked == attack["expect_blocked"],
-            })
+            results.append(
+                {
+                    "id": attack["id"],
+                    "name": attack["name"],
+                    "category": attack["category"],
+                    "expect_blocked": attack["expect_blocked"],
+                    "verdict": result.verdict,
+                    "blocked": result.blocked,
+                    "detection_method": result.detection_method,
+                    "ml_score": result.ml_result.get("score") if result.ml_result else None,
+                    "llm_verdict": result.llm_verdict,
+                    "elapsed_ms": round(elapsed_ms, 1),
+                    "correct": result.blocked == attack["expect_blocked"],
+                }
+            )
         except Exception as e:
-            results.append({
-                "id": attack["id"],
-                "name": attack["name"],
-                "category": attack["category"],
-                "expect_blocked": attack["expect_blocked"],
-                "verdict": "ERROR",
-                "blocked": False,
-                "detection_method": "error",
-                "ml_score": None,
-                "llm_verdict": None,
-                "elapsed_ms": 0,
-                "correct": False,
-                "error": str(e),
-            })
+            results.append(
+                {
+                    "id": attack["id"],
+                    "name": attack["name"],
+                    "category": attack["category"],
+                    "expect_blocked": attack["expect_blocked"],
+                    "verdict": "ERROR",
+                    "blocked": False,
+                    "detection_method": "error",
+                    "ml_score": None,
+                    "llm_verdict": None,
+                    "elapsed_ms": 0,
+                    "correct": False,
+                    "error": str(e),
+                }
+            )
 
     return results
 
@@ -203,6 +212,7 @@ def run_attacks_with_provider(provider_name, attacks):
 # ===================================================================
 # Reporting
 # ===================================================================
+
 
 def print_comparison_table(all_results, attacks):
     """Print an ASCII comparison table across providers."""
@@ -283,9 +293,11 @@ def print_failure_details(all_results):
             for f in failures:
                 expected = "blocked" if f["expect_blocked"] else "passed"
                 actual = "BLOCKED" if f["blocked"] else "passed"
-                print(f"    [{provider}] {f['id']} {f['name']}: "
-                      f"expected {expected}, got {actual} "
-                      f"(method={f['detection_method']})")
+                print(
+                    f"    [{provider}] {f['id']} {f['name']}: "
+                    f"expected {expected}, got {actual} "
+                    f"(method={f['detection_method']})"
+                )
 
     if not has_failures:
         print("\n  All providers classified correctly!")
@@ -294,6 +306,7 @@ def print_failure_details(all_results):
 # ===================================================================
 # YAML scenario loader
 # ===================================================================
+
 
 def load_yaml_scenarios(path):
     """Load attack scenarios from a YAML file."""
@@ -308,13 +321,15 @@ def load_yaml_scenarios(path):
 
     scenarios = []
     for i, item in enumerate(data.get("scenarios", data if isinstance(data, list) else [])):
-        scenarios.append({
-            "id": item.get("id", f"YAML-{i+1:03d}"),
-            "name": item.get("name", f"Scenario {i+1}"),
-            "prompt": item["prompt"],
-            "category": item.get("category", "custom"),
-            "expect_blocked": item.get("expect_blocked", True),
-        })
+        scenarios.append(
+            {
+                "id": item.get("id", f"YAML-{i + 1:03d}"),
+                "name": item.get("name", f"Scenario {i + 1}"),
+                "prompt": item["prompt"],
+                "category": item.get("category", "custom"),
+                "expect_blocked": item.get("expect_blocked", True),
+            }
+        )
 
     return scenarios
 
@@ -322,6 +337,7 @@ def load_yaml_scenarios(path):
 # ===================================================================
 # Main
 # ===================================================================
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -402,7 +418,9 @@ def main():
     print_failure_details(all_results)
 
     # Save JSON results
-    output_file = args.output or f"redteam_comparison_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    output_file = (
+        args.output or f"redteam_comparison_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    )
     output_data = {
         "timestamp": datetime.now().isoformat(),
         "providers": {k: v for k, v in providers.items()},

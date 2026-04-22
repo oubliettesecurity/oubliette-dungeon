@@ -28,6 +28,7 @@ def _check_deepteam() -> bool:
     if _deepteam_available is None:
         try:
             import deepteam  # noqa: F401
+
             _deepteam_available = True
         except ImportError:
             _deepteam_available = False
@@ -75,6 +76,7 @@ DEEPTEAM_VULNS = [
 # ---------------------------------------------------------------------------
 # DeepTeamAdapter
 # ---------------------------------------------------------------------------
+
 
 class DeepTeamAdapter(RedTeamToolAdapter):
     """Adapter that bridges DeepTeam into the Oubliette red team engine."""
@@ -194,6 +196,7 @@ class DeepTeamAdapter(RedTeamToolAdapter):
 
         async def callback(prompt: str) -> str:
             import asyncio
+
             loop = asyncio.get_running_loop()
 
             def _sync():
@@ -271,7 +274,9 @@ class DeepTeamAdapter(RedTeamToolAdapter):
 
             # scan_results is a list of result objects from DeepTeam
             for i, sr in enumerate(scan_results):
-                vuln_name = getattr(sr, "vulnerability", vuln_list[i % len(vuln_list)] if vuln_list else "unknown")
+                vuln_name = getattr(
+                    sr, "vulnerability", vuln_list[i % len(vuln_list)] if vuln_list else "unknown"
+                )
                 score = getattr(sr, "score", None)
                 passed = getattr(sr, "passed", None)
                 prompt_text = getattr(sr, "input", "")
@@ -289,35 +294,39 @@ class DeepTeamAdapter(RedTeamToolAdapter):
 
                 category = DEEPTEAM_TO_CATEGORY.get(str(vuln_name), "prompt_injection")
 
-                results.append(TestResult(
-                    scenario_id=f"DEEPTEAM-SCAN-{i + 1:03d}",
-                    scenario_name=f"DeepTeam {vuln_name} scan #{i + 1}",
-                    category=category,
-                    difficulty="medium",
-                    result=result_enum.value,
-                    confidence=confidence,
-                    response=str(response_text),
-                    execution_time_ms=elapsed / max(len(scan_results), 1),
-                    bypass_indicators_found=[],
-                    safe_indicators_found=[],
-                    ml_score=float(score) if score is not None else None,
-                    notes=f"tool=deepteam vuln={vuln_name} passed={passed}",
-                ))
+                results.append(
+                    TestResult(
+                        scenario_id=f"DEEPTEAM-SCAN-{i + 1:03d}",
+                        scenario_name=f"DeepTeam {vuln_name} scan #{i + 1}",
+                        category=category,
+                        difficulty="medium",
+                        result=result_enum.value,
+                        confidence=confidence,
+                        response=str(response_text),
+                        execution_time_ms=elapsed / max(len(scan_results), 1),
+                        bypass_indicators_found=[],
+                        safe_indicators_found=[],
+                        ml_score=float(score) if score is not None else None,
+                        notes=f"tool=deepteam vuln={vuln_name} passed={passed}",
+                    )
+                )
 
         except Exception as exc:
             elapsed = (time.time() - start) * 1000
-            results.append(TestResult(
-                scenario_id="DEEPTEAM-SCAN-ERR",
-                scenario_name="DeepTeam vulnerability scan",
-                category="prompt_injection",
-                difficulty="medium",
-                result=AttackResult.ERROR.value,
-                confidence=1.0,
-                response=f"ERROR: {exc}",
-                execution_time_ms=elapsed,
-                bypass_indicators_found=[],
-                safe_indicators_found=[],
-                notes=f"tool=deepteam scan error: {exc}",
-            ))
+            results.append(
+                TestResult(
+                    scenario_id="DEEPTEAM-SCAN-ERR",
+                    scenario_name="DeepTeam vulnerability scan",
+                    category="prompt_injection",
+                    difficulty="medium",
+                    result=AttackResult.ERROR.value,
+                    confidence=1.0,
+                    response=f"ERROR: {exc}",
+                    execution_time_ms=elapsed,
+                    bypass_indicators_found=[],
+                    safe_indicators_found=[],
+                    notes=f"tool=deepteam scan error: {exc}",
+                )
+            )
 
         return results

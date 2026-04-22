@@ -46,10 +46,12 @@ def start_session():
 
     with _session_lock:
         if mw._running_session is not None:
-            return jsonify({
-                "error": "A session is already running",
-                "running_session": mw._running_session,
-            }), 409
+            return jsonify(
+                {
+                    "error": "A session is already running",
+                    "running_session": mw._running_session,
+                }
+            ), 409
 
     data = request.get_json(silent=True) or {}
     target_url = data.get("target_url", DEFAULT_TARGET_URL)
@@ -74,7 +76,10 @@ def start_session():
     with _session_lock:
         mw._running_session = session_id
 
-    _audit("start_session", f"session={session_id} target={target_url} cat={category} diff={difficulty}")
+    _audit(
+        "start_session",
+        f"session={session_id} target={target_url} cat={category} diff={difficulty}",
+    )
 
     def _run():
         """Execute the red team session in a background daemon thread."""
@@ -94,13 +99,15 @@ def start_session():
     t = threading.Thread(target=_run, daemon=True)
     t.start()
 
-    return jsonify({
-        "session_id": session_id,
-        "status": "started",
-        "target_url": target_url,
-        "category": category,
-        "difficulty": difficulty,
-    })
+    return jsonify(
+        {
+            "session_id": session_id,
+            "status": "started",
+            "target_url": target_url,
+            "category": category,
+            "difficulty": difficulty,
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/execute/<scenario_id>", methods=["POST"])
@@ -140,10 +147,12 @@ def execute_scenario(scenario_id):
     except Exception:
         return jsonify({"error": "Execution failed"}), 500
 
-    return jsonify({
-        "session_id": orchestrator.current_session_id,
-        "result": _result_to_dict(result),
-    })
+    return jsonify(
+        {
+            "session_id": orchestrator.current_session_id,
+            "result": _result_to_dict(result),
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/execute/category/<category>", methods=["POST"])
@@ -157,10 +166,12 @@ def execute_category(category):
 
     with _session_lock:
         if mw._running_session is not None:
-            return jsonify({
-                "error": "A session is already running",
-                "running_session": mw._running_session,
-            }), 409
+            return jsonify(
+                {
+                    "error": "A session is already running",
+                    "running_session": mw._running_session,
+                }
+            ), 409
 
     data = request.get_json(silent=True) or {}
     target_url = data.get("target_url", DEFAULT_TARGET_URL)
@@ -203,9 +214,11 @@ def execute_category(category):
     t = threading.Thread(target=_run, daemon=True)
     t.start()
 
-    return jsonify({
-        "session_id": session_id,
-        "status": "started",
-        "category": category,
-        "scenario_count": len(scenarios),
-    })
+    return jsonify(
+        {
+            "session_id": session_id,
+            "status": "started",
+            "category": category,
+            "scenario_count": len(scenarios),
+        }
+    )

@@ -17,8 +17,7 @@ except ImportError:
 def _require_fpdf():
     if FPDF is None:
         raise ImportError(
-            "fpdf2 package required for PDF generation. "
-            "Install with: pip install fpdf2>=2.8.0"
+            "fpdf2 package required for PDF generation. Install with: pip install fpdf2>=2.8.0"
         )
 
 
@@ -78,8 +77,17 @@ class OubliettePDF(FPDF if FPDF else object):
         self.set_text_color(*COLOR_TEXT_MUTED)
         if date_range:
             self.cell(0, 8, f"Period: {date_range}", align="C", new_x="LMARGIN", new_y="NEXT")
-        self.cell(0, 8, f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", align="C", new_x="LMARGIN", new_y="NEXT")
-        self.cell(0, 8, f"Classification: {self.classification}", align="C", new_x="LMARGIN", new_y="NEXT")
+        self.cell(
+            0,
+            8,
+            f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            align="C",
+            new_x="LMARGIN",
+            new_y="NEXT",
+        )
+        self.cell(
+            0, 8, f"Classification: {self.classification}", align="C", new_x="LMARGIN", new_y="NEXT"
+        )
         self.ln(30)
         self.set_draw_color(*COLOR_RED)
         self.line(60, self.get_y(), 150, self.get_y())
@@ -130,7 +138,15 @@ class OubliettePDF(FPDF if FPDF else object):
             self.set_text_color(*COLOR_TEXT_MUTED)
             self.cell(0, 7, title, new_x="LMARGIN", new_y="NEXT")
         max_val = max(data.values()) if data.values() else 1
-        colors = [COLOR_GREEN, COLOR_CYAN, COLOR_BLUE, COLOR_PURPLE, COLOR_YELLOW, COLOR_ORANGE, COLOR_RED]
+        colors = [
+            COLOR_GREEN,
+            COLOR_CYAN,
+            COLOR_BLUE,
+            COLOR_PURPLE,
+            COLOR_YELLOW,
+            COLOR_ORANGE,
+            COLOR_RED,
+        ]
         for i, (label, value) in enumerate(data.items()):
             color = colors[i % len(colors)]
             bar_w = (value / max_val) * max_width if max_val > 0 else 0
@@ -157,6 +173,7 @@ class ReportGenerator:
             import os
 
             from oubliette_dungeon.storage import RedTeamResultsDB
+
             db = RedTeamResultsDB(os.getenv("DUNGEON_DB_DIR", "redteam_results"))
             if stats is None:
                 stats = db.get_statistics(session_id)
@@ -165,9 +182,16 @@ class ReportGenerator:
                 results = session_data.get("results", []) if session_data else []
 
         if "error" in stats:
-            stats = {"total_tests": 0, "detection_rate": 0, "bypass_rate": 0,
-                     "avg_confidence": 0, "by_result": {}, "by_category": {},
-                     "by_difficulty": {}, "session_id": session_id or "N/A"}
+            stats = {
+                "total_tests": 0,
+                "detection_rate": 0,
+                "bypass_rate": 0,
+                "avg_confidence": 0,
+                "by_result": {},
+                "by_category": {},
+                "by_difficulty": {},
+                "session_id": session_id or "N/A",
+            }
 
         pdf = OubliettePDF("Red Team Assessment Report")
         pdf.alias_nb_pages()
@@ -191,10 +215,14 @@ class ReportGenerator:
 
         pdf.stat_row("Session ID", stats.get("session_id", "N/A"))
         pdf.stat_row("Total Scenarios Tested", stats.get("total_tests", 0), COLOR_CYAN)
-        pdf.stat_row("Detection Rate", f"{detection_rate:.1f}%",
-                      COLOR_GREEN if detection_rate >= 80 else COLOR_RED)
-        pdf.stat_row("Bypass Rate", f"{bypass_rate:.1f}%",
-                      COLOR_RED if bypass_rate > 10 else COLOR_GREEN)
+        pdf.stat_row(
+            "Detection Rate",
+            f"{detection_rate:.1f}%",
+            COLOR_GREEN if detection_rate >= 80 else COLOR_RED,
+        )
+        pdf.stat_row(
+            "Bypass Rate", f"{bypass_rate:.1f}%", COLOR_RED if bypass_rate > 10 else COLOR_GREEN
+        )
         pdf.stat_row("Average Confidence", f"{stats.get('avg_confidence', 0):.1%}", COLOR_CYAN)
         pdf.stat_row("Risk Level", risk_level, risk_color)
 
@@ -227,7 +255,9 @@ class ReportGenerator:
                     r.get("category", ""),
                     r.get("difficulty", ""),
                     r.get("result", ""),
-                    f"{r.get('confidence', 0):.0%}" if isinstance(r.get("confidence"), (int, float)) else str(r.get("confidence", "")),
+                    f"{r.get('confidence', 0):.0%}"
+                    if isinstance(r.get("confidence"), (int, float))
+                    else str(r.get("confidence", "")),
                 ]
                 pdf.table_row(row, widths, highlight=is_bypass)
 
@@ -237,9 +267,11 @@ class ReportGenerator:
             pdf.section_header("Critical Findings - Bypassed Scenarios", COLOR_RED)
             pdf.set_font("Helvetica", "", 9)
             pdf.set_text_color(*COLOR_TEXT_MUTED)
-            pdf.multi_cell(0, 5,
+            pdf.multi_cell(
+                0,
+                5,
                 "The following attack scenarios successfully bypassed detection. "
-                "These represent the highest-priority areas for security improvement."
+                "These represent the highest-priority areas for security improvement.",
             )
             pdf.ln(3)
             for r in bypassed:
@@ -250,7 +282,13 @@ class ReportGenerator:
                 pdf.cell(0, 6, f"{sid}: {name}", new_x="LMARGIN", new_y="NEXT")
                 pdf.set_font("Helvetica", "", 8)
                 pdf.set_text_color(0, 0, 0)
-                pdf.cell(0, 5, f"  Category: {r.get('category', 'N/A')} | Difficulty: {r.get('difficulty', 'N/A')}", new_x="LMARGIN", new_y="NEXT")
+                pdf.cell(
+                    0,
+                    5,
+                    f"  Category: {r.get('category', 'N/A')} | Difficulty: {r.get('difficulty', 'N/A')}",
+                    new_x="LMARGIN",
+                    new_y="NEXT",
+                )
                 pdf.ln(2)
 
         pdf.add_page()
@@ -260,13 +298,21 @@ class ReportGenerator:
 
         recs = []
         if bypass_rate > 20:
-            recs.append("CRITICAL: High bypass rate indicates significant detection gaps. Review pre-filter rules and ML model retraining.")
+            recs.append(
+                "CRITICAL: High bypass rate indicates significant detection gaps. Review pre-filter rules and ML model retraining."
+            )
         if bypass_rate > 0:
-            recs.append("Review all bypassed scenarios and add specific detection rules for their attack patterns.")
+            recs.append(
+                "Review all bypassed scenarios and add specific detection rules for their attack patterns."
+            )
         if stats.get("total_tests", 0) < 20:
             recs.append("Expand test coverage: run more scenarios for comprehensive assessment.")
-        recs.append("Schedule regular automated red team runs to track detection improvements over time.")
-        recs.append("Export results as STIX bundle for integration with external threat intelligence platforms.")
+        recs.append(
+            "Schedule regular automated red team runs to track detection improvements over time."
+        )
+        recs.append(
+            "Export results as STIX bundle for integration with external threat intelligence platforms."
+        )
 
         for i, rec in enumerate(recs, 1):
             pdf.multi_cell(0, 5, f"{i}. {rec}")

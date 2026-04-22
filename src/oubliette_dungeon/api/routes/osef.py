@@ -7,7 +7,6 @@ Routes:
     POST /api/dungeon/osef/validate      - Validate an OSEF document
 """
 
-
 from flask import jsonify, request
 
 from oubliette_dungeon.api.middleware import (
@@ -23,21 +22,23 @@ def _build_results_from_session(session_data: dict) -> list[AttackTestResult]:
     """Convert raw session result dicts into AttackTestResult objects."""
     results = []
     for r in session_data.get("results", []):
-        results.append(AttackTestResult(
-            scenario_id=r.get("scenario_id", ""),
-            scenario_name=r.get("scenario_name", ""),
-            category=r.get("category", ""),
-            difficulty=r.get("difficulty", ""),
-            result=r.get("result", ""),
-            confidence=r.get("confidence", 0),
-            response=r.get("response", ""),
-            execution_time_ms=r.get("execution_time_ms", 0),
-            bypass_indicators_found=r.get("bypass_indicators_found", []),
-            safe_indicators_found=r.get("safe_indicators_found", []),
-            ml_score=r.get("ml_score"),
-            llm_verdict=r.get("llm_verdict"),
-            notes=r.get("notes", ""),
-        ))
+        results.append(
+            AttackTestResult(
+                scenario_id=r.get("scenario_id", ""),
+                scenario_name=r.get("scenario_name", ""),
+                category=r.get("category", ""),
+                difficulty=r.get("difficulty", ""),
+                result=r.get("result", ""),
+                confidence=r.get("confidence", 0),
+                response=r.get("response", ""),
+                execution_time_ms=r.get("execution_time_ms", 0),
+                bypass_indicators_found=r.get("bypass_indicators_found", []),
+                safe_indicators_found=r.get("safe_indicators_found", []),
+                ml_score=r.get("ml_score"),
+                llm_verdict=r.get("llm_verdict"),
+                notes=r.get("notes", ""),
+            )
+        )
     return results
 
 
@@ -111,8 +112,13 @@ def validate_osef():
 
     # Check required top-level fields
     required_top = [
-        "osef_version", "tool", "model_id", "timestamp",
-        "aggregate", "results", "framework_coverage",
+        "osef_version",
+        "tool",
+        "model_id",
+        "timestamp",
+        "aggregate",
+        "results",
+        "framework_coverage",
     ]
     for key in required_top:
         if key not in data:
@@ -152,9 +158,11 @@ def validate_osef():
 
     valid = len(errors) == 0
 
-    return jsonify({
-        "valid": valid,
-        "osef_version": OSEF_VERSION,
-        "errors": errors,
-        "fields_checked": len(required_top),
-    })
+    return jsonify(
+        {
+            "valid": valid,
+            "osef_version": OSEF_VERSION,
+            "errors": errors,
+            "fields_checked": len(required_top),
+        }
+    )

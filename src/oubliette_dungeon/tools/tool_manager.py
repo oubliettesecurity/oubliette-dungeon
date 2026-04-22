@@ -60,19 +60,21 @@ class ToolManager:
 
         # Always include garak importer (it's not an adapter but a utility)
         try:
-            tools.append({
-                "name": "garak",
-                "version": "importer",
-                "available": True,
-                "capabilities": {
+            tools.append(
+                {
                     "name": "garak",
                     "version": "importer",
-                    "multi_turn": False,
-                    "converters": False,
-                    "vulnerability_scan": False,
-                    "probe_import": True,
-                },
-            })
+                    "available": True,
+                    "capabilities": {
+                        "name": "garak",
+                        "version": "importer",
+                        "multi_turn": False,
+                        "converters": False,
+                        "vulnerability_scan": False,
+                        "probe_import": True,
+                    },
+                }
+            )
         except Exception:
             pass
 
@@ -150,19 +152,21 @@ class ToolManager:
                 self._persist(results, name)
                 all_results[name] = results
             except Exception as exc:
-                all_results[name] = [TestResult(
-                    scenario_id=f"{name.upper()}-ERR",
-                    scenario_name=f"{name} campaign error",
-                    category="prompt_injection",
-                    difficulty="medium",
-                    result="error",
-                    confidence=1.0,
-                    response=f"ERROR: {exc}",
-                    execution_time_ms=0,
-                    bypass_indicators_found=[],
-                    safe_indicators_found=[],
-                    notes=f"tool={name} campaign error: {exc}",
-                )]
+                all_results[name] = [
+                    TestResult(
+                        scenario_id=f"{name.upper()}-ERR",
+                        scenario_name=f"{name} campaign error",
+                        category="prompt_injection",
+                        difficulty="medium",
+                        result="error",
+                        confidence=1.0,
+                        response=f"ERROR: {exc}",
+                        execution_time_ms=0,
+                        bypass_indicators_found=[],
+                        safe_indicators_found=[],
+                        notes=f"tool={name} campaign error: {exc}",
+                    )
+                ]
 
         return all_results
 
@@ -185,16 +189,8 @@ class ToolManager:
             detected = sum(1 for r in results if r.result == "detected")
             bypassed = sum(1 for r in results if r.result == "bypass")
             errors = sum(1 for r in results if r.result == "error")
-            avg_conf = (
-                sum(r.confidence for r in results) / total
-                if total > 0
-                else 0
-            )
-            avg_time = (
-                sum(r.execution_time_ms for r in results) / total
-                if total > 0
-                else 0
-            )
+            avg_conf = sum(r.confidence for r in results) / total if total > 0 else 0
+            avg_time = sum(r.execution_time_ms for r in results) / total if total > 0 else 0
 
             comparison["tools"][tool_name] = {
                 "total": total,

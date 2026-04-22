@@ -38,7 +38,9 @@ def create_schedule():
     if notification and notification.get("type") == "webhook":
         url = notification.get("url", "")
         if url and not _is_safe_webhook_url(url):
-            return jsonify({"error": "Webhook URL blocked: private/internal addresses not allowed"}), 400
+            return jsonify(
+                {"error": "Webhook URL blocked: private/internal addresses not allowed"}
+            ), 400
 
     try:
         scheduler = _get_scheduler()
@@ -97,7 +99,9 @@ def update_schedule(job_id):
     if notification and notification.get("type") == "webhook":
         url = notification.get("url", "")
         if url and not _is_safe_webhook_url(url):
-            return jsonify({"error": "Webhook URL blocked: private/internal addresses not allowed"}), 400
+            return jsonify(
+                {"error": "Webhook URL blocked: private/internal addresses not allowed"}
+            ), 400
 
     scheduler = _get_scheduler()
 

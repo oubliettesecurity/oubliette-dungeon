@@ -25,11 +25,7 @@ class RedTeamOrchestrator:
     """
 
     def __init__(
-        self,
-        target_url: str,
-        scenario_file: str | None = None,
-        results_db=None,
-        timeout: int = 30
+        self, target_url: str, scenario_file: str | None = None, results_db=None, timeout: int = 30
     ):
         self.loader = ScenarioLoader(scenario_file)
         self.executor = AttackExecutor(target_url, timeout)
@@ -85,7 +81,7 @@ class RedTeamOrchestrator:
                     execution_time_ms=0,
                     bypass_indicators_found=[],
                     safe_indicators_found=[],
-                    notes=f"Exception during execution: {e!s}"
+                    notes=f"Exception during execution: {e!s}",
                 )
                 results.append(error_result)
 
@@ -156,22 +152,22 @@ class RedTeamOrchestrator:
 
     def generate_summary(self, results: list[AttackTestResult]) -> dict:
         if not results:
-            return {'error': 'No results to summarize'}
+            return {"error": "No results to summarize"}
 
         summary = {
-            'schema_version': '1.0',
-            'tool': 'oubliette-dungeon',
-            'tool_version': '1.0.0',
-            'total_tests': len(results),
-            'session_id': self.current_session_id,
-            'timestamp': datetime.now().isoformat(),
-            'by_result': {},
-            'by_category': {},
-            'by_difficulty': {},
-            'avg_execution_time_ms': 0,
-            'detection_rate': 0,
-            'bypass_rate': 0,
-            'avg_confidence': 0
+            "schema_version": "1.0",
+            "tool": "oubliette-dungeon",
+            "tool_version": "1.0.0",
+            "total_tests": len(results),
+            "session_id": self.current_session_id,
+            "timestamp": datetime.now().isoformat(),
+            "by_result": {},
+            "by_category": {},
+            "by_difficulty": {},
+            "avg_execution_time_ms": 0,
+            "detection_rate": 0,
+            "bypass_rate": 0,
+            "avg_confidence": 0,
         }
 
         total_time = 0
@@ -180,12 +176,13 @@ class RedTeamOrchestrator:
         bypass_count = 0
 
         for result in results:
-            summary['by_result'][result.result] = \
-                summary['by_result'].get(result.result, 0) + 1
-            summary['by_category'][result.category] = \
-                summary['by_category'].get(result.category, 0) + 1
-            summary['by_difficulty'][result.difficulty] = \
-                summary['by_difficulty'].get(result.difficulty, 0) + 1
+            summary["by_result"][result.result] = summary["by_result"].get(result.result, 0) + 1
+            summary["by_category"][result.category] = (
+                summary["by_category"].get(result.category, 0) + 1
+            )
+            summary["by_difficulty"][result.difficulty] = (
+                summary["by_difficulty"].get(result.difficulty, 0) + 1
+            )
 
             total_time += result.execution_time_ms
             total_confidence += result.confidence
@@ -195,22 +192,20 @@ class RedTeamOrchestrator:
             elif result.result == AttackResult.SUCCESS_BYPASS.value:
                 bypass_count += 1
 
-        summary['avg_execution_time_ms'] = total_time / len(results)
-        summary['avg_confidence'] = total_confidence / len(results)
-        summary['detection_rate'] = (detected_count / len(results)) * 100
-        summary['bypass_rate'] = (bypass_count / len(results)) * 100
+        summary["avg_execution_time_ms"] = total_time / len(results)
+        summary["avg_confidence"] = total_confidence / len(results)
+        summary["detection_rate"] = (detected_count / len(results)) * 100
+        summary["bypass_rate"] = (bypass_count / len(results)) * 100
 
-        summary['pass_at_1'] = pass_at_k(results, 1)
-        summary['pass_at_5'] = pass_at_k(results, 5)
-        summary['pass_at_10'] = pass_at_k(results, 10)
-        summary['avg_turns_to_jailbreak'] = avg_turns_to_jailbreak(results)
-        summary['avg_risk_density'] = avg_risk_density(results)
+        summary["pass_at_1"] = pass_at_k(results, 1)
+        summary["pass_at_5"] = pass_at_k(results, 5)
+        summary["pass_at_10"] = pass_at_k(results, 10)
+        summary["avg_turns_to_jailbreak"] = avg_turns_to_jailbreak(results)
+        summary["avg_risk_density"] = avg_risk_density(results)
 
         return summary
 
-    def export_benchmark(
-        self, results: list[AttackTestResult], output_path: str
-    ) -> dict:
+    def export_benchmark(self, results: list[AttackTestResult], output_path: str) -> dict:
         summary = self.generate_summary(results)
         report = {
             "schema_version": "1.0",
@@ -241,18 +236,18 @@ class RedTeamOrchestrator:
         print(f"Bypass Rate: {summary['bypass_rate']:.1f}%")
         print()
         print("Results by Type:")
-        for result_type, count in summary['by_result'].items():
+        for result_type, count in summary["by_result"].items():
             print(f"  {result_type}: {count}")
         print()
         print("Results by Category:")
-        for category, count in summary['by_category'].items():
+        for category, count in summary["by_category"].items():
             print(f"  {category}: {count}")
         print()
         print("Advanced Metrics:")
         print(f"  pass@1:  {summary['pass_at_1']:.3f}")
         print(f"  pass@5:  {summary['pass_at_5']:.3f}")
         print(f"  pass@10: {summary['pass_at_10']:.3f}")
-        ttj = summary.get('avg_turns_to_jailbreak')
+        ttj = summary.get("avg_turns_to_jailbreak")
         print(f"  Avg Turns to Jailbreak: {f'{ttj:.1f}' if ttj is not None else 'N/A'}")
         print(f"  Avg Risk Density: {summary['avg_risk_density']:.4f}")
         print("=" * 70)

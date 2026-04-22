@@ -31,6 +31,7 @@ def _check_pyrit() -> bool:
     if _pyrit_available is None:
         try:
             import pyrit  # noqa: F401
+
             _pyrit_available = True
         except ImportError:
             _pyrit_available = False
@@ -40,6 +41,7 @@ def _check_pyrit() -> bool:
 # ---------------------------------------------------------------------------
 # OubliettePromptTarget
 # ---------------------------------------------------------------------------
+
 
 class OubliettePromptTarget:
     """PyRIT PromptTarget that sends prompts to our HTTP endpoint.
@@ -85,10 +87,13 @@ class OubliettePromptTarget:
         from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
         # Extract prompt text from the request pieces
-        pieces = prompt_request.request_pieces if hasattr(prompt_request, "request_pieces") else [prompt_request]
+        pieces = (
+            prompt_request.request_pieces
+            if hasattr(prompt_request, "request_pieces")
+            else [prompt_request]
+        )
         prompt_text = " ".join(
-            p.converted_value if hasattr(p, "converted_value") else str(p)
-            for p in pieces
+            p.converted_value if hasattr(p, "converted_value") else str(p) for p in pieces
         )
 
         loop = asyncio.get_running_loop()
@@ -117,6 +122,7 @@ class OubliettePromptTarget:
 # ---------------------------------------------------------------------------
 # PyRITAdapter
 # ---------------------------------------------------------------------------
+
 
 class PyRITAdapter(RedTeamToolAdapter):
     """Adapter that bridges PyRIT into the Oubliette red team engine."""
@@ -174,7 +180,9 @@ class PyRITAdapter(RedTeamToolAdapter):
             )
 
         # Determine result from endpoint metadata
-        result_enum, confidence = self._classify_response(response_text, blocked, ml_score, llm_verdict)
+        result_enum, confidence = self._classify_response(
+            response_text, blocked, ml_score, llm_verdict
+        )
 
         return TestResult(
             scenario_id=kwargs.get("scenario_id", "PYRIT-SINGLE"),
@@ -254,7 +262,9 @@ class PyRITAdapter(RedTeamToolAdapter):
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             try:
-                crescendo_result = loop.run_until_complete(orchestrator.run_attack_async(objective=objective))
+                crescendo_result = loop.run_until_complete(
+                    orchestrator.run_attack_async(objective=objective)
+                )
             finally:
                 loop.close()
 
@@ -265,48 +275,54 @@ class PyRITAdapter(RedTeamToolAdapter):
                 for i, turn in enumerate(crescendo_result.conversation):
                     prompt_text = getattr(turn, "converted_value", str(turn))
                     resp_text = getattr(turn, "response_text", "")
-                    results.append(TestResult(
-                        scenario_id=f"PYRIT-CRESCENDO-T{i + 1}",
-                        scenario_name=f"Crescendo turn {i + 1}",
+                    results.append(
+                        TestResult(
+                            scenario_id=f"PYRIT-CRESCENDO-T{i + 1}",
+                            scenario_name=f"Crescendo turn {i + 1}",
+                            category="multi_turn_attack",
+                            difficulty="advanced",
+                            result=AttackResult.PARTIAL.value,
+                            confidence=0.5,
+                            response=resp_text,
+                            execution_time_ms=elapsed / max(len(crescendo_result.conversation), 1),
+                            bypass_indicators_found=[],
+                            safe_indicators_found=[],
+                            notes=f"tool=pyrit crescendo turn={i + 1} objective={objective[:80]}",
+                        )
+                    )
+            else:
+                results.append(
+                    TestResult(
+                        scenario_id="PYRIT-CRESCENDO",
+                        scenario_name="Crescendo multi-turn",
                         category="multi_turn_attack",
                         difficulty="advanced",
                         result=AttackResult.PARTIAL.value,
                         confidence=0.5,
-                        response=resp_text,
-                        execution_time_ms=elapsed / max(len(crescendo_result.conversation), 1),
+                        response=str(crescendo_result),
+                        execution_time_ms=elapsed,
                         bypass_indicators_found=[],
                         safe_indicators_found=[],
-                        notes=f"tool=pyrit crescendo turn={i + 1} objective={objective[:80]}",
-                    ))
-            else:
-                results.append(TestResult(
+                        notes=f"tool=pyrit crescendo objective={objective[:80]}",
+                    )
+                )
+        except Exception as exc:
+            elapsed = (time.time() - start) * 1000
+            results.append(
+                TestResult(
                     scenario_id="PYRIT-CRESCENDO",
                     scenario_name="Crescendo multi-turn",
                     category="multi_turn_attack",
                     difficulty="advanced",
-                    result=AttackResult.PARTIAL.value,
-                    confidence=0.5,
-                    response=str(crescendo_result),
+                    result=AttackResult.ERROR.value,
+                    confidence=1.0,
+                    response=f"ERROR: {exc}",
                     execution_time_ms=elapsed,
                     bypass_indicators_found=[],
                     safe_indicators_found=[],
-                    notes=f"tool=pyrit crescendo objective={objective[:80]}",
-                ))
-        except Exception as exc:
-            elapsed = (time.time() - start) * 1000
-            results.append(TestResult(
-                scenario_id="PYRIT-CRESCENDO",
-                scenario_name="Crescendo multi-turn",
-                category="multi_turn_attack",
-                difficulty="advanced",
-                result=AttackResult.ERROR.value,
-                confidence=1.0,
-                response=f"ERROR: {exc}",
-                execution_time_ms=elapsed,
-                bypass_indicators_found=[],
-                safe_indicators_found=[],
-                notes=f"tool=pyrit crescendo error: {exc}",
-            ))
+                    notes=f"tool=pyrit crescendo error: {exc}",
+                )
+            )
 
         return results
 
@@ -368,9 +384,16 @@ class PyRITAdapter(RedTeamToolAdapter):
             converters are unavailable).
         """
         converter_names = [
-            "base64", "rot13", "leetspeak", "unicode_confusable",
-            "caesar_cipher", "binary", "morse_code",
-            "pig_latin", "reverse", "atbash",
+            "base64",
+            "rot13",
+            "leetspeak",
+            "unicode_confusable",
+            "caesar_cipher",
+            "binary",
+            "morse_code",
+            "pig_latin",
+            "reverse",
+            "atbash",
         ]
 
         variations: list[str] = []
@@ -398,6 +421,7 @@ class PyRITAdapter(RedTeamToolAdapter):
                     Base64Converter,
                     ROT13Converter,
                 )
+
                 converter_map = {
                     "base64": Base64Converter,
                     "rot13": ROT13Converter,
@@ -407,7 +431,11 @@ class PyRITAdapter(RedTeamToolAdapter):
                     loop = asyncio.new_event_loop()
                     try:
                         converted = loop.run_until_complete(cls().convert_async(prompt=prompt))
-                        return converted.output_text if hasattr(converted, "output_text") else str(converted)
+                        return (
+                            converted.output_text
+                            if hasattr(converted, "output_text")
+                            else str(converted)
+                        )
                     finally:
                         loop.close()
             except Exception:
@@ -422,12 +450,18 @@ class PyRITAdapter(RedTeamToolAdapter):
             "rot13": lambda t: codecs.encode(t, "rot_13"),
             "reverse": lambda t: t[::-1],
             "leetspeak": lambda t: (
-                t.replace("a", "4").replace("e", "3").replace("i", "1")
-                 .replace("o", "0").replace("s", "5").replace("t", "7")
+                t.replace("a", "4")
+                .replace("e", "3")
+                .replace("i", "1")
+                .replace("o", "0")
+                .replace("s", "5")
+                .replace("t", "7")
             ),
             "caesar_cipher": lambda t: "".join(
-                chr((ord(c) - 97 + 3) % 26 + 97) if c.isalpha() and c.islower()
-                else chr((ord(c) - 65 + 3) % 26 + 65) if c.isalpha()
+                chr((ord(c) - 97 + 3) % 26 + 97)
+                if c.isalpha() and c.islower()
+                else chr((ord(c) - 65 + 3) % 26 + 65)
+                if c.isalpha()
                 else c
                 for c in t
             ),

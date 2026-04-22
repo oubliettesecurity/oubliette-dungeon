@@ -34,6 +34,7 @@ from oubliette_dungeon.core.models import AttackResult, AttackTestResult
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ModelScore:
     """Aggregate resilience score for a single model."""
@@ -58,9 +59,18 @@ class ModelScore:
         total = len(results)
         if total == 0:
             return cls(
-                model_id=model_id, total_scenarios=0, detected=0, bypassed=0,
-                partial=0, errors=0, detection_rate=0, bypass_rate=0,
-                avg_confidence=0, avg_execution_time_ms=0, pass_at_1=0, pass_at_5=0,
+                model_id=model_id,
+                total_scenarios=0,
+                detected=0,
+                bypassed=0,
+                partial=0,
+                errors=0,
+                detection_rate=0,
+                bypass_rate=0,
+                avg_confidence=0,
+                avg_execution_time_ms=0,
+                pass_at_1=0,
+                pass_at_5=0,
             )
 
         detected = sum(1 for r in results if r.result == AttackResult.SUCCESS_DETECTED.value)
@@ -301,6 +311,7 @@ class ModelComparison:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _esc(s: str) -> str:
     return html.escape(str(s))

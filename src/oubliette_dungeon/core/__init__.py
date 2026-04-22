@@ -23,6 +23,7 @@ from oubliette_dungeon.core.osef import OSEFReport
 def _default_scenarios_path() -> str:
     """Resolve the path to the bundled default scenarios YAML."""
     from importlib.resources import files
+
     return str(files("oubliette_dungeon") / "scenarios" / "default.yaml")
 
 

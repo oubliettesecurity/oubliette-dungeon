@@ -76,11 +76,13 @@ def run_tool_campaign(tool_name):
     except RuntimeError as e:
         return jsonify({"error": str(e)}), 503
 
-    return jsonify({
-        "tool": tool_name,
-        "results": [_result_to_dict(r) for r in results],
-        "count": len(results),
-    })
+    return jsonify(
+        {
+            "tool": tool_name,
+            "results": [_result_to_dict(r) for r in results],
+            "count": len(results),
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/tools/pyrit/crescendo", methods=["POST"])
@@ -122,12 +124,14 @@ def pyrit_crescendo():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    return jsonify({
-        "tool": "pyrit",
-        "attack_type": "crescendo",
-        "results": [_result_to_dict(r) for r in results],
-        "count": len(results),
-    })
+    return jsonify(
+        {
+            "tool": "pyrit",
+            "attack_type": "crescendo",
+            "results": [_result_to_dict(r) for r in results],
+            "count": len(results),
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/tools/pyrit/variations", methods=["POST"])
@@ -152,12 +156,14 @@ def pyrit_variations():
         return jsonify({"error": "PyRIT adapter not found"}), 404
 
     variations = adapter.generate_variations(prompt, num_variations)
-    return jsonify({
-        "tool": "pyrit",
-        "original_prompt": prompt,
-        "variations": variations,
-        "count": len(variations),
-    })
+    return jsonify(
+        {
+            "tool": "pyrit",
+            "original_prompt": prompt,
+            "variations": variations,
+            "count": len(variations),
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/tools/deepteam/scan", methods=["POST"])
@@ -196,12 +202,14 @@ def deepteam_scan():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-    return jsonify({
-        "tool": "deepteam",
-        "attack_type": "vulnerability_scan",
-        "results": [_result_to_dict(r) for r in results],
-        "count": len(results),
-    })
+    return jsonify(
+        {
+            "tool": "deepteam",
+            "attack_type": "vulnerability_scan",
+            "results": [_result_to_dict(r) for r in results],
+            "count": len(results),
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/tools/garak/import", methods=["POST"])
@@ -226,7 +234,9 @@ def garak_import():
             os.path.realpath(os.getenv("DUNGEON_GARAK_DIR", os.path.join(os.getcwd(), "garak"))),
             os.path.realpath(os.getcwd()),
         ]
-        if not any(resolved.startswith(root + os.sep) or resolved == root for root in allowed_roots):
+        if not any(
+            resolved.startswith(root + os.sep) or resolved == root for root in allowed_roots
+        ):
             return jsonify({"error": "garak_path outside allowed directories"}), 400
 
     from oubliette_dungeon.tools.garak_importer import GarakImporter
@@ -252,7 +262,9 @@ def garak_import():
     if merge:
         merged_yaml = importer.merge_with_existing(SCENARIOS_FILE, scenarios)
         result["merged_yaml_length"] = len(merged_yaml)
-        result["note"] = "Merged YAML generated but not written to disk. POST with write=true to persist."
+        result["note"] = (
+            "Merged YAML generated but not written to disk. POST with write=true to persist."
+        )
 
     return jsonify(result)
 
@@ -305,6 +317,7 @@ def promptfoo_import():
 
     if data.get("merge", False):
         from oubliette_dungeon.tools.garak_importer import GarakImporter
+
         garak = GarakImporter()
         merged_yaml = garak.merge_with_existing(SCENARIOS_FILE, scenarios)
         result["merged_yaml_length"] = len(merged_yaml)

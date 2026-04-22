@@ -38,6 +38,7 @@ from oubliette_dungeon.core.models import AttackTestResult
 # Data structures
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class Review:
     """A single human review decision."""
@@ -203,10 +204,7 @@ class ReviewQueue:
     @property
     def pending_review(self) -> list[ReviewableResult]:
         """Items flagged for review but not yet reviewed."""
-        return [
-            item for item in self._items.values()
-            if item.needs_review and not item.is_reviewed
-        ]
+        return [item for item in self._items.values() if item.needs_review and not item.is_reviewed]
 
     @property
     def reviewed(self) -> list[ReviewableResult]:
@@ -225,10 +223,7 @@ class ReviewQueue:
         reviewed = self.reviewed
         if not reviewed:
             return None
-        agreed = sum(
-            1 for item in reviewed
-            if item.automated_result == item.final_result
-        )
+        agreed = sum(1 for item in reviewed if item.automated_result == item.final_result)
         return agreed / len(reviewed)
 
     def override_rate(self) -> float | None:
@@ -236,10 +231,7 @@ class ReviewQueue:
         reviewed = self.reviewed
         if not reviewed:
             return None
-        overridden = sum(
-            1 for item in reviewed
-            if item.automated_result != item.final_result
-        )
+        overridden = sum(1 for item in reviewed if item.automated_result != item.final_result)
         return overridden / len(reviewed)
 
     def inter_rater_reliability(self) -> float | None:
@@ -248,10 +240,7 @@ class ReviewQueue:
         Returns the fraction of items with multiple reviews where all reviewers
         agree on the result. Returns None if no items have multiple reviews.
         """
-        multi_reviewed = [
-            item for item in self._items.values()
-            if len(item.reviews) >= 2
-        ]
+        multi_reviewed = [item for item in self._items.values() if len(item.reviews) >= 2]
         if not multi_reviewed:
             return None
 
@@ -313,9 +302,7 @@ class ReviewQueue:
 
         queue = cls()
         for item_data in data.get("items", []):
-            reviews = [
-                Review(**r) for r in item_data.pop("reviews", [])
-            ]
+            reviews = [Review(**r) for r in item_data.pop("reviews", [])]
             item = ReviewableResult(**item_data)
             item.reviews = reviews
             queue._items[item.scenario_id] = item

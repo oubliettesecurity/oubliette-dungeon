@@ -83,10 +83,7 @@ class OfflineExecutor:
             return True, "OK"
 
         except requests.exceptions.ConnectionError:
-            return False, (
-                "Cannot connect to Ollama. "
-                "Ensure Ollama is running: ollama serve"
-            )
+            return False, ("Cannot connect to Ollama. Ensure Ollama is running: ollama serve")
         except Exception as e:
             return False, f"Error checking Ollama: {e}"
 

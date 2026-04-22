@@ -27,10 +27,12 @@ def session_status():
 
     with _session_lock:
         running = mw._running_session
-    return jsonify({
-        "running": running is not None,
-        "session_id": running,
-    })
+    return jsonify(
+        {
+            "running": running is not None,
+            "session_id": running,
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/sessions")
@@ -39,10 +41,12 @@ def list_sessions():
     """List all test sessions."""
     db = _get_results_db()
     sessions = db.list_sessions()
-    return jsonify({
-        "sessions": sessions,
-        "count": len(sessions),
-    })
+    return jsonify(
+        {
+            "sessions": sessions,
+            "count": len(sessions),
+        }
+    )
 
 
 @dungeon_bp.route("/api/dungeon/sessions/latest")

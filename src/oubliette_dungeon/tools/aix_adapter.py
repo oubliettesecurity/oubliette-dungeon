@@ -43,6 +43,7 @@ def _check_aix() -> bool:
     if _aix_available is None:
         try:
             import aix  # noqa: F401
+
             _aix_available = True
         except ImportError:
             _aix_available = False
@@ -53,8 +54,18 @@ def _check_aix() -> bool:
 # AIX module name -> scanner class mapping
 # ---------------------------------------------------------------------------
 AIX_MODULES = [
-    "inject", "jailbreak", "extract", "leak", "exfil",
-    "agent", "dos", "fuzz", "memory", "rag", "multiturn", "recon",
+    "inject",
+    "jailbreak",
+    "extract",
+    "leak",
+    "exfil",
+    "agent",
+    "dos",
+    "fuzz",
+    "memory",
+    "rag",
+    "multiturn",
+    "recon",
 ]
 
 # Map AIX modules to Oubliette attack categories
@@ -95,6 +106,7 @@ DEFAULT_ALLOWED_HOSTS = [
 # Sanitization helpers (treat all AIX output as untrusted)
 # ---------------------------------------------------------------------------
 
+
 def _sanitize_text(text: str, max_length: int = 10000) -> str:
     """Sanitize AIX output before storing in results."""
     if not isinstance(text, str):
@@ -127,6 +139,7 @@ def _validate_target(target_url: str, allowed_hosts: list[str]) -> bool:
 # ---------------------------------------------------------------------------
 # AixAdapter
 # ---------------------------------------------------------------------------
+
 
 class AixAdapter(RedTeamToolAdapter):
     """Adapter that bridges AIX Framework into the Oubliette red team engine.
@@ -232,7 +245,10 @@ class AixAdapter(RedTeamToolAdapter):
             )
 
         result_enum, confidence = self._classify_response(
-            response_text, blocked, ml_score, llm_verdict,
+            response_text,
+            blocked,
+            ml_score,
+            llm_verdict,
         )
 
         return TestResult(
@@ -307,8 +323,7 @@ class AixAdapter(RedTeamToolAdapter):
 
         if module_name not in AIX_MODULES:
             raise ValueError(
-                f"Unknown AIX module: {module_name}. "
-                f"Available: {', '.join(AIX_MODULES)}"
+                f"Unknown AIX module: {module_name}. Available: {', '.join(AIX_MODULES)}"
             )
 
         start = time.time()
@@ -340,11 +355,9 @@ class AixAdapter(RedTeamToolAdapter):
             # Convert AIX findings to TestResult objects
             findings = getattr(scanner, "findings", [])
             for i, finding in enumerate(findings):
-                title = getattr(finding, "title", f"{module_name} finding {i+1}")
+                title = getattr(finding, "title", f"{module_name} finding {i + 1}")
                 severity = str(getattr(finding, "severity", "medium")).lower()
-                technique = _sanitize_text(
-                    getattr(finding, "technique", module_name)
-                )
+                technique = _sanitize_text(getattr(finding, "technique", module_name))
                 payload = _sanitize_text(getattr(finding, "payload", ""))
                 response = _sanitize_text(getattr(finding, "response", ""))
                 reason = _sanitize_text(getattr(finding, "reason", "") or "")
@@ -357,57 +370,63 @@ class AixAdapter(RedTeamToolAdapter):
 
                 owasp_str = ",".join(str(o) for o in owasp) if owasp else ""
 
-                results.append(TestResult(
-                    scenario_id=f"AIX-{module_name.upper()}-{i+1:03d}",
-                    scenario_name=_sanitize_text(title, 200),
-                    category=category,
-                    difficulty=self._severity_to_difficulty(severity),
-                    result=result_enum.value,
-                    confidence=confidence,
-                    response=response,
-                    execution_time_ms=elapsed / max(len(findings), 1),
-                    bypass_indicators_found=[],
-                    safe_indicators_found=[],
-                    notes=(
-                        f"tool=aix module={module_name} "
-                        f"technique={technique} severity={severity} "
-                        f"owasp={owasp_str}"
-                    ),
-                ))
+                results.append(
+                    TestResult(
+                        scenario_id=f"AIX-{module_name.upper()}-{i + 1:03d}",
+                        scenario_name=_sanitize_text(title, 200),
+                        category=category,
+                        difficulty=self._severity_to_difficulty(severity),
+                        result=result_enum.value,
+                        confidence=confidence,
+                        response=response,
+                        execution_time_ms=elapsed / max(len(findings), 1),
+                        bypass_indicators_found=[],
+                        safe_indicators_found=[],
+                        notes=(
+                            f"tool=aix module={module_name} "
+                            f"technique={technique} severity={severity} "
+                            f"owasp={owasp_str}"
+                        ),
+                    )
+                )
 
             # If no findings, the target defended successfully
             if not findings:
                 elapsed = (time.time() - start) * 1000
-                results.append(TestResult(
-                    scenario_id=f"AIX-{module_name.upper()}-000",
-                    scenario_name=f"AIX {module_name} scan (no findings)",
-                    category=category,
-                    difficulty="medium",
-                    result=AttackResult.SUCCESS_DETECTED.value,
-                    confidence=0.80,
-                    response="No vulnerabilities found by AIX scanner.",
-                    execution_time_ms=elapsed,
-                    bypass_indicators_found=[],
-                    safe_indicators_found=[],
-                    notes=f"tool=aix module={module_name} findings=0",
-                ))
+                results.append(
+                    TestResult(
+                        scenario_id=f"AIX-{module_name.upper()}-000",
+                        scenario_name=f"AIX {module_name} scan (no findings)",
+                        category=category,
+                        difficulty="medium",
+                        result=AttackResult.SUCCESS_DETECTED.value,
+                        confidence=0.80,
+                        response="No vulnerabilities found by AIX scanner.",
+                        execution_time_ms=elapsed,
+                        bypass_indicators_found=[],
+                        safe_indicators_found=[],
+                        notes=f"tool=aix module={module_name} findings=0",
+                    )
+                )
 
         except Exception as exc:
             elapsed = (time.time() - start) * 1000
             logger.error("AIX module %s failed: %s", module_name, exc)
-            results.append(TestResult(
-                scenario_id=f"AIX-{module_name.upper()}-ERR",
-                scenario_name=f"AIX {module_name} error",
-                category=AIX_MODULE_TO_CATEGORY.get(module_name, "prompt_injection"),
-                difficulty="medium",
-                result=AttackResult.ERROR.value,
-                confidence=1.0,
-                response=_sanitize_text(f"ERROR: {exc}"),
-                execution_time_ms=elapsed,
-                bypass_indicators_found=[],
-                safe_indicators_found=[],
-                notes=f"tool=aix module={module_name} error: {exc}",
-            ))
+            results.append(
+                TestResult(
+                    scenario_id=f"AIX-{module_name.upper()}-ERR",
+                    scenario_name=f"AIX {module_name} error",
+                    category=AIX_MODULE_TO_CATEGORY.get(module_name, "prompt_injection"),
+                    difficulty="medium",
+                    result=AttackResult.ERROR.value,
+                    confidence=1.0,
+                    response=_sanitize_text(f"ERROR: {exc}"),
+                    execution_time_ms=elapsed,
+                    bypass_indicators_found=[],
+                    safe_indicators_found=[],
+                    notes=f"tool=aix module={module_name} error: {exc}",
+                )
+            )
 
         return results
 
@@ -437,8 +456,11 @@ class AixAdapter(RedTeamToolAdapter):
         all_results: list[TestResult] = []
         for module_name in modules:
             results = self.run_module(
-                module_name, target_url,
-                level=level, risk=risk, **kwargs,
+                module_name,
+                target_url,
+                level=level,
+                risk=risk,
+                **kwargs,
             )
             all_results.extend(results)
 
@@ -500,67 +522,68 @@ class AixAdapter(RedTeamToolAdapter):
 
             findings = getattr(scanner, "findings", [])
             for i, finding in enumerate(findings):
-                title = getattr(finding, "title", f"Chain finding {i+1}")
+                title = getattr(finding, "title", f"Chain finding {i + 1}")
                 severity = str(getattr(finding, "severity", "medium")).lower()
-                technique = _sanitize_text(
-                    getattr(finding, "technique", "chain")
-                )
+                technique = _sanitize_text(getattr(finding, "technique", "chain"))
                 response = _sanitize_text(getattr(finding, "response", ""))
 
                 confidence = AIX_SEVERITY_TO_CONFIDENCE.get(severity, 0.75)
 
-                results.append(TestResult(
-                    scenario_id=f"AIX-CHAIN-{i+1:03d}",
-                    scenario_name=_sanitize_text(title, 200),
-                    category="multi_turn_attack",
-                    difficulty=self._severity_to_difficulty(severity),
-                    result=AttackResult.SUCCESS_BYPASS.value,
-                    confidence=confidence,
-                    response=response,
-                    execution_time_ms=elapsed / max(len(findings), 1),
-                    bypass_indicators_found=[],
-                    safe_indicators_found=[],
-                    notes=(
-                        f"tool=aix playbook={os.path.basename(playbook_path)} "
-                        f"technique={technique} severity={severity}"
-                    ),
-                ))
+                results.append(
+                    TestResult(
+                        scenario_id=f"AIX-CHAIN-{i + 1:03d}",
+                        scenario_name=_sanitize_text(title, 200),
+                        category="multi_turn_attack",
+                        difficulty=self._severity_to_difficulty(severity),
+                        result=AttackResult.SUCCESS_BYPASS.value,
+                        confidence=confidence,
+                        response=response,
+                        execution_time_ms=elapsed / max(len(findings), 1),
+                        bypass_indicators_found=[],
+                        safe_indicators_found=[],
+                        notes=(
+                            f"tool=aix playbook={os.path.basename(playbook_path)} "
+                            f"technique={technique} severity={severity}"
+                        ),
+                    )
+                )
 
             if not findings:
                 elapsed = (time.time() - start) * 1000
-                results.append(TestResult(
-                    scenario_id="AIX-CHAIN-000",
-                    scenario_name="AIX playbook (no findings)",
-                    category="multi_turn_attack",
-                    difficulty="medium",
-                    result=AttackResult.SUCCESS_DETECTED.value,
-                    confidence=0.80,
-                    response="Playbook completed with no vulnerabilities found.",
-                    execution_time_ms=elapsed,
-                    bypass_indicators_found=[],
-                    safe_indicators_found=[],
-                    notes=(
-                        f"tool=aix playbook={os.path.basename(playbook_path)} "
-                        f"findings=0"
-                    ),
-                ))
+                results.append(
+                    TestResult(
+                        scenario_id="AIX-CHAIN-000",
+                        scenario_name="AIX playbook (no findings)",
+                        category="multi_turn_attack",
+                        difficulty="medium",
+                        result=AttackResult.SUCCESS_DETECTED.value,
+                        confidence=0.80,
+                        response="Playbook completed with no vulnerabilities found.",
+                        execution_time_ms=elapsed,
+                        bypass_indicators_found=[],
+                        safe_indicators_found=[],
+                        notes=(f"tool=aix playbook={os.path.basename(playbook_path)} findings=0"),
+                    )
+                )
 
         except Exception as exc:
             elapsed = (time.time() - start) * 1000
             logger.error("AIX playbook failed: %s", exc)
-            results.append(TestResult(
-                scenario_id="AIX-CHAIN-ERR",
-                scenario_name="AIX playbook error",
-                category="multi_turn_attack",
-                difficulty="medium",
-                result=AttackResult.ERROR.value,
-                confidence=1.0,
-                response=_sanitize_text(f"ERROR: {exc}"),
-                execution_time_ms=elapsed,
-                bypass_indicators_found=[],
-                safe_indicators_found=[],
-                notes=f"tool=aix playbook error: {exc}",
-            ))
+            results.append(
+                TestResult(
+                    scenario_id="AIX-CHAIN-ERR",
+                    scenario_name="AIX playbook error",
+                    category="multi_turn_attack",
+                    difficulty="medium",
+                    result=AttackResult.ERROR.value,
+                    confidence=1.0,
+                    response=_sanitize_text(f"ERROR: {exc}"),
+                    execution_time_ms=elapsed,
+                    bypass_indicators_found=[],
+                    safe_indicators_found=[],
+                    notes=f"tool=aix playbook error: {exc}",
+                )
+            )
 
         return results
 
@@ -581,9 +604,8 @@ class AixAdapter(RedTeamToolAdapter):
 
         try:
             import aix
-            payloads_dir = os.path.join(
-                os.path.dirname(aix.__file__), "payloads"
-            )
+
+            payloads_dir = os.path.join(os.path.dirname(aix.__file__), "payloads")
             payload_file = os.path.join(payloads_dir, f"{module_name}.json")
 
             if not os.path.isfile(payload_file):
@@ -613,9 +635,8 @@ class AixAdapter(RedTeamToolAdapter):
 
         try:
             import aix
-            playbooks_dir = os.path.join(
-                os.path.dirname(aix.__file__), "playbooks"
-            )
+
+            playbooks_dir = os.path.join(os.path.dirname(aix.__file__), "playbooks")
             if not os.path.isdir(playbooks_dir):
                 return []
 

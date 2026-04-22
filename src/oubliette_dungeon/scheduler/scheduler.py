@@ -45,6 +45,7 @@ def _validate_scheduler_target_url(url):
     # Imported here to avoid a circular import (middleware imports storage
     # which can pull this module in).
     from oubliette_dungeon.api.middleware import _validate_target_url
+
     return _validate_target_url(url)
 
 
@@ -178,9 +179,18 @@ class RedTeamScheduler:
             except OSError:
                 pass
 
-    def schedule_run(self, name, cron, target_url=None, categories=None,
-                     difficulty=None, scenarios=None, notification=None,
-                     timeout=30, enabled=True):
+    def schedule_run(
+        self,
+        name,
+        cron,
+        target_url=None,
+        categories=None,
+        difficulty=None,
+        scenarios=None,
+        notification=None,
+        timeout=30,
+        enabled=True,
+    ):
         CronExpression(cron)
         job_id = str(uuid.uuid4())[:8]
         cron_obj = CronExpression(cron)
@@ -249,8 +259,15 @@ class RedTeamScheduler:
             if not job:
                 return None
             allowed_fields = {
-                "name", "cron", "target_url", "categories", "difficulty",
-                "scenarios", "notification", "timeout", "enabled",
+                "name",
+                "cron",
+                "target_url",
+                "categories",
+                "difficulty",
+                "scenarios",
+                "notification",
+                "timeout",
+                "enabled",
             }
             for key, value in updates.items():
                 if key in allowed_fields:
@@ -275,8 +292,7 @@ class RedTeamScheduler:
         with self._lock:
             return list(reversed(self._history[-limit:]))
 
-    def run_now(self, job_id=None, target_url=None, categories=None,
-                scenarios=None, timeout=30):
+    def run_now(self, job_id=None, target_url=None, categories=None, scenarios=None, timeout=30):
         run_config = {
             "target_url": target_url or os.getenv("DUNGEON_TARGET_URL", DEFAULT_TARGET_URL),
             "categories": categories or ["all"],
@@ -287,12 +303,14 @@ class RedTeamScheduler:
             with self._lock:
                 job = self._jobs.get(job_id)
                 if job:
-                    run_config.update({
-                        "target_url": target_url or job["target_url"],
-                        "categories": categories or job["categories"],
-                        "scenarios": scenarios or job["scenarios"],
-                        "timeout": timeout or job.get("timeout", 30),
-                    })
+                    run_config.update(
+                        {
+                            "target_url": target_url or job["target_url"],
+                            "categories": categories or job["categories"],
+                            "scenarios": scenarios or job["scenarios"],
+                            "timeout": timeout or job.get("timeout", 30),
+                        }
+                    )
         run_id = str(uuid.uuid4())[:8]
         t = threading.Thread(
             target=self._execute_run,
@@ -333,9 +351,7 @@ class RedTeamScheduler:
             from oubliette_dungeon.storage import RedTeamResultsDB
 
             scenarios_file = _default_scenarios_path()
-            results_db = RedTeamResultsDB(
-                os.getenv("DUNGEON_DB_DIR", "redteam_results")
-            )
+            results_db = RedTeamResultsDB(os.getenv("DUNGEON_DB_DIR", "redteam_results"))
             orchestrator = RedTeamOrchestrator(
                 scenario_file=scenarios_file,
                 target_url=config["target_url"],
@@ -363,26 +379,32 @@ class RedTeamScheduler:
                 orchestrator.run_all_scenarios()
 
             stats = results_db.get_statistics(session_id)
-            result.update({
-                "status": "completed",
-                "completed_at": datetime.now().isoformat(),
-                "session_id": session_id,
-                "total_tests": stats.get("total_tests", 0),
-                "detection_rate": stats.get("detection_rate", 0),
-                "bypass_rate": stats.get("bypass_rate", 0),
-            })
+            result.update(
+                {
+                    "status": "completed",
+                    "completed_at": datetime.now().isoformat(),
+                    "session_id": session_id,
+                    "total_tests": stats.get("total_tests", 0),
+                    "detection_rate": stats.get("detection_rate", 0),
+                    "bypass_rate": stats.get("bypass_rate", 0),
+                }
+            )
         except ImportError as e:
-            result.update({
-                "status": "error",
-                "completed_at": datetime.now().isoformat(),
-                "error": f"Missing dependency: {e}",
-            })
+            result.update(
+                {
+                    "status": "error",
+                    "completed_at": datetime.now().isoformat(),
+                    "error": f"Missing dependency: {e}",
+                }
+            )
         except Exception as e:
-            result.update({
-                "status": "error",
-                "completed_at": datetime.now().isoformat(),
-                "error": str(e),
-            })
+            result.update(
+                {
+                    "status": "error",
+                    "completed_at": datetime.now().isoformat(),
+                    "error": str(e),
+                }
+            )
 
         with self._lock:
             self._history.append(result)
@@ -423,6 +445,7 @@ class RedTeamScheduler:
                     return
                 try:
                     import requests
+
                     payload = {
                         "text": (
                             f"Red Team Run {result.get('run_id', '?')}: "
@@ -456,6 +479,7 @@ class RedTeamScheduler:
         import ipaddress
         import socket as _socket
         from urllib.parse import urlparse
+
         try:
             parsed = urlparse(url)
         except Exception:
@@ -465,7 +489,12 @@ class RedTeamScheduler:
         hostname = parsed.hostname
         if not hostname:
             return False
-        blocked = {"localhost", "localhost.localdomain", "metadata.google.internal", "169.254.169.254"}
+        blocked = {
+            "localhost",
+            "localhost.localdomain",
+            "metadata.google.internal",
+            "169.254.169.254",
+        }
         if hostname.lower() in blocked:
             return False
         lower = hostname.lower()

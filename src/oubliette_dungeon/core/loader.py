@@ -4,7 +4,6 @@ Scenario loader for Oubliette Dungeon.
 Loads attack scenarios from YAML files with filtering capabilities.
 """
 
-
 import yaml
 
 from oubliette_dungeon.core.models import AttackScenario
@@ -19,6 +18,7 @@ class ScenarioLoader:
     def __init__(self, scenario_file: str | None = None):
         if scenario_file is None:
             from oubliette_dungeon.core import _default_scenarios_path
+
             scenario_file = _default_scenarios_path()
         self.scenario_file = scenario_file
         self.scenarios: list[AttackScenario] = []
@@ -29,7 +29,7 @@ class ScenarioLoader:
         self.scenarios = []
 
         try:
-            with open(self.scenario_file, encoding='utf-8') as f:
+            with open(self.scenario_file, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
 
             if not data:
@@ -37,33 +37,33 @@ class ScenarioLoader:
 
             if isinstance(data, list):
                 scenarios_list = data
-            elif isinstance(data, dict) and 'scenarios' in data:
-                scenarios_list = data['scenarios']
+            elif isinstance(data, dict) and "scenarios" in data:
+                scenarios_list = data["scenarios"]
             else:
                 raise ValueError(f"Invalid scenario file format: {self.scenario_file}")
 
             for scenario_dict in scenarios_list:
-                multi_turn_prompts = scenario_dict.get('multi_turn_prompts')
-                if not multi_turn_prompts and 'multi_turn_sequence' in scenario_dict:
+                multi_turn_prompts = scenario_dict.get("multi_turn_prompts")
+                if not multi_turn_prompts and "multi_turn_sequence" in scenario_dict:
                     multi_turn_prompts = [
-                        turn['prompt'] for turn in scenario_dict['multi_turn_sequence']
+                        turn["prompt"] for turn in scenario_dict["multi_turn_sequence"]
                     ]
 
                 scenario = AttackScenario(
-                    id=scenario_dict['id'],
-                    name=scenario_dict['name'],
-                    category=scenario_dict['category'],
-                    difficulty=scenario_dict['difficulty'],
-                    description=scenario_dict.get('description', ''),
-                    owasp_mapping=scenario_dict.get('owasp_mapping', []),
-                    mitre_mapping=scenario_dict.get('mitre_mapping', []),
-                    prompt=scenario_dict.get('prompt', ''),
+                    id=scenario_dict["id"],
+                    name=scenario_dict["name"],
+                    category=scenario_dict["category"],
+                    difficulty=scenario_dict["difficulty"],
+                    description=scenario_dict.get("description", ""),
+                    owasp_mapping=scenario_dict.get("owasp_mapping", []),
+                    mitre_mapping=scenario_dict.get("mitre_mapping", []),
+                    prompt=scenario_dict.get("prompt", ""),
                     multi_turn_prompts=multi_turn_prompts,
-                    expected_behavior=scenario_dict.get('expected_behavior', ''),
-                    success_criteria=scenario_dict.get('success_criteria', ''),
-                    bypass_indicators=scenario_dict.get('bypass_indicators', []),
-                    safe_indicators=scenario_dict.get('safe_indicators', []),
-                    metadata=scenario_dict.get('metadata', {})
+                    expected_behavior=scenario_dict.get("expected_behavior", ""),
+                    success_criteria=scenario_dict.get("success_criteria", ""),
+                    bypass_indicators=scenario_dict.get("bypass_indicators", []),
+                    safe_indicators=scenario_dict.get("safe_indicators", []),
+                    metadata=scenario_dict.get("metadata", {}),
                 )
                 self.scenarios.append(scenario)
 
@@ -99,14 +99,16 @@ class ScenarioLoader:
 
     def get_statistics(self) -> dict:
         stats = {
-            'total': len(self.scenarios),
-            'by_category': {},
-            'by_difficulty': {},
-            'multi_turn_count': sum(1 for s in self.scenarios if s.multi_turn_prompts)
+            "total": len(self.scenarios),
+            "by_category": {},
+            "by_difficulty": {},
+            "multi_turn_count": sum(1 for s in self.scenarios if s.multi_turn_prompts),
         }
         for scenario in self.scenarios:
-            stats['by_category'][scenario.category] = \
-                stats['by_category'].get(scenario.category, 0) + 1
-            stats['by_difficulty'][scenario.difficulty] = \
-                stats['by_difficulty'].get(scenario.difficulty, 0) + 1
+            stats["by_category"][scenario.category] = (
+                stats["by_category"].get(scenario.category, 0) + 1
+            )
+            stats["by_difficulty"][scenario.difficulty] = (
+                stats["by_difficulty"].get(scenario.difficulty, 0) + 1
+            )
         return stats

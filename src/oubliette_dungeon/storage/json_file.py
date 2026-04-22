@@ -47,20 +47,20 @@ class RedTeamResultsDB:
         if self.index_file.exists():
             with open(self.index_file) as f:
                 return json.load(f)
-        default = {'sessions': {}}
-        with open(self.index_file, 'w') as f:
+        default = {"sessions": {}}
+        with open(self.index_file, "w") as f:
             json.dump(default, f, indent=2)
         _restrict_permissions(self.index_file)
         return default
 
     def _save_index(self) -> None:
-        with open(self.index_file, 'w') as f:
+        with open(self.index_file, "w") as f:
             json.dump(self.index, f, indent=2)
         _restrict_permissions(self.index_file)
 
     def save_result(self, result, session_id: str) -> None:
         _validate_session_id(session_id)
-        if hasattr(result, '__dict__'):
+        if hasattr(result, "__dict__"):
             result_dict = vars(result)
         else:
             result_dict = result
@@ -71,28 +71,28 @@ class RedTeamResultsDB:
                 session_data = json.load(f)
         else:
             session_data = {
-                'session_id': session_id,
-                'started_at': datetime.now().isoformat(),
-                'results': []
+                "session_id": session_id,
+                "started_at": datetime.now().isoformat(),
+                "results": [],
             }
 
-        session_data['results'].append(result_dict)
-        session_data['updated_at'] = datetime.now().isoformat()
-        session_data['total_tests'] = len(session_data['results'])
+        session_data["results"].append(result_dict)
+        session_data["updated_at"] = datetime.now().isoformat()
+        session_data["total_tests"] = len(session_data["results"])
 
-        with open(session_file, 'w') as f:
+        with open(session_file, "w") as f:
             json.dump(session_data, f, indent=2)
         _restrict_permissions(session_file)
 
-        if session_id not in self.index['sessions']:
-            self.index['sessions'][session_id] = {
-                'file': str(session_file),
-                'started_at': session_data['started_at'],
-                'total_tests': 0
+        if session_id not in self.index["sessions"]:
+            self.index["sessions"][session_id] = {
+                "file": str(session_file),
+                "started_at": session_data["started_at"],
+                "total_tests": 0,
             }
 
-        self.index['sessions'][session_id]['updated_at'] = session_data['updated_at']
-        self.index['sessions'][session_id]['total_tests'] = session_data['total_tests']
+        self.index["sessions"][session_id]["updated_at"] = session_data["updated_at"]
+        self.index["sessions"][session_id]["total_tests"] = session_data["total_tests"]
         self._save_index()
 
     def get_session(self, session_id: str) -> dict | None:
@@ -105,59 +105,54 @@ class RedTeamResultsDB:
 
     def list_sessions(self) -> list[dict]:
         sessions = []
-        for session_id, meta in self.index['sessions'].items():
-            sessions.append({'session_id': session_id, **meta})
-        return sorted(sessions, key=lambda x: x['started_at'], reverse=True)
+        for session_id, meta in self.index["sessions"].items():
+            sessions.append({"session_id": session_id, **meta})
+        return sorted(sessions, key=lambda x: x["started_at"], reverse=True)
 
     def get_latest_session(self) -> dict | None:
         sessions = self.list_sessions()
         if sessions:
-            return self.get_session(sessions[0]['session_id'])
+            return self.get_session(sessions[0]["session_id"])
         return None
 
     def query_by_category(self, category: str, session_id: str | None = None) -> list[dict]:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
         if not session_data:
             return []
-        return [r for r in session_data['results'] if r['category'] == category]
+        return [r for r in session_data["results"] if r["category"] == category]
 
     def query_by_result(self, result_type: str, session_id: str | None = None) -> list[dict]:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
         if not session_data:
             return []
-        return [r for r in session_data['results'] if r['result'] == result_type]
+        return [r for r in session_data["results"] if r["result"] == result_type]
 
-    def query_by_difficulty(
-        self, difficulty: str, session_id: str | None = None
-    ) -> list[dict]:
+    def query_by_difficulty(self, difficulty: str, session_id: str | None = None) -> list[dict]:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
         if not session_data:
             return []
-        return [
-            r for r in session_data['results']
-            if r['difficulty'].lower() == difficulty.lower()
-        ]
+        return [r for r in session_data["results"] if r["difficulty"].lower() == difficulty.lower()]
 
     def get_statistics(self, session_id: str | None = None) -> dict:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
-        if not session_data or not session_data['results']:
-            return {'error': 'No results found'}
+        if not session_data or not session_data["results"]:
+            return {"error": "No results found"}
 
-        results = session_data['results']
+        results = session_data["results"]
 
         stats = {
-            'session_id': session_data['session_id'],
-            'total_tests': len(results),
-            'started_at': session_data['started_at'],
-            'updated_at': session_data.get('updated_at', ''),
-            'by_result': {},
-            'by_category': {},
-            'by_difficulty': {},
-            'avg_execution_time_ms': 0,
-            'avg_confidence': 0,
-            'detection_rate': 0,
-            'bypass_rate': 0,
-            'high_confidence_tests': 0
+            "session_id": session_data["session_id"],
+            "total_tests": len(results),
+            "started_at": session_data["started_at"],
+            "updated_at": session_data.get("updated_at", ""),
+            "by_result": {},
+            "by_category": {},
+            "by_difficulty": {},
+            "avg_execution_time_ms": 0,
+            "avg_confidence": 0,
+            "detection_rate": 0,
+            "bypass_rate": 0,
+            "high_confidence_tests": 0,
         }
 
         total_time = 0
@@ -167,29 +162,29 @@ class RedTeamResultsDB:
         high_conf = 0
 
         for result in results:
-            result_type = result['result']
-            stats['by_result'][result_type] = stats['by_result'].get(result_type, 0) + 1
-            category = result['category']
-            stats['by_category'][category] = stats['by_category'].get(category, 0) + 1
-            difficulty = result['difficulty']
-            stats['by_difficulty'][difficulty] = stats['by_difficulty'].get(difficulty, 0) + 1
+            result_type = result["result"]
+            stats["by_result"][result_type] = stats["by_result"].get(result_type, 0) + 1
+            category = result["category"]
+            stats["by_category"][category] = stats["by_category"].get(category, 0) + 1
+            difficulty = result["difficulty"]
+            stats["by_difficulty"][difficulty] = stats["by_difficulty"].get(difficulty, 0) + 1
 
-            total_time += result.get('execution_time_ms', 0)
-            total_confidence += result.get('confidence', 0)
+            total_time += result.get("execution_time_ms", 0)
+            total_confidence += result.get("confidence", 0)
 
-            if result_type == 'detected':
+            if result_type == "detected":
                 detected += 1
-            elif result_type == 'bypass':
+            elif result_type == "bypass":
                 bypassed += 1
 
-            if result.get('confidence', 0) >= 0.85:
+            if result.get("confidence", 0) >= 0.85:
                 high_conf += 1
 
-        stats['avg_execution_time_ms'] = total_time / len(results)
-        stats['avg_confidence'] = total_confidence / len(results)
-        stats['detection_rate'] = (detected / len(results)) * 100
-        stats['bypass_rate'] = (bypassed / len(results)) * 100
-        stats['high_confidence_tests'] = high_conf
+        stats["avg_execution_time_ms"] = total_time / len(results)
+        stats["avg_confidence"] = total_confidence / len(results)
+        stats["detection_rate"] = (detected / len(results)) * 100
+        stats["bypass_rate"] = (bypassed / len(results)) * 100
+        stats["high_confidence_tests"] = high_conf
 
         return stats
 
@@ -198,8 +193,8 @@ class RedTeamResultsDB:
         if not session_data:
             print("No results to export")
             return
-        results = session_data['results']
-        with open(output_file, 'w', newline='', encoding='utf-8') as f:
+        results = session_data["results"]
+        with open(output_file, "w", newline="", encoding="utf-8") as f:
             if results:
                 writer = csv.DictWriter(f, fieldnames=results[0].keys())
                 writer.writeheader()
@@ -211,13 +206,13 @@ class RedTeamResultsDB:
         if not session_data:
             print("No results to export")
             return
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(session_data, f, indent=2)
         print(f"Exported session to {output_file}")
 
     def generate_report(self, session_id: str | None = None) -> str:
         stats = self.get_statistics(session_id)
-        if 'error' in stats:
+        if "error" in stats:
             return f"# Error\n\n{stats['error']}"
 
         report = []
@@ -234,25 +229,25 @@ class RedTeamResultsDB:
         report.append(f"- **High Confidence Tests**: {stats['high_confidence_tests']}")
 
         report.append("\n## Results by Type\n")
-        for result_type, count in stats['by_result'].items():
-            percentage = (count / stats['total_tests']) * 100
+        for result_type, count in stats["by_result"].items():
+            percentage = (count / stats["total_tests"]) * 100
             report.append(f"- **{result_type}**: {count} ({percentage:.1f}%)")
 
         report.append("\n## Results by Category\n")
-        for category, count in sorted(stats['by_category'].items()):
-            percentage = (count / stats['total_tests']) * 100
+        for category, count in sorted(stats["by_category"].items()):
+            percentage = (count / stats["total_tests"]) * 100
             report.append(f"- **{category}**: {count} ({percentage:.1f}%)")
 
         report.append("\n## Results by Difficulty\n")
-        for difficulty, count in sorted(stats['by_difficulty'].items()):
-            percentage = (count / stats['total_tests']) * 100
+        for difficulty, count in sorted(stats["by_difficulty"].items()):
+            percentage = (count / stats["total_tests"]) * 100
             report.append(f"- **{difficulty}**: {count} ({percentage:.1f}%)")
 
         return "\n".join(report)
 
     def save_report(self, output_file: str, session_id: str | None = None) -> None:
         report = self.generate_report(session_id)
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             f.write(report)
         print(f"Report saved to {output_file}")
 
@@ -261,8 +256,8 @@ class RedTeamResultsDB:
         session_file = self.db_dir / f"{session_id}.json"
         if session_file.exists():
             session_file.unlink()
-            if session_id in self.index['sessions']:
-                del self.index['sessions'][session_id]
+            if session_id in self.index["sessions"]:
+                del self.index["sessions"][session_id]
                 self._save_index()
             print(f"Deleted session: {session_id}")
             return True
@@ -277,7 +272,7 @@ class RedTeamResultsDB:
         to_delete = sessions[keep_latest:]
         deleted_count = 0
         for session in to_delete:
-            if self.delete_session(session['session_id']):
+            if self.delete_session(session["session_id"]):
                 deleted_count += 1
         print(f"Cleaned up {deleted_count} old sessions")
         return deleted_count

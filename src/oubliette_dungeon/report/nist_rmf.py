@@ -42,8 +42,13 @@ RMF_TAXONOMY: dict[str, dict[str, dict]] = {
         },
         "GV-3.1": {
             "title": "AI risk management processes include assessment of potential harms",
-            "categories": ["prompt_injection", "jailbreak", "jailbreaking",
-                           "information_extraction", "social_engineering"],
+            "categories": [
+                "prompt_injection",
+                "jailbreak",
+                "jailbreaking",
+                "information_extraction",
+                "social_engineering",
+            ],
             "keywords": ["harm", "assessment", "risk"],
         },
         "GV-4.1": {
@@ -55,8 +60,7 @@ RMF_TAXONOMY: dict[str, dict[str, dict]] = {
     "MAP": {
         "MP-2.1": {
             "title": "Intended use and potential misuse of AI are enumerated",
-            "categories": ["jailbreak", "jailbreaking", "prompt_injection",
-                           "social_engineering"],
+            "categories": ["jailbreak", "jailbreaking", "prompt_injection", "social_engineering"],
             "keywords": ["misuse", "jailbreak", "injection"],
         },
         "MP-2.2": {
@@ -71,16 +75,28 @@ RMF_TAXONOMY: dict[str, dict[str, dict]] = {
         },
         "MP-4.1": {
             "title": "Risks in context of intended deployment are assessed",
-            "categories": ["prompt_injection", "jailbreak", "jailbreaking",
-                           "information_extraction", "model_exploitation"],
+            "categories": [
+                "prompt_injection",
+                "jailbreak",
+                "jailbreaking",
+                "information_extraction",
+                "model_exploitation",
+            ],
             "keywords": ["deployment", "production", "operational"],
         },
         "MP-5.1": {
             "title": "Likelihood and magnitude of each risk are assessed",
-            "categories": ["prompt_injection", "jailbreak", "jailbreaking",
-                           "information_extraction", "social_engineering",
-                           "context_manipulation", "model_exploitation",
-                           "resource_abuse", "tool_exploitation"],
+            "categories": [
+                "prompt_injection",
+                "jailbreak",
+                "jailbreaking",
+                "information_extraction",
+                "social_engineering",
+                "context_manipulation",
+                "model_exploitation",
+                "resource_abuse",
+                "tool_exploitation",
+            ],
             "keywords": ["success_rate", "severity", "critical"],
         },
     },
@@ -92,30 +108,52 @@ RMF_TAXONOMY: dict[str, dict[str, dict]] = {
         },
         "MS-2.1": {
             "title": "AI system is evaluated for trustworthy characteristics",
-            "categories": ["prompt_injection", "jailbreak", "jailbreaking",
-                           "information_extraction", "social_engineering",
-                           "context_manipulation"],
+            "categories": [
+                "prompt_injection",
+                "jailbreak",
+                "jailbreaking",
+                "information_extraction",
+                "social_engineering",
+                "context_manipulation",
+            ],
             "keywords": ["evaluate", "test", "assessment"],
         },
         "MS-2.2": {
             "title": "AI system performance is evaluated against benchmarks",
-            "categories": ["prompt_injection", "jailbreak", "jailbreaking",
-                           "information_extraction", "model_exploitation"],
+            "categories": [
+                "prompt_injection",
+                "jailbreak",
+                "jailbreaking",
+                "information_extraction",
+                "model_exploitation",
+            ],
             "keywords": ["benchmark", "performance", "comparison"],
         },
         "MS-2.5": {
             "title": "AI system is evaluated for adversarial robustness",
-            "categories": ["prompt_injection", "jailbreak", "jailbreaking",
-                           "information_extraction", "social_engineering",
-                           "context_manipulation", "model_exploitation",
-                           "resource_abuse", "tool_exploitation"],
+            "categories": [
+                "prompt_injection",
+                "jailbreak",
+                "jailbreaking",
+                "information_extraction",
+                "social_engineering",
+                "context_manipulation",
+                "model_exploitation",
+                "resource_abuse",
+                "tool_exploitation",
+            ],
             "keywords": ["adversarial", "robustness", "attack", "red team"],
         },
         "MS-2.6": {
             "title": "AI system security and resilience are evaluated",
-            "categories": ["prompt_injection", "jailbreak", "jailbreaking",
-                           "information_extraction", "tool_exploitation",
-                           "resource_abuse"],
+            "categories": [
+                "prompt_injection",
+                "jailbreak",
+                "jailbreaking",
+                "information_extraction",
+                "tool_exploitation",
+                "resource_abuse",
+            ],
             "keywords": ["security", "resilience", "breach"],
         },
         "MS-2.7": {
@@ -125,8 +163,7 @@ RMF_TAXONOMY: dict[str, dict[str, dict]] = {
         },
         "MS-2.8": {
             "title": "AI system is evaluated for safety risks",
-            "categories": ["jailbreak", "jailbreaking", "social_engineering",
-                           "compliance_testing"],
+            "categories": ["jailbreak", "jailbreaking", "social_engineering", "compliance_testing"],
             "keywords": ["safety", "harmful", "unsafe"],
         },
         "MS-3.1": {
@@ -143,22 +180,38 @@ RMF_TAXONOMY: dict[str, dict[str, dict]] = {
     "MANAGE": {
         "MG-1.1": {
             "title": "AI risks based on assessments are prioritized and responded to",
-            "categories": ["prompt_injection", "jailbreak", "jailbreaking",
-                           "information_extraction"],
+            "categories": [
+                "prompt_injection",
+                "jailbreak",
+                "jailbreaking",
+                "information_extraction",
+            ],
             "keywords": ["prioritize", "critical", "severity"],
         },
         "MG-2.1": {
             "title": "Response to identified AI risks is planned",
-            "categories": ["prompt_injection", "jailbreak", "jailbreaking",
-                           "information_extraction", "social_engineering"],
+            "categories": [
+                "prompt_injection",
+                "jailbreak",
+                "jailbreaking",
+                "information_extraction",
+                "social_engineering",
+            ],
             "keywords": ["response", "mitigation", "plan"],
         },
         "MG-2.2": {
             "title": "Mechanisms to mitigate AI risks are in place",
-            "categories": ["prompt_injection", "jailbreak", "jailbreaking",
-                           "information_extraction", "social_engineering",
-                           "context_manipulation", "model_exploitation",
-                           "resource_abuse", "tool_exploitation"],
+            "categories": [
+                "prompt_injection",
+                "jailbreak",
+                "jailbreaking",
+                "information_extraction",
+                "social_engineering",
+                "context_manipulation",
+                "model_exploitation",
+                "resource_abuse",
+                "tool_exploitation",
+            ],
             "keywords": ["mitigation", "filter", "block", "detection"],
         },
         "MG-3.1": {
@@ -183,6 +236,7 @@ RMF_TAXONOMY: dict[str, dict[str, dict]] = {
 # ---------------------------------------------------------------------------
 # Mapping helpers
 # ---------------------------------------------------------------------------
+
 
 def _normalize_category(cat: str) -> str:
     """Normalize a scenario category string for matching."""
@@ -228,6 +282,7 @@ def _sub_to_function(sub_id: str) -> str:
 # ---------------------------------------------------------------------------
 # NISTRMFReport
 # ---------------------------------------------------------------------------
+
 
 class NISTRMFReport:
     """Generate NIST AI RMF compliance reports from Dungeon test results.
@@ -303,8 +358,12 @@ class NISTRMFReport:
         # --- Summary Table ---
         lines.append("## Coverage Summary")
         lines.append("")
-        lines.append("| Function | Sub-categories Tested | Total Sub-categories | Coverage | Risk Level |")
-        lines.append("|----------|----------------------|---------------------|----------|------------|")
+        lines.append(
+            "| Function | Sub-categories Tested | Total Sub-categories | Coverage | Risk Level |"
+        )
+        lines.append(
+            "|----------|----------------------|---------------------|----------|------------|"
+        )
 
         for func_name in ("GOVERN", "MAP", "MEASURE", "MANAGE"):
             stats = func_stats[func_name]
@@ -315,8 +374,10 @@ class NISTRMFReport:
             )
 
         lines.append("")
-        lines.append(f"**Overall Coverage: {overall:.1f}%** | "
-                      f"**Overall Risk Level: {self._risk_level(overall)}**")
+        lines.append(
+            f"**Overall Coverage: {overall:.1f}%** | "
+            f"**Overall Risk Level: {self._risk_level(overall)}**"
+        )
         lines.append("")
 
         # --- Per-function detail ---
@@ -437,15 +498,15 @@ class NISTRMFReport:
                     )
                 lines.append("")
             else:
-                lines.append("*No scenarios currently mapped to this sub-category. "
-                             "Consider expanding test coverage.*")
+                lines.append(
+                    "*No scenarios currently mapped to this sub-category. "
+                    "Consider expanding test coverage.*"
+                )
                 lines.append("")
 
         return lines
 
-    def _results_analysis(
-        self, results: list[dict], scenarios: list[AttackScenario]
-    ) -> list[str]:
+    def _results_analysis(self, results: list[dict], scenarios: list[AttackScenario]) -> list[str]:
         """Generate results analysis section."""
         lines: list[str] = []
         lines.append("## Test Results Analysis")
@@ -481,8 +542,7 @@ class NISTRMFReport:
                     if sc:
                         subs = map_scenario_to_subcategories(sc)
                         lines.append(
-                            f"| {sid} | {sc.name[:40]} | {sc.category} "
-                            f"| {', '.join(subs[:5])} |"
+                            f"| {sid} | {sc.name[:40]} | {sc.category} | {', '.join(subs[:5])} |"
                         )
             lines.append("")
 

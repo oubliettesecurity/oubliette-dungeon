@@ -40,9 +40,9 @@ _audit_log = logging.getLogger("oubliette.dungeon.audit")
 _audit_log.setLevel(logging.INFO)
 if not _audit_log.handlers:
     _handler = logging.StreamHandler()
-    _handler.setFormatter(logging.Formatter(
-        "[AUDIT] %(asctime)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S"
-    ))
+    _handler.setFormatter(
+        logging.Formatter("[AUDIT] %(asctime)s %(message)s", datefmt="%Y-%m-%dT%H:%M:%S")
+    )
     _audit_log.addHandler(_handler)
 
 
@@ -86,10 +86,7 @@ def _check_rate_limit() -> Response | None:
         if _rate_limit_request_counter >= _RATE_LIMIT_CLEANUP_INTERVAL:
             _rate_limit_request_counter = 0
             cutoff = now - RATE_LIMIT_WINDOW
-            stale_ips = [
-                k for k, v in _rate_limit_store.items()
-                if not v or v[-1] < cutoff
-            ]
+            stale_ips = [k for k, v in _rate_limit_store.items() if not v or v[-1] < cutoff]
             for k in stale_ips:
                 del _rate_limit_store[k]
 
@@ -108,6 +105,7 @@ def _check_rate_limit() -> Response | None:
 
 # --- Request Size Limit ---
 
+
 @dungeon_bp.before_request
 def _enforce_limits():
     """Enforce request body size limit and rate limiting."""
@@ -120,6 +118,7 @@ def _enforce_limits():
     rate_resp = _check_rate_limit()
     if rate_resp is not None:
         return rate_resp
+
 
 # --- Unified storage backend (optional, set by oubliette_security.py) ---
 _unified_storage = None
@@ -178,7 +177,9 @@ class _UnifiedStorageAdapter:
         self._b = backend
 
     def save_result(self, result, session_id):
-        self._b.save_redteam_result(result if isinstance(result, dict) else vars(result), session_id)
+        self._b.save_redteam_result(
+            result if isinstance(result, dict) else vars(result), session_id
+        )
 
     def get_session(self, session_id):
         return self._b.get_redteam_session(session_id)
@@ -277,8 +278,10 @@ def _is_safe_webhook_url(url: str) -> bool:
 
     # Block known internal hostnames
     blocked_hostnames = {
-        "localhost", "localhost.localdomain",
-        "metadata.google.internal", "169.254.169.254",
+        "localhost",
+        "localhost.localdomain",
+        "metadata.google.internal",
+        "169.254.169.254",
     }
     if hostname.lower() in blocked_hostnames:
         return False
@@ -329,8 +332,10 @@ def _validate_target_url(url: str) -> tuple[bool, str]:
 
     # Block known internal hostnames
     blocked_hostnames = {
-        "localhost", "localhost.localdomain",
-        "metadata.google.internal", "169.254.169.254",
+        "localhost",
+        "localhost.localdomain",
+        "metadata.google.internal",
+        "169.254.169.254",
     }
     if hostname.lower() in blocked_hostnames:
         return False, f"Blocked internal hostname: {hostname}"
@@ -362,6 +367,7 @@ def _require_api_key(f):
     - In development (FLASK_ENV=development): allow unauthenticated access
     - In production: return 401 with helpful error message
     """
+
     @functools.wraps(f)
     def decorated(*args, **kwargs):
         api_key = os.getenv("OUBLIETTE_API_KEY", "")
@@ -369,13 +375,16 @@ def _require_api_key(f):
             flask_env = os.getenv("FLASK_ENV", "production")
             if flask_env == "development":
                 return f(*args, **kwargs)
-            return jsonify({
-                "error": "API key not configured. Set OUBLIETTE_API_KEY environment variable.",
-            }), 401
+            return jsonify(
+                {
+                    "error": "API key not configured. Set OUBLIETTE_API_KEY environment variable.",
+                }
+            ), 401
         key = request.headers.get("X-API-Key", "")
         if not key or not hmac.compare_digest(key.encode(), api_key.encode()):
             return jsonify({"error": "Unauthorized"}), 401
         return f(*args, **kwargs)
+
     return decorated
 
 
@@ -413,8 +422,8 @@ def _scenario_to_dict(scenario) -> dict[str, Any]:
 
 def _result_to_dict(result) -> dict[str, Any]:
     """Convert AttackTestResult to API-safe dict."""
-    if hasattr(result, '__dict__'):
-        d = vars(result) if not hasattr(result, 'to_dict') else result
+    if hasattr(result, "__dict__"):
+        d = vars(result) if not hasattr(result, "to_dict") else result
         if isinstance(d, dict):
             return d
         return vars(result)
@@ -432,6 +441,7 @@ def _get_scheduler():
         with _scheduler_init_lock:
             if _scheduler is None:
                 from oubliette_dungeon.scheduler import get_scheduler
+
                 _scheduler = get_scheduler()
     return _scheduler
 
@@ -447,6 +457,7 @@ def _get_tool_manager():
         with _tool_manager_lock:
             if _tool_manager is None:
                 from oubliette_dungeon.tools.tool_manager import ToolManager
+
                 _tool_manager = ToolManager(results_db=_get_results_db())
     return _tool_manager
 

@@ -4,7 +4,6 @@ Advanced metrics for Oubliette Dungeon.
 pass@k, average turns to jailbreak, risk density.
 """
 
-
 from oubliette_dungeon.core.models import AttackResult, AttackTestResult
 
 
@@ -48,8 +47,7 @@ def avg_risk_density(results: list[AttackTestResult]) -> float:
         if not tokens:
             continue
         indicator_tokens = sum(
-            1 for t in tokens
-            if any(ind.lower() in t.lower() for ind in r.bypass_indicators_found)
+            1 for t in tokens if any(ind.lower() in t.lower() for ind in r.bypass_indicators_found)
         )
         densities.append(indicator_tokens / len(tokens))
     if not densities:

@@ -48,9 +48,24 @@ def cli():
 @click.option("--ddil-bandwidth", default=0, type=int, help="DDIL: bandwidth limit in kbps")
 @click.option("--osef", default=None, help="Export OSEF-format report to this path")
 @click.option("--osef-model-id", default=None, help="Model identifier for OSEF report")
-def run(target, scenarios, timeout, category, difficulty, scenario_id, db_dir,
-        output, offline, model, ollama_url, ddil_latency, ddil_drop_rate,
-        ddil_bandwidth, osef, osef_model_id):
+def run(
+    target,
+    scenarios,
+    timeout,
+    category,
+    difficulty,
+    scenario_id,
+    db_dir,
+    output,
+    offline,
+    model,
+    ollama_url,
+    ddil_latency,
+    ddil_drop_rate,
+    ddil_bandwidth,
+    osef,
+    osef_model_id,
+):
     """Run red team attack scenarios against a target."""
     scenarios_file = scenarios or _default_scenarios_path()
     results_db = RedTeamResultsDB(db_dir)
@@ -159,10 +174,10 @@ def stats(scenarios):
     click.echo(f"Total Scenarios: {s['total']}")
     click.echo(f"Multi-turn Scenarios: {s['multi_turn_count']}")
     click.echo("\nBy Category:")
-    for cat, count in sorted(s['by_category'].items()):
+    for cat, count in sorted(s["by_category"].items()):
         click.echo(f"  {cat}: {count}")
     click.echo("\nBy Difficulty:")
-    for diff, count in sorted(s['by_difficulty'].items()):
+    for diff, count in sorted(s["by_difficulty"].items()):
         click.echo(f"  {diff}: {count}")
 
 
@@ -243,7 +258,9 @@ def replay(results_file, target, scenarios, timeout, scenario_ids):
 
 
 @cli.command()
-@click.option("--format", "fmt", type=click.Choice(["json", "csv"]), default="json", help="Export format")
+@click.option(
+    "--format", "fmt", type=click.Choice(["json", "csv"]), default="json", help="Export format"
+)
 @click.option("--session", default=None, help="Session ID (default: latest)")
 @click.option("--output", required=True, help="Output file path")
 @click.option("--db-dir", default="redteam_results", help="Results database directory")
@@ -269,8 +286,9 @@ def export(fmt, session, output, db_dir):
 @click.option("--output-json", default=None, help="Save comparison as JSON")
 @click.option("--output-html", default=None, help="Save comparison as HTML")
 @click.option("--db-dir", default="redteam_results", help="Results database directory")
-def compare(models, scenarios, timeout, category, difficulty, ollama_url,
-            output_json, output_html, db_dir):
+def compare(
+    models, scenarios, timeout, category, difficulty, ollama_url, output_json, output_html, db_dir
+):
     """Compare adversarial resilience across multiple local models."""
     from oubliette_dungeon.core.comparison import ModelComparison
     from oubliette_dungeon.core.offline import OfflineExecutor
@@ -365,7 +383,9 @@ def nist_rmf(scenarios, session, db_dir, output, organization):
         if session_data:
             results = session_data.get("results", [])
         else:
-            click.echo(f"Warning: Session '{session}' not found. Generating report without results.")
+            click.echo(
+                f"Warning: Session '{session}' not found. Generating report without results."
+            )
 
     report = NISTRMFReport()
     md = report.generate(

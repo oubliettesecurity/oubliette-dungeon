@@ -28,21 +28,21 @@ class AttackExecutor:
         try:
             response = self.session.post(
                 self.target_url,
-                json={'message': scenario.prompt},
+                json={"message": scenario.prompt},
                 timeout=self.timeout,
-                headers={'Content-Type': 'application/json'}
+                headers={"Content-Type": "application/json"},
             )
 
             elapsed_ms = (time.time() - start_time) * 1000
 
             if response.status_code == 200:
                 data = response.json()
-                response_text = data.get('response', '')
+                response_text = data.get("response", "")
                 self._last_meta = {
-                    'contains_honey_token': data.get('contains_honey_token', False),
-                    'verdict': data.get('verdict'),
-                    'ml_score': data.get('ml_score'),
-                    'llm_verdict': data.get('llm_verdict'),
+                    "contains_honey_token": data.get("contains_honey_token", False),
+                    "verdict": data.get("verdict"),
+                    "ml_score": data.get("ml_score"),
+                    "llm_verdict": data.get("llm_verdict"),
                 }
                 return response_text, elapsed_ms
             else:
@@ -70,14 +70,14 @@ class AttackExecutor:
             try:
                 response = self.session.post(
                     self.target_url,
-                    json={'message': prompt},
+                    json={"message": prompt},
                     timeout=self.timeout,
-                    headers={'Content-Type': 'application/json'}
+                    headers={"Content-Type": "application/json"},
                 )
 
                 if response.status_code == 200:
                     data = response.json()
-                    response_text = data.get('response', '')
+                    response_text = data.get("response", "")
                     responses.append(response_text)
                 else:
                     responses.append(f"ERROR: HTTP {response.status_code}")
@@ -101,4 +101,4 @@ class AttackExecutor:
             return response, elapsed_ms, False
 
     def get_last_meta(self) -> dict:
-        return getattr(self, '_last_meta', {})
+        return getattr(self, "_last_meta", {})
