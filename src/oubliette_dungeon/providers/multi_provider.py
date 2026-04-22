@@ -118,12 +118,13 @@ def detect_providers():
     """Detect which LLM providers have API keys configured."""
     available = {}
 
+    from oubliette_dungeon.model_config import get_model
     if os.getenv("ANTHROPIC_API_KEY"):
-        available["anthropic"] = "claude-sonnet-4-5-20250929"
+        available["anthropic"] = get_model("anthropic")
     if os.getenv("OPENAI_API_KEY"):
-        available["openai"] = "gpt-4o-mini"
+        available["openai"] = get_model("openai")
     if os.getenv("GOOGLE_API_KEY"):
-        available["gemini"] = "gemini-2.0-flash"
+        available["gemini"] = get_model("google_gemini")
 
     # Check Ollama availability
     try:
