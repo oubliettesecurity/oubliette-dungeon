@@ -14,7 +14,7 @@ import os
 import socket
 import threading
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 from urllib.parse import urlparse
 
 from flask import Blueprint, Response, jsonify, request
@@ -57,7 +57,7 @@ def _audit(action: str, detail: str = "") -> None:
 
 
 # --- Rate Limiter ---
-_rate_limit_store: Dict[str, List[float]] = {}
+_rate_limit_store: dict[str, list[float]] = {}
 _rate_limit_lock = threading.Lock()
 
 # Defaults: 30 requests per 60 seconds per IP
@@ -69,7 +69,7 @@ _rate_limit_request_counter = 0
 _RATE_LIMIT_CLEANUP_INTERVAL = 500
 
 
-def _check_rate_limit() -> Optional[Response]:
+def _check_rate_limit() -> Response | None:
     """Return a 429 Response if the client has exceeded the rate limit, else None."""
     global _rate_limit_request_counter
 
@@ -227,7 +227,7 @@ def _is_ip_safe(addr) -> bool:
     return True
 
 
-def _resolve_and_check(hostname: str) -> Tuple[bool, str]:
+def _resolve_and_check(hostname: str) -> tuple[bool, str]:
     """Resolve a hostname via DNS and verify all resolved IPs are safe.
 
     Returns (is_safe, error_message).
@@ -242,7 +242,7 @@ def _resolve_and_check(hostname: str) -> Tuple[bool, str]:
     if not addrinfos:
         return False, f"No DNS results for {hostname}"
 
-    for family, _type, _proto, _canonname, sockaddr in addrinfos:
+    for _family, _type, _proto, _canonname, sockaddr in addrinfos:
         ip_str = sockaddr[0]
         try:
             if not _is_ip_safe(ip_str):
@@ -300,7 +300,7 @@ def _is_safe_webhook_url(url: str) -> bool:
     return is_safe
 
 
-def _validate_target_url(url: str) -> Tuple[bool, str]:
+def _validate_target_url(url: str) -> tuple[bool, str]:
     """Validate a target URL to prevent SSRF attacks.
 
     Similar to _is_safe_webhook_url but returns (is_safe, error_message)
@@ -395,7 +395,7 @@ def _warn_no_api_key():
 _warn_no_api_key()
 
 
-def _scenario_to_dict(scenario) -> Dict[str, Any]:
+def _scenario_to_dict(scenario) -> dict[str, Any]:
     """Convert AttackScenario to API-safe dict."""
     return {
         "id": scenario.id,
@@ -411,7 +411,7 @@ def _scenario_to_dict(scenario) -> Dict[str, Any]:
     }
 
 
-def _result_to_dict(result) -> Dict[str, Any]:
+def _result_to_dict(result) -> dict[str, Any]:
     """Convert AttackTestResult to API-safe dict."""
     if hasattr(result, '__dict__'):
         d = vars(result) if not hasattr(result, 'to_dict') else result
@@ -452,12 +452,12 @@ def _get_tool_manager():
 
 
 # --- Register route modules (import at bottom to avoid circular imports) ---
-import oubliette_dungeon.api.routes.comparisons  # noqa: E402, F401
-import oubliette_dungeon.api.routes.execution  # noqa: E402, F401
-import oubliette_dungeon.api.routes.osef  # noqa: E402, F401
-import oubliette_dungeon.api.routes.reports  # noqa: E402, F401
-import oubliette_dungeon.api.routes.reviews  # noqa: E402, F401
-import oubliette_dungeon.api.routes.scenarios  # noqa: E402, F401
-import oubliette_dungeon.api.routes.scheduler  # noqa: E402, F401
-import oubliette_dungeon.api.routes.sessions  # noqa: E402, F401
+import oubliette_dungeon.api.routes.comparisons  # noqa: E402
+import oubliette_dungeon.api.routes.execution  # noqa: E402
+import oubliette_dungeon.api.routes.osef  # noqa: E402
+import oubliette_dungeon.api.routes.reports  # noqa: E402
+import oubliette_dungeon.api.routes.reviews  # noqa: E402
+import oubliette_dungeon.api.routes.scenarios  # noqa: E402
+import oubliette_dungeon.api.routes.scheduler  # noqa: E402
+import oubliette_dungeon.api.routes.sessions  # noqa: E402
 import oubliette_dungeon.api.routes.tools  # noqa: E402, F401

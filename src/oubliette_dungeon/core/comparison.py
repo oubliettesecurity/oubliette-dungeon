@@ -24,8 +24,8 @@ CLI::
 import html
 import json
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List
+from datetime import UTC, datetime
+from typing import Any
 
 from oubliette_dungeon.core.metrics import pass_at_k
 from oubliette_dungeon.core.models import AttackResult, AttackTestResult
@@ -50,11 +50,11 @@ class ModelScore:
     avg_execution_time_ms: float
     pass_at_1: float
     pass_at_5: float
-    by_category: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-    by_difficulty: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    by_category: dict[str, dict[str, Any]] = field(default_factory=dict)
+    by_difficulty: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     @classmethod
-    def from_results(cls, model_id: str, results: List[AttackTestResult]) -> "ModelScore":
+    def from_results(cls, model_id: str, results: list[AttackTestResult]) -> "ModelScore":
         total = len(results)
         if total == 0:
             return cls(
@@ -69,7 +69,7 @@ class ModelScore:
         errors = total - detected - bypassed - partial
 
         # Category breakdown
-        cats: Dict[str, List[AttackTestResult]] = {}
+        cats: dict[str, list[AttackTestResult]] = {}
         for r in results:
             cats.setdefault(r.category, []).append(r)
 
@@ -87,7 +87,7 @@ class ModelScore:
             }
 
         # Difficulty breakdown
-        diffs: Dict[str, List[AttackTestResult]] = {}
+        diffs: dict[str, list[AttackTestResult]] = {}
         for r in results:
             diffs.setdefault(r.difficulty, []).append(r)
 
@@ -129,7 +129,7 @@ class ScenarioComparison:
     scenario_name: str
     category: str
     difficulty: str
-    model_results: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    model_results: dict[str, dict[str, Any]] = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -141,30 +141,30 @@ class ModelComparison:
     """Build and export multi-model comparison reports."""
 
     def __init__(self) -> None:
-        self._results: Dict[str, List[AttackTestResult]] = {}
-        self._scores: Dict[str, ModelScore] = {}
+        self._results: dict[str, list[AttackTestResult]] = {}
+        self._scores: dict[str, ModelScore] = {}
 
-    def add_results(self, model_id: str, results: List[AttackTestResult]) -> None:
+    def add_results(self, model_id: str, results: list[AttackTestResult]) -> None:
         """Add results for a model."""
         self._results[model_id] = results
         self._scores[model_id] = ModelScore.from_results(model_id, results)
 
     @property
-    def model_ids(self) -> List[str]:
+    def model_ids(self) -> list[str]:
         return list(self._results.keys())
 
     @property
-    def scores(self) -> Dict[str, ModelScore]:
+    def scores(self) -> dict[str, ModelScore]:
         return dict(self._scores)
 
-    def ranking(self) -> List[ModelScore]:
+    def ranking(self) -> list[ModelScore]:
         """Return models ranked by detection rate (highest first)."""
         return sorted(self._scores.values(), key=lambda s: s.detection_rate, reverse=True)
 
-    def scenario_matrix(self) -> List[ScenarioComparison]:
+    def scenario_matrix(self) -> list[ScenarioComparison]:
         """Build per-scenario comparison across all models."""
         # Collect all unique scenarios across all models
-        scenario_map: Dict[str, ScenarioComparison] = {}
+        scenario_map: dict[str, ScenarioComparison] = {}
 
         for model_id, results in self._results.items():
             for r in results:
@@ -184,7 +184,7 @@ class ModelComparison:
 
         return sorted(scenario_map.values(), key=lambda s: s.scenario_id)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Export comparison as a plain dict."""
         matrix = self.scenario_matrix()
         ranked = self.ranking()
@@ -193,16 +193,16 @@ class ModelComparison:
             "schema_version": "1.0",
             "tool": "oubliette-dungeon",
             "report_type": "multi_model_comparison",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "model_count": len(self._results),
             "ranking": [asdict(s) for s in ranked],
             "scenario_matrix": [asdict(s) for s in matrix],
             "category_comparison": self._category_comparison(),
         }
 
-    def _category_comparison(self) -> Dict[str, Dict[str, Any]]:
+    def _category_comparison(self) -> dict[str, dict[str, Any]]:
         """Category-level comparison across models."""
-        cats: Dict[str, Dict[str, Any]] = {}
+        cats: dict[str, dict[str, Any]] = {}
         for model_id, score in self._scores.items():
             for cat, cat_data in score.by_category.items():
                 if cat not in cats:
@@ -264,7 +264,7 @@ class ModelComparison:
         model_headers = "".join(f"<th>{_esc(m)}</th>" for m in models)
 
         page = _HTML_TEMPLATE.format(
-            timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+            timestamp=datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC"),
             model_count=len(models),
             scenario_count=len(matrix),
             rows_ranking=rows_ranking,

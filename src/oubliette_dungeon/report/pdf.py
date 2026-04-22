@@ -107,7 +107,7 @@ class OubliettePDF(FPDF if FPDF else object):
         self.set_font("Helvetica", "B", 8)
         self.set_fill_color(31, 41, 55)
         self.set_text_color(*COLOR_CYAN)
-        for col, w in zip(columns, widths):
+        for col, w in zip(columns, widths, strict=False):
             self.cell(w, 7, col, border=1, fill=True)
         self.ln()
 
@@ -118,7 +118,7 @@ class OubliettePDF(FPDF if FPDF else object):
         else:
             self.set_fill_color(255, 255, 255)
         self.set_text_color(0, 0, 0)
-        for cell, w in zip(cells, widths):
+        for cell, w in zip(cells, widths, strict=False):
             self.cell(w, 6, str(cell)[:40], border=1, fill=highlight)
         self.ln()
 

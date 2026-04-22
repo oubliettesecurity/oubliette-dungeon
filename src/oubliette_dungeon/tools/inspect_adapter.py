@@ -19,7 +19,6 @@ Usage::
 Requires: pip install inspect-ai oubliette-dungeon
 """
 
-from typing import List, Optional
 
 from inspect_ai import Task, task
 from inspect_ai.dataset import MemoryDataset, Sample
@@ -42,7 +41,7 @@ from oubliette_dungeon.core.models import AttackScenario
 # ---------------------------------------------------------------------------
 
 def _scenarios_to_dataset(
-    scenarios: List[AttackScenario],
+    scenarios: list[AttackScenario],
 ) -> MemoryDataset:
     """Convert oubliette AttackScenario objects into an Inspect MemoryDataset."""
     samples = []
@@ -70,10 +69,10 @@ def _scenarios_to_dataset(
 
 
 def _load_scenarios(
-    category: Optional[str] = None,
-    difficulty: Optional[str] = None,
-    scenario_file: Optional[str] = None,
-) -> List[AttackScenario]:
+    category: str | None = None,
+    difficulty: str | None = None,
+    scenario_file: str | None = None,
+) -> list[AttackScenario]:
     """Load and optionally filter scenarios."""
     loader = ScenarioLoader(scenario_file=scenario_file)
     scenarios = loader.get_all_scenarios()
@@ -172,9 +171,9 @@ def oubliette_scorer():
 
 @task
 def oubliette_attacks(
-    category: Optional[str] = None,
-    difficulty: Optional[str] = None,
-    scenario_file: Optional[str] = None,
+    category: str | None = None,
+    difficulty: str | None = None,
+    scenario_file: str | None = None,
 ):
     """All oubliette-dungeon attack scenarios (filterable).
 
@@ -201,8 +200,8 @@ def oubliette_attacks(
 
 @task
 def oubliette_prompt_injection(
-    difficulty: Optional[str] = None,
-    scenario_file: Optional[str] = None,
+    difficulty: str | None = None,
+    scenario_file: str | None = None,
 ):
     """Prompt injection attack scenarios (direct and indirect)."""
     scenarios = _load_scenarios("prompt_injection", difficulty, scenario_file)
@@ -215,8 +214,8 @@ def oubliette_prompt_injection(
 
 @task
 def oubliette_jailbreaking(
-    difficulty: Optional[str] = None,
-    scenario_file: Optional[str] = None,
+    difficulty: str | None = None,
+    scenario_file: str | None = None,
 ):
     """Jailbreak attack scenarios (DAN, roleplay, hypothetical framing)."""
     scenarios = _load_scenarios("jailbreak", difficulty, scenario_file)
@@ -229,8 +228,8 @@ def oubliette_jailbreaking(
 
 @task
 def oubliette_information_extraction(
-    difficulty: Optional[str] = None,
-    scenario_file: Optional[str] = None,
+    difficulty: str | None = None,
+    scenario_file: str | None = None,
 ):
     """Information extraction attack scenarios (system prompt, PII, data)."""
     scenarios = _load_scenarios("information_extraction", difficulty, scenario_file)
@@ -243,8 +242,8 @@ def oubliette_information_extraction(
 
 @task
 def oubliette_social_engineering(
-    difficulty: Optional[str] = None,
-    scenario_file: Optional[str] = None,
+    difficulty: str | None = None,
+    scenario_file: str | None = None,
 ):
     """Social engineering attack scenarios."""
     scenarios = _load_scenarios("social_engineering", difficulty, scenario_file)
@@ -257,8 +256,8 @@ def oubliette_social_engineering(
 
 @task
 def oubliette_context_manipulation(
-    difficulty: Optional[str] = None,
-    scenario_file: Optional[str] = None,
+    difficulty: str | None = None,
+    scenario_file: str | None = None,
 ):
     """Context manipulation attack scenarios."""
     scenarios = _load_scenarios("context_manipulation", difficulty, scenario_file)
@@ -271,8 +270,8 @@ def oubliette_context_manipulation(
 
 @task
 def oubliette_model_exploitation(
-    difficulty: Optional[str] = None,
-    scenario_file: Optional[str] = None,
+    difficulty: str | None = None,
+    scenario_file: str | None = None,
 ):
     """Model exploitation attack scenarios."""
     scenarios = _load_scenarios("model_exploitation", difficulty, scenario_file)
@@ -285,8 +284,8 @@ def oubliette_model_exploitation(
 
 @task
 def oubliette_tool_exploitation(
-    difficulty: Optional[str] = None,
-    scenario_file: Optional[str] = None,
+    difficulty: str | None = None,
+    scenario_file: str | None = None,
 ):
     """Tool exploitation attack scenarios."""
     scenarios = _load_scenarios("tool_exploitation", difficulty, scenario_file)
@@ -299,8 +298,8 @@ def oubliette_tool_exploitation(
 
 @task
 def oubliette_compliance(
-    difficulty: Optional[str] = None,
-    scenario_file: Optional[str] = None,
+    difficulty: str | None = None,
+    scenario_file: str | None = None,
 ):
     """Compliance testing scenarios."""
     scenarios = _load_scenarios("compliance_testing", difficulty, scenario_file)
@@ -312,7 +311,7 @@ def oubliette_compliance(
 
 
 @task
-def oubliette_full_suite(scenario_file: Optional[str] = None):
+def oubliette_full_suite(scenario_file: str | None = None):
     """Complete 57-scenario adversarial robustness evaluation.
 
     Runs all attack categories against the target model and scores

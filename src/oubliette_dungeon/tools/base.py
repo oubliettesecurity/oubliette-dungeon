@@ -7,7 +7,6 @@ ToolManager and API layer.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List
 
 from oubliette_dungeon.core.models import AttackScenario, TestResult
 
@@ -47,10 +46,10 @@ class RedTeamToolAdapter(ABC):
     @abstractmethod
     def run_campaign(
         self,
-        scenarios: List[AttackScenario],
+        scenarios: list[AttackScenario],
         target_url: str,
         **kwargs,
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """Run a batch of attack scenarios.
 
         Args:
@@ -62,7 +61,7 @@ class RedTeamToolAdapter(ABC):
             List of TestResult, one per scenario.
         """
 
-    def get_capabilities(self) -> Dict:
+    def get_capabilities(self) -> dict:
         """Return a dictionary describing the tool's capabilities.
 
         Override in subclasses to advertise features like multi-turn support,
@@ -77,7 +76,7 @@ class RedTeamToolAdapter(ABC):
             "probe_import": False,
         }
 
-    def info(self) -> Dict:
+    def info(self) -> dict:
         """Convenience wrapper returning availability + capabilities."""
         return {
             "name": self.name,

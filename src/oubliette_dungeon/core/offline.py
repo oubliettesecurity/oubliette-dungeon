@@ -22,7 +22,6 @@ Usage::
 
 import random
 import time
-from typing import List, Tuple
 
 import requests
 
@@ -63,7 +62,7 @@ class OfflineExecutor:
         self.ddil_bandwidth_kbps = ddil_bandwidth_kbps
         self._last_meta: dict = {}
 
-    def check_availability(self) -> Tuple[bool, str]:
+    def check_availability(self) -> tuple[bool, str]:
         """Check if the local model is available."""
         try:
             resp = requests.get(f"{self.ollama_url}/api/tags", timeout=5)
@@ -91,7 +90,7 @@ class OfflineExecutor:
         except Exception as e:
             return False, f"Error checking Ollama: {e}"
 
-    def execute_single_turn(self, scenario: AttackScenario) -> Tuple[str, float]:
+    def execute_single_turn(self, scenario: AttackScenario) -> tuple[str, float]:
         """Execute a single-turn attack against the local model."""
         # DDIL: simulate packet drop
         if self.ddil_drop_rate > 0 and random.random() < self.ddil_drop_rate:
@@ -156,13 +155,13 @@ class OfflineExecutor:
             self._last_meta = {"offline": True}
             return f"ERROR: {e}", elapsed_ms
 
-    def execute_multi_turn(self, scenario: AttackScenario) -> Tuple[List[str], float]:
+    def execute_multi_turn(self, scenario: AttackScenario) -> tuple[list[str], float]:
         """Execute a multi-turn attack sequence."""
         if not scenario.multi_turn_prompts:
             raise ValueError(f"Scenario {scenario.id} has no multi-turn prompts")
 
         responses = []
-        context: List[dict] = []
+        context: list[dict] = []
         start_time = time.time()
 
         for prompt in scenario.multi_turn_prompts:
@@ -202,7 +201,7 @@ class OfflineExecutor:
         elapsed_ms = (time.time() - start_time) * 1000
         return responses, elapsed_ms
 
-    def execute(self, scenario: AttackScenario) -> Tuple[str, float, bool]:
+    def execute(self, scenario: AttackScenario) -> tuple[str, float, bool]:
         """Execute a scenario (auto-detects single vs multi-turn)."""
         self._last_meta = {}
         if scenario.multi_turn_prompts:

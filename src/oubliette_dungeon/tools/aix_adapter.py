@@ -23,7 +23,6 @@ import json
 import logging
 import os
 import time
-from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 import requests
@@ -36,7 +35,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Lazy import check
 # ---------------------------------------------------------------------------
-_aix_available: Optional[bool] = None
+_aix_available: bool | None = None
 
 
 def _check_aix() -> bool:
@@ -107,7 +106,7 @@ def _sanitize_text(text: str, max_length: int = 10000) -> str:
     return text
 
 
-def _validate_target(target_url: str, allowed_hosts: List[str]) -> bool:
+def _validate_target(target_url: str, allowed_hosts: list[str]) -> bool:
     """Check if target URL is in the allowlist."""
     try:
         parsed = urlparse(target_url)
@@ -147,9 +146,9 @@ class AixAdapter(RedTeamToolAdapter):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         timeout: int = 30,
-        allowed_hosts: Optional[List[str]] = None,
+        allowed_hosts: list[str] | None = None,
         allow_any_target: bool = False,
     ):
         """
@@ -171,7 +170,7 @@ class AixAdapter(RedTeamToolAdapter):
     def is_available(self) -> bool:
         return _check_aix()
 
-    def get_capabilities(self) -> Dict:
+    def get_capabilities(self) -> dict:
         return {
             "name": self.name,
             "version": self.version,
@@ -254,14 +253,14 @@ class AixAdapter(RedTeamToolAdapter):
 
     def run_campaign(
         self,
-        scenarios: List[AttackScenario],
+        scenarios: list[AttackScenario],
         target_url: str,
         **kwargs,
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """Run a batch of AttackScenarios through AIX."""
         self._check_target(target_url)
 
-        results: List[TestResult] = []
+        results: list[TestResult] = []
         for sc in scenarios:
             r = self.run_attack(
                 prompt=sc.prompt,
@@ -284,7 +283,7 @@ class AixAdapter(RedTeamToolAdapter):
         risk: int = 1,
         verbose: bool = False,
         **kwargs,
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """Run a specific AIX attack module against the target.
 
         This uses AIX's native scanner infrastructure to run full module
@@ -313,7 +312,7 @@ class AixAdapter(RedTeamToolAdapter):
             )
 
         start = time.time()
-        results: List[TestResult] = []
+        results: list[TestResult] = []
 
         try:
             scanner_cls = self._get_scanner_class(module_name)
@@ -415,11 +414,11 @@ class AixAdapter(RedTeamToolAdapter):
     def run_all_modules(
         self,
         target_url: str,
-        modules: Optional[List[str]] = None,
+        modules: list[str] | None = None,
         level: int = 3,
         risk: int = 1,
         **kwargs,
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """Run multiple AIX modules sequentially against the target.
 
         Args:
@@ -435,7 +434,7 @@ class AixAdapter(RedTeamToolAdapter):
             # Exclude 'dos' by default to avoid resource exhaustion
             modules = [m for m in AIX_MODULES if m != "dos"]
 
-        all_results: List[TestResult] = []
+        all_results: list[TestResult] = []
         for module_name in modules:
             results = self.run_module(
                 module_name, target_url,
@@ -449,9 +448,9 @@ class AixAdapter(RedTeamToolAdapter):
         self,
         playbook_path: str,
         target_url: str,
-        variables: Optional[Dict[str, str]] = None,
+        variables: dict[str, str] | None = None,
         **kwargs,
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """Run an AIX YAML playbook (chain attack).
 
         Args:
@@ -475,7 +474,7 @@ class AixAdapter(RedTeamToolAdapter):
             raise ValueError("Playbook must be a .yaml or .yml file")
 
         start = time.time()
-        results: List[TestResult] = []
+        results: list[TestResult] = []
 
         try:
             from aix.modules.chain import ChainScanner
@@ -565,7 +564,7 @@ class AixAdapter(RedTeamToolAdapter):
 
         return results
 
-    def get_payloads(self, module_name: str) -> List[Dict]:
+    def get_payloads(self, module_name: str) -> list[dict]:
         """Load AIX's built-in payloads for a module.
 
         Useful for extracting attack prompts to use in campaigns
@@ -590,7 +589,7 @@ class AixAdapter(RedTeamToolAdapter):
             if not os.path.isfile(payload_file):
                 return []
 
-            with open(payload_file, "r", encoding="utf-8") as f:
+            with open(payload_file, encoding="utf-8") as f:
                 data = json.load(f)
 
             # Return as list of dicts
@@ -603,7 +602,7 @@ class AixAdapter(RedTeamToolAdapter):
             logger.warning("Failed to load AIX payloads for %s: %s", module_name, exc)
             return []
 
-    def list_playbooks(self) -> List[str]:
+    def list_playbooks(self) -> list[str]:
         """List built-in AIX playbook files.
 
         Returns:
@@ -675,8 +674,8 @@ class AixAdapter(RedTeamToolAdapter):
     def _classify_response(
         response: str,
         blocked: bool,
-        ml_score: Optional[float],
-        llm_verdict: Optional[str],
+        ml_score: float | None,
+        llm_verdict: str | None,
     ) -> tuple:
         """Map endpoint metadata to (AttackResult, confidence)."""
         if blocked:

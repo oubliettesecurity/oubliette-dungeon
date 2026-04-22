@@ -4,7 +4,7 @@ import os
 
 from flask import Flask, request, send_from_directory
 
-from oubliette_dungeon.api.middleware import dungeon_bp, set_unified_storage  # noqa: F401
+from oubliette_dungeon.api.middleware import dungeon_bp, set_unified_storage
 
 __all__ = ["create_app", "dungeon_bp", "set_unified_storage"]
 

@@ -145,7 +145,7 @@ class RedTeamScheduler:
 
     def _load_jobs(self):
         try:
-            with open(self.schedules_file, "r", encoding="utf-8") as f:
+            with open(self.schedules_file, encoding="utf-8") as f:
                 data = json.load(f)
                 return data.get("jobs", {})
         except (FileNotFoundError, json.JSONDecodeError):
@@ -158,7 +158,7 @@ class RedTeamScheduler:
 
     def _load_history(self):
         try:
-            with open(self.history_file, "r", encoding="utf-8") as f:
+            with open(self.history_file, encoding="utf-8") as f:
                 data = json.load(f)
                 return data.get("runs", [])
         except (FileNotFoundError, json.JSONDecodeError):
@@ -488,7 +488,7 @@ class RedTeamScheduler:
         # DNS resolution check: resolve and verify all IPs are safe
         try:
             addrinfos = _socket.getaddrinfo(hostname, None, _socket.AF_UNSPEC, _socket.SOCK_STREAM)
-            for family, _type, _proto, _canonname, sockaddr in addrinfos:
+            for _family, _type, _proto, _canonname, sockaddr in addrinfos:
                 ip_str = sockaddr[0]
                 try:
                     if not _is_ip_safe(ip_str):

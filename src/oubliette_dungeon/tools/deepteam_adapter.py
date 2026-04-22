@@ -10,7 +10,7 @@ Key class:
 """
 
 import time
-from typing import Callable, Dict, List, Optional
+from collections.abc import Callable
 
 import requests
 
@@ -20,7 +20,7 @@ from oubliette_dungeon.tools.base import RedTeamToolAdapter
 # ---------------------------------------------------------------------------
 # Lazy import check
 # ---------------------------------------------------------------------------
-_deepteam_available: Optional[bool] = None
+_deepteam_available: bool | None = None
 
 
 def _check_deepteam() -> bool:
@@ -84,7 +84,7 @@ class DeepTeamAdapter(RedTeamToolAdapter):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         timeout: int = 30,
     ):
         self.api_key = api_key
@@ -95,7 +95,7 @@ class DeepTeamAdapter(RedTeamToolAdapter):
     def is_available(self) -> bool:
         return _check_deepteam()
 
-    def get_capabilities(self) -> Dict:
+    def get_capabilities(self) -> dict:
         return {
             "name": self.name,
             "version": self.version,
@@ -163,12 +163,12 @@ class DeepTeamAdapter(RedTeamToolAdapter):
 
     def run_campaign(
         self,
-        scenarios: List[AttackScenario],
+        scenarios: list[AttackScenario],
         target_url: str,
         **kwargs,
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """Execute a batch of scenarios through DeepTeam."""
-        results: List[TestResult] = []
+        results: list[TestResult] = []
         for sc in scenarios:
             r = self.run_attack(
                 prompt=sc.prompt,
@@ -213,7 +213,7 @@ class DeepTeamAdapter(RedTeamToolAdapter):
 
         return callback
 
-    def _map_vulnerabilities(self, categories: Optional[List[str]] = None) -> List[str]:
+    def _map_vulnerabilities(self, categories: list[str] | None = None) -> list[str]:
         """Map Oubliette AttackCategory names to DeepTeam vulnerability names.
 
         Args:
@@ -236,9 +236,9 @@ class DeepTeamAdapter(RedTeamToolAdapter):
     def run_vulnerability_scan(
         self,
         target_url: str,
-        vulns: Optional[List[str]] = None,
+        vulns: list[str] | None = None,
         attacks_per_vuln: int = 5,
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """Run DeepTeam's built-in vulnerability scanner.
 
         Args:
@@ -257,7 +257,7 @@ class DeepTeamAdapter(RedTeamToolAdapter):
         callback = self._create_model_callback(target_url)
         vuln_list = vulns or list(DEEPTEAM_VULNS)
 
-        results: List[TestResult] = []
+        results: list[TestResult] = []
         start = time.time()
 
         try:

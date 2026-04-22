@@ -15,7 +15,6 @@ import stat
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
 
 _SAFE_SESSION_ID = re.compile(r"^[a-zA-Z0-9_\-]{1,128}$")
 
@@ -44,9 +43,9 @@ class RedTeamResultsDB:
         self.index_file = self.db_dir / "index.json"
         self.index = self._load_index()
 
-    def _load_index(self) -> Dict:
+    def _load_index(self) -> dict:
         if self.index_file.exists():
-            with open(self.index_file, 'r') as f:
+            with open(self.index_file) as f:
                 return json.load(f)
         default = {'sessions': {}}
         with open(self.index_file, 'w') as f:
@@ -68,7 +67,7 @@ class RedTeamResultsDB:
 
         session_file = self.db_dir / f"{session_id}.json"
         if session_file.exists():
-            with open(session_file, 'r') as f:
+            with open(session_file) as f:
                 session_data = json.load(f)
         else:
             session_data = {
@@ -96,41 +95,41 @@ class RedTeamResultsDB:
         self.index['sessions'][session_id]['total_tests'] = session_data['total_tests']
         self._save_index()
 
-    def get_session(self, session_id: str) -> Optional[Dict]:
+    def get_session(self, session_id: str) -> dict | None:
         _validate_session_id(session_id)
         session_file = self.db_dir / f"{session_id}.json"
         if session_file.exists():
-            with open(session_file, 'r') as f:
+            with open(session_file) as f:
                 return json.load(f)
         return None
 
-    def list_sessions(self) -> List[Dict]:
+    def list_sessions(self) -> list[dict]:
         sessions = []
         for session_id, meta in self.index['sessions'].items():
             sessions.append({'session_id': session_id, **meta})
         return sorted(sessions, key=lambda x: x['started_at'], reverse=True)
 
-    def get_latest_session(self) -> Optional[Dict]:
+    def get_latest_session(self) -> dict | None:
         sessions = self.list_sessions()
         if sessions:
             return self.get_session(sessions[0]['session_id'])
         return None
 
-    def query_by_category(self, category: str, session_id: Optional[str] = None) -> List[Dict]:
+    def query_by_category(self, category: str, session_id: str | None = None) -> list[dict]:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
         if not session_data:
             return []
         return [r for r in session_data['results'] if r['category'] == category]
 
-    def query_by_result(self, result_type: str, session_id: Optional[str] = None) -> List[Dict]:
+    def query_by_result(self, result_type: str, session_id: str | None = None) -> list[dict]:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
         if not session_data:
             return []
         return [r for r in session_data['results'] if r['result'] == result_type]
 
     def query_by_difficulty(
-        self, difficulty: str, session_id: Optional[str] = None
-    ) -> List[Dict]:
+        self, difficulty: str, session_id: str | None = None
+    ) -> list[dict]:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
         if not session_data:
             return []
@@ -139,7 +138,7 @@ class RedTeamResultsDB:
             if r['difficulty'].lower() == difficulty.lower()
         ]
 
-    def get_statistics(self, session_id: Optional[str] = None) -> Dict:
+    def get_statistics(self, session_id: str | None = None) -> dict:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
         if not session_data or not session_data['results']:
             return {'error': 'No results found'}
@@ -194,7 +193,7 @@ class RedTeamResultsDB:
 
         return stats
 
-    def export_to_csv(self, output_file: str, session_id: Optional[str] = None) -> None:
+    def export_to_csv(self, output_file: str, session_id: str | None = None) -> None:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
         if not session_data:
             print("No results to export")
@@ -207,7 +206,7 @@ class RedTeamResultsDB:
                 writer.writerows(results)
         print(f"Exported {len(results)} results to {output_file}")
 
-    def export_to_json(self, output_file: str, session_id: Optional[str] = None) -> None:
+    def export_to_json(self, output_file: str, session_id: str | None = None) -> None:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
         if not session_data:
             print("No results to export")
@@ -216,7 +215,7 @@ class RedTeamResultsDB:
             json.dump(session_data, f, indent=2)
         print(f"Exported session to {output_file}")
 
-    def generate_report(self, session_id: Optional[str] = None) -> str:
+    def generate_report(self, session_id: str | None = None) -> str:
         stats = self.get_statistics(session_id)
         if 'error' in stats:
             return f"# Error\n\n{stats['error']}"
@@ -251,7 +250,7 @@ class RedTeamResultsDB:
 
         return "\n".join(report)
 
-    def save_report(self, output_file: str, session_id: Optional[str] = None) -> None:
+    def save_report(self, output_file: str, session_id: str | None = None) -> None:
         report = self.generate_report(session_id)
         with open(output_file, 'w') as f:
             f.write(report)

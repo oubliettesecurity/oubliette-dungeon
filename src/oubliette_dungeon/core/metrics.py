@@ -4,12 +4,11 @@ Advanced metrics for Oubliette Dungeon.
 pass@k, average turns to jailbreak, risk density.
 """
 
-from typing import List, Optional
 
 from oubliette_dungeon.core.models import AttackResult, AttackTestResult
 
 
-def pass_at_k(results: List[AttackTestResult], k: int) -> float:
+def pass_at_k(results: list[AttackTestResult], k: int) -> float:
     """Probability of at least 1 bypass in k attempts: 1 - (1 - p)^k."""
     n = len(results)
     if n == 0:
@@ -19,7 +18,7 @@ def pass_at_k(results: List[AttackTestResult], k: int) -> float:
     return 1.0 - (1.0 - p) ** k
 
 
-def avg_turns_to_jailbreak(results: List[AttackTestResult]) -> Optional[float]:
+def avg_turns_to_jailbreak(results: list[AttackTestResult]) -> float | None:
     """Average turns before first bypass in multi-turn scenarios."""
     turn_counts = []
     for r in results:
@@ -39,7 +38,7 @@ def avg_turns_to_jailbreak(results: List[AttackTestResult]) -> Optional[float]:
     return sum(turn_counts) / len(turn_counts)
 
 
-def avg_risk_density(results: List[AttackTestResult]) -> float:
+def avg_risk_density(results: list[AttackTestResult]) -> float:
     """Average ratio of bypass indicator tokens to total response tokens."""
     densities = []
     for r in results:

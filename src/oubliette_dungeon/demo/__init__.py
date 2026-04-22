@@ -15,7 +15,7 @@ def load_fixtures(db_dir: str = "redteam_results") -> None:
         print("No fixtures file found.")
         return
 
-    with open(fixtures_path, "r", encoding="utf-8") as f:
+    with open(fixtures_path, encoding="utf-8") as f:
         data = json.load(f)
 
     db = RedTeamResultsDB(db_dir)

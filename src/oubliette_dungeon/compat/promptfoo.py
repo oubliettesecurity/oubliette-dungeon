@@ -21,7 +21,7 @@ Usage::
     scenarios = importer.import_dict(config_dict)
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 import yaml
 
@@ -31,7 +31,7 @@ from oubliette_dungeon.core.models import AttackScenario
 # Provider mapping
 # ---------------------------------------------------------------------------
 
-PROVIDER_MAP: Dict[str, Dict[str, str]] = {
+PROVIDER_MAP: dict[str, dict[str, str]] = {
     "openai": {"provider_type": "openai"},
     "anthropic": {"provider_type": "anthropic"},
     "ollama": {"provider_type": "ollama"},
@@ -49,7 +49,7 @@ PROVIDER_MAP: Dict[str, Dict[str, str]] = {
 # Assertion -> Dungeon mapping
 # ---------------------------------------------------------------------------
 
-def _assertion_to_bypass_indicators(assertion: Dict) -> List[str]:
+def _assertion_to_bypass_indicators(assertion: dict) -> list[str]:
     """Convert a single Promptfoo assertion to bypass indicator strings."""
     atype = assertion.get("type", "")
     value = assertion.get("value", "")
@@ -67,7 +67,7 @@ def _assertion_to_bypass_indicators(assertion: Dict) -> List[str]:
     return []
 
 
-def _assertion_to_description(assertion: Dict) -> str:
+def _assertion_to_description(assertion: dict) -> str:
     """Extract human-readable description from an assertion."""
     atype = assertion.get("type", "")
     value = assertion.get("value", "")
@@ -93,7 +93,7 @@ def _assertion_to_description(assertion: Dict) -> str:
     return f"{atype}: {str(value)[:80]}"
 
 
-def _infer_category(prompt_text: str, assertions: List[Dict]) -> str:
+def _infer_category(prompt_text: str, assertions: list[dict]) -> str:
     """Heuristic category assignment from prompt content and assertions."""
     text = prompt_text.lower()
 
@@ -130,7 +130,7 @@ def _infer_difficulty(prompt_text: str, num_assertions: int) -> str:
     return "easy"
 
 
-def _render_template(template: str, variables: Dict[str, Any]) -> str:
+def _render_template(template: str, variables: dict[str, Any]) -> str:
     """Substitute Promptfoo-style {{variable}} templates."""
     result = template
     for key, value in variables.items():
@@ -145,7 +145,7 @@ def _render_template(template: str, variables: Dict[str, Any]) -> str:
 class PromptfooImporter:
     """Import Promptfoo YAML configs and convert to Dungeon scenarios."""
 
-    def import_file(self, filepath: str) -> List[AttackScenario]:
+    def import_file(self, filepath: str) -> list[AttackScenario]:
         """Load a Promptfoo YAML config file and convert to scenarios.
 
         Args:
@@ -154,11 +154,11 @@ class PromptfooImporter:
         Returns:
             List of AttackScenario objects.
         """
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             config = yaml.safe_load(f)
         return self.import_dict(config or {})
 
-    def import_yaml_string(self, yaml_string: str) -> List[AttackScenario]:
+    def import_yaml_string(self, yaml_string: str) -> list[AttackScenario]:
         """Parse a YAML string and convert to scenarios.
 
         Args:
@@ -170,7 +170,7 @@ class PromptfooImporter:
         config = yaml.safe_load(yaml_string) or {}
         return self.import_dict(config)
 
-    def import_dict(self, config: Dict) -> List[AttackScenario]:
+    def import_dict(self, config: dict) -> list[AttackScenario]:
         """Convert a parsed Promptfoo config dict to Dungeon scenarios.
 
         Args:
@@ -186,7 +186,7 @@ class PromptfooImporter:
         if not prompts:
             prompts = ["{{prompt}}"]
 
-        scenarios: List[AttackScenario] = []
+        scenarios: list[AttackScenario] = []
         counter = 0
 
         for test_entry in tests:
@@ -195,9 +195,9 @@ class PromptfooImporter:
             test_description = test_entry.get("description", "")
 
             # Collect bypass indicators and descriptions from all assertions
-            bypass_indicators: List[str] = []
-            descriptions: List[str] = []
-            safe_indicators: List[str] = []
+            bypass_indicators: list[str] = []
+            descriptions: list[str] = []
+            safe_indicators: list[str] = []
 
             for assertion in assertions:
                 bypass_indicators.extend(
@@ -251,12 +251,12 @@ class PromptfooImporter:
 
         return scenarios
 
-    def _parse_providers(self, providers_raw: List) -> List[Dict[str, str]]:
+    def _parse_providers(self, providers_raw: list) -> list[dict[str, str]]:
         """Parse Promptfoo provider specifications.
 
         Providers can be strings like "openai:gpt-4" or dicts.
         """
-        parsed: List[Dict[str, str]] = []
+        parsed: list[dict[str, str]] = []
         for p in providers_raw:
             if isinstance(p, str):
                 parts = p.split(":", 1)
@@ -271,7 +271,7 @@ class PromptfooImporter:
         return parsed
 
     @staticmethod
-    def _owasp_for_category(category: str) -> List[str]:
+    def _owasp_for_category(category: str) -> list[str]:
         """Map category to OWASP LLM Top 10 IDs."""
         mapping = {
             "prompt_injection": ["LLM01"],

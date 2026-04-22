@@ -17,8 +17,8 @@ Usage::
 
 import json
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from oubliette_dungeon.core.models import AttackResult, AttackTestResult
 
@@ -114,11 +114,11 @@ class OSEFScenarioResult:
     confidence: float
     execution_time_ms: float
     response_snippet: str
-    bypass_indicators_found: List[str]
-    safe_indicators_found: List[str]
-    framework_mappings: Dict[str, List[str]]
-    ml_score: Optional[float] = None
-    llm_verdict: Optional[str] = None
+    bypass_indicators_found: list[str]
+    safe_indicators_found: list[str]
+    framework_mappings: dict[str, list[str]]
+    ml_score: float | None = None
+    llm_verdict: str | None = None
     notes: str = ""
     timestamp: str = ""
 
@@ -164,8 +164,8 @@ class OSEFCategoryScore:
     detection_rate: float
     bypass_rate: float
     avg_confidence: float
-    owasp_mappings: List[str] = field(default_factory=list)
-    mitre_atlas_mappings: List[str] = field(default_factory=list)
+    owasp_mappings: list[str] = field(default_factory=list)
+    mitre_atlas_mappings: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -184,9 +184,9 @@ class OSEFAggregate:
     pass_at_1: float
     pass_at_5: float
     pass_at_10: float
-    by_category: List[OSEFCategoryScore] = field(default_factory=list)
-    by_difficulty: Dict[str, Dict[str, Any]] = field(default_factory=dict)
-    by_severity: Dict[str, int] = field(default_factory=dict)
+    by_category: list[OSEFCategoryScore] = field(default_factory=list)
+    by_difficulty: dict[str, dict[str, Any]] = field(default_factory=dict)
+    by_severity: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -199,18 +199,18 @@ class OSEFReport:
     model_id: str
     timestamp: str
     session_id: str
-    evaluation_context: Dict[str, Any]
+    evaluation_context: dict[str, Any]
     aggregate: OSEFAggregate
-    results: List[OSEFScenarioResult]
-    framework_coverage: Dict[str, Any]
+    results: list[OSEFScenarioResult]
+    framework_coverage: dict[str, Any]
 
     @classmethod
     def from_results(
         cls,
-        results: List[AttackTestResult],
+        results: list[AttackTestResult],
         model_id: str = "unknown",
         session_id: str = "",
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> "OSEFReport":
         """Build an OSEF report from a list of AttackTestResult objects."""
         from oubliette_dungeon.core.metrics import (
@@ -237,7 +237,7 @@ class OSEFReport:
         avg_time = sum(r.execution_time_ms for r in results) / total if total else 0
 
         # Category breakdown
-        categories: Dict[str, List[AttackTestResult]] = {}
+        categories: dict[str, list[AttackTestResult]] = {}
         for r in results:
             categories.setdefault(r.category, []).append(r)
 
@@ -272,7 +272,7 @@ class OSEFReport:
             )
 
         # Difficulty breakdown
-        difficulties: Dict[str, List[AttackTestResult]] = {}
+        difficulties: dict[str, list[AttackTestResult]] = {}
         for r in results:
             difficulties.setdefault(r.difficulty, []).append(r)
         by_diff = {}
@@ -293,7 +293,7 @@ class OSEFReport:
             }
 
         # Severity breakdown
-        by_severity: Dict[str, int] = {}
+        by_severity: dict[str, int] = {}
         for r in osef_results:
             by_severity[r.severity] = by_severity.get(r.severity, 0) + 1
 
@@ -350,7 +350,7 @@ class OSEFReport:
             tool="oubliette-dungeon",
             tool_version="1.0.1",
             model_id=model_id,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             session_id=session_id,
             evaluation_context=context or {
                 "evaluation_type": "adversarial_robustness",
@@ -362,7 +362,7 @@ class OSEFReport:
             framework_coverage=framework_coverage,
         )
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert report to a plain dict suitable for JSON serialization."""
         return _deep_asdict(self)
 
@@ -372,17 +372,17 @@ class OSEFReport:
             json.dump(self.to_dict(), f, indent=2, default=str)
 
     @staticmethod
-    def load(path: str) -> Dict[str, Any]:
+    def load(path: str) -> dict[str, Any]:
         """Load an OSEF report from a JSON file."""
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return json.load(f)
 
     @staticmethod
-    def validate(path: str) -> List[str]:
+    def validate(path: str) -> list[str]:
         """Validate an OSEF report file. Returns list of validation errors."""
         errors = []
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
         except (json.JSONDecodeError, OSError) as e:
             return [f"Cannot read file: {e}"]

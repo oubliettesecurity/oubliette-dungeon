@@ -5,7 +5,6 @@ Executes attack scenarios against target LLM endpoints.
 """
 
 import time
-from typing import List, Tuple
 
 import requests
 
@@ -23,7 +22,7 @@ class AttackExecutor:
         self.timeout = timeout
         self.session = requests.Session()
 
-    def execute_single_turn(self, scenario: AttackScenario) -> Tuple[str, float]:
+    def execute_single_turn(self, scenario: AttackScenario) -> tuple[str, float]:
         start_time = time.time()
 
         try:
@@ -58,9 +57,9 @@ class AttackExecutor:
         except Exception as e:
             elapsed_ms = (time.time() - start_time) * 1000
             self._last_meta = {}
-            return f"ERROR: {str(e)}", elapsed_ms
+            return f"ERROR: {e!s}", elapsed_ms
 
-    def execute_multi_turn(self, scenario: AttackScenario) -> Tuple[List[str], float]:
+    def execute_multi_turn(self, scenario: AttackScenario) -> tuple[list[str], float]:
         if not scenario.multi_turn_prompts:
             raise ValueError(f"Scenario {scenario.id} has no multi-turn prompts")
 
@@ -86,12 +85,12 @@ class AttackExecutor:
                 time.sleep(0.5)
 
             except Exception as e:
-                responses.append(f"ERROR: {str(e)}")
+                responses.append(f"ERROR: {e!s}")
 
         elapsed_ms = (time.time() - start_time) * 1000
         return responses, elapsed_ms
 
-    def execute(self, scenario: AttackScenario) -> Tuple[str, float, bool]:
+    def execute(self, scenario: AttackScenario) -> tuple[str, float, bool]:
         self._last_meta = {}
         if scenario.multi_turn_prompts:
             responses, elapsed_ms = self.execute_multi_turn(scenario)

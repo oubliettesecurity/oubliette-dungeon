@@ -2,8 +2,6 @@
 oubliette_dungeon.core - Core red team engine components.
 """
 
-import sys
-
 from oubliette_dungeon.core.evaluator import ResultEvaluator
 from oubliette_dungeon.core.executor import AttackExecutor
 from oubliette_dungeon.core.loader import ScenarioLoader
@@ -24,12 +22,8 @@ from oubliette_dungeon.core.osef import OSEFReport
 
 def _default_scenarios_path() -> str:
     """Resolve the path to the bundled default scenarios YAML."""
-    if sys.version_info >= (3, 9):
-        from importlib.resources import files
-        return str(files("oubliette_dungeon") / "scenarios" / "default.yaml")
-    import importlib.resources as _res
-    with _res.path("oubliette_dungeon.scenarios", "default.yaml") as p:
-        return str(p)
+    from importlib.resources import files
+    return str(files("oubliette_dungeon") / "scenarios" / "default.yaml")
 
 
 __all__ = [

@@ -16,7 +16,6 @@ Functions:
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from oubliette_dungeon.core.models import AttackScenario
 
@@ -24,7 +23,7 @@ from oubliette_dungeon.core.models import AttackScenario
 # NIST AI RMF sub-category definitions & scenario mapping
 # ---------------------------------------------------------------------------
 
-RMF_TAXONOMY: Dict[str, Dict[str, Dict]] = {
+RMF_TAXONOMY: dict[str, dict[str, dict]] = {
     "GOVERN": {
         "GV-1.1": {
             "title": "Legal and regulatory requirements involving AI are understood",
@@ -190,7 +189,7 @@ def _normalize_category(cat: str) -> str:
     return cat.lower().replace("-", "_").replace(" ", "_")
 
 
-def map_scenario_to_subcategories(scenario: AttackScenario) -> List[str]:
+def map_scenario_to_subcategories(scenario: AttackScenario) -> list[str]:
     """Return the list of RMF sub-category IDs that a scenario covers.
 
     Matching is based on scenario category, tags (if available), and
@@ -203,8 +202,8 @@ def map_scenario_to_subcategories(scenario: AttackScenario) -> List[str]:
         for t in scenario.metadata.get("tags", []):
             tags.add(t.lower())
 
-    matched: List[str] = []
-    for func_id, subcats in RMF_TAXONOMY.items():
+    matched: list[str] = []
+    for _func_id, subcats in RMF_TAXONOMY.items():
         for sub_id, sub_def in subcats.items():
             # Category match
             if cat in [_normalize_category(c) for c in sub_def["categories"]]:
@@ -255,9 +254,9 @@ class NISTRMFReport:
 
     def generate(
         self,
-        scenarios: List[AttackScenario],
-        results: Optional[List[dict]] = None,
-        session_id: Optional[str] = None,
+        scenarios: list[AttackScenario],
+        results: list[dict] | None = None,
+        session_id: str | None = None,
         organization: str = "Oubliette Security",
     ) -> str:
         """Generate a full NIST AI RMF compliance report in markdown.
@@ -275,7 +274,7 @@ class NISTRMFReport:
         func_stats = self._compute_function_stats(mapping, results)
         overall = self._overall_coverage(func_stats)
 
-        lines: List[str] = []
+        lines: list[str] = []
 
         # --- Header ---
         lines.append("# NIST AI RMF Compliance Report")
@@ -345,10 +344,10 @@ class NISTRMFReport:
     # -- Internal helpers ---------------------------------------------------
 
     def _build_mapping(
-        self, scenarios: List[AttackScenario]
-    ) -> Dict[str, Dict[str, List[AttackScenario]]]:
+        self, scenarios: list[AttackScenario]
+    ) -> dict[str, dict[str, list[AttackScenario]]]:
         """Build func -> sub_id -> [scenarios] mapping."""
-        mapping: Dict[str, Dict[str, List[AttackScenario]]] = {}
+        mapping: dict[str, dict[str, list[AttackScenario]]] = {}
         for func_name, subcats in self.taxonomy.items():
             mapping[func_name] = {}
             for sub_id in subcats:
@@ -365,11 +364,11 @@ class NISTRMFReport:
 
     def _compute_function_stats(
         self,
-        mapping: Dict[str, Dict[str, List[AttackScenario]]],
-        results: Optional[List[dict]],
-    ) -> Dict[str, Dict]:
+        mapping: dict[str, dict[str, list[AttackScenario]]],
+        results: list[dict] | None,
+    ) -> dict[str, dict]:
         """Compute per-function coverage statistics."""
-        stats: Dict[str, Dict] = {}
+        stats: dict[str, dict] = {}
         for func_name, subcats in mapping.items():
             total = len(subcats)
             tested = sum(1 for scs in subcats.values() if len(scs) > 0)
@@ -381,7 +380,7 @@ class NISTRMFReport:
             }
         return stats
 
-    def _overall_coverage(self, func_stats: Dict[str, Dict]) -> float:
+    def _overall_coverage(self, func_stats: dict[str, dict]) -> float:
         """Compute overall coverage across all functions."""
         total_sub = sum(s["total"] for s in func_stats.values())
         tested_sub = sum(s["tested"] for s in func_stats.values())
@@ -400,15 +399,15 @@ class NISTRMFReport:
     def _function_section(
         self,
         func_name: str,
-        mapping: Dict[str, Dict[str, List[AttackScenario]]],
-        results: Optional[List[dict]],
-    ) -> List[str]:
+        mapping: dict[str, dict[str, list[AttackScenario]]],
+        results: list[dict] | None,
+    ) -> list[str]:
         """Generate markdown section for one RMF function."""
-        lines: List[str] = []
+        lines: list[str] = []
         lines.append(f"## {func_name}")
         lines.append("")
 
-        result_lookup: Dict[str, dict] = {}
+        result_lookup: dict[str, dict] = {}
         if results:
             for r in results:
                 sid = r.get("scenario_id", "")
@@ -445,10 +444,10 @@ class NISTRMFReport:
         return lines
 
     def _results_analysis(
-        self, results: List[dict], scenarios: List[AttackScenario]
-    ) -> List[str]:
+        self, results: list[dict], scenarios: list[AttackScenario]
+    ) -> list[str]:
         """Generate results analysis section."""
-        lines: List[str] = []
+        lines: list[str] = []
         lines.append("## Test Results Analysis")
         lines.append("")
 
@@ -490,10 +489,10 @@ class NISTRMFReport:
         return lines
 
     def _recommendations(
-        self, func_stats: Dict[str, Dict], results: Optional[List[dict]]
-    ) -> List[str]:
+        self, func_stats: dict[str, dict], results: list[dict] | None
+    ) -> list[str]:
         """Generate recommendations section."""
-        lines: List[str] = []
+        lines: list[str] = []
         lines.append("## Recommendations")
         lines.append("")
 

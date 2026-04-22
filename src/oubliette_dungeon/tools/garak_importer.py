@@ -15,7 +15,6 @@ import hashlib
 import os
 import re
 from pathlib import Path
-from typing import Dict, List, Optional
 
 import yaml
 
@@ -25,7 +24,7 @@ from oubliette_dungeon.core.models import AttackScenario
 # Probe category -> our AttackCategory mapping
 # ---------------------------------------------------------------------------
 
-GARAK_CATEGORY_MAP: Dict[str, str] = {
+GARAK_CATEGORY_MAP: dict[str, str] = {
     "injection": "prompt_injection",
     "promptinject": "prompt_injection",
     "dan": "jailbreaking",
@@ -51,7 +50,7 @@ GARAK_CATEGORY_MAP: Dict[str, str] = {
 }
 
 # OWASP LLM Top 10 mapping for imported probes
-CATEGORY_OWASP: Dict[str, List[str]] = {
+CATEGORY_OWASP: dict[str, list[str]] = {
     "prompt_injection": ["LLM01"],
     "jailbreaking": ["LLM01", "LLM06"],
     "information_extraction": ["LLM06"],
@@ -70,7 +69,7 @@ CATEGORY_OWASP: Dict[str, List[str]] = {
 class GarakImporter:
     """Import Garak probe files and convert them to AttackScenario objects."""
 
-    def __init__(self, garak_path: Optional[str] = None):
+    def __init__(self, garak_path: str | None = None):
         """
         Args:
             garak_path: Path to a cloned garak repository (or just the
@@ -78,7 +77,7 @@ class GarakImporter:
                         from a bundled sample are used instead.
         """
         self.garak_path = garak_path
-        self._probes_dir: Optional[str] = None
+        self._probes_dir: str | None = None
 
         if garak_path:
             # Locate the probes directory
@@ -94,9 +93,9 @@ class GarakImporter:
 
     def import_probes(
         self,
-        probe_categories: Optional[List[str]] = None,
+        probe_categories: list[str] | None = None,
         max_per_file: int = 20,
-    ) -> List[AttackScenario]:
+    ) -> list[AttackScenario]:
         """Parse garak probe files and extract attack scenarios.
 
         Args:
@@ -111,7 +110,7 @@ class GarakImporter:
         if not self._probes_dir or not os.path.isdir(self._probes_dir):
             return self._fallback_probes()
 
-        scenarios: List[AttackScenario] = []
+        scenarios: list[AttackScenario] = []
         counter = 0
 
         for fname in sorted(os.listdir(self._probes_dir)):
@@ -152,7 +151,7 @@ class GarakImporter:
     def merge_with_existing(
         self,
         existing_yaml_path: str,
-        imported: List[AttackScenario],
+        imported: list[AttackScenario],
     ) -> str:
         """Merge imported scenarios with an existing YAML file.
 
@@ -172,7 +171,7 @@ class GarakImporter:
         max_id = 0
 
         if os.path.exists(existing_yaml_path):
-            with open(existing_yaml_path, "r", encoding="utf-8") as f:
+            with open(existing_yaml_path, encoding="utf-8") as f:
                 data = yaml.safe_load(f) or []
             if isinstance(data, dict) and "scenarios" in data:
                 data = data["scenarios"]
@@ -250,7 +249,7 @@ class GarakImporter:
     # -- Extraction logic ---------------------------------------------------
 
     @staticmethod
-    def _extract_prompts_from_file(filepath: str, max_prompts: int = 20) -> List[str]:
+    def _extract_prompts_from_file(filepath: str, max_prompts: int = 20) -> list[str]:
         """Extract string constants that look like attack prompts.
 
         Uses AST parsing to find list assignments whose names suggest they
@@ -258,12 +257,12 @@ class GarakImporter:
         Falls back to regex extraction if AST parsing fails.
         """
         try:
-            with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+            with open(filepath, encoding="utf-8", errors="replace") as f:
                 source = f.read()
         except Exception:
             return []
 
-        prompts: List[str] = []
+        prompts: list[str] = []
 
         # --- AST approach ---------------------------------------------------
         try:
@@ -321,7 +320,7 @@ class GarakImporter:
         return unique
 
     @staticmethod
-    def _extract_strings_from_node(node) -> List[str]:
+    def _extract_strings_from_node(node) -> list[str]:
         """Recursively extract string values from an AST node."""
         strings = []
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
@@ -359,7 +358,7 @@ class GarakImporter:
         return "easy"
 
     @staticmethod
-    def _default_bypass_indicators(category: str) -> List[str]:
+    def _default_bypass_indicators(category: str) -> list[str]:
         """Return default bypass indicators based on category."""
         base = ["here's how", "step 1", "certainly", "of course"]
         extra = {
@@ -374,7 +373,7 @@ class GarakImporter:
         return base + extra.get(category, [])
 
     @staticmethod
-    def _fallback_probes() -> List[AttackScenario]:
+    def _fallback_probes() -> list[AttackScenario]:
         """Return a small set of built-in garak-style probes.
 
         These cover the most common garak probe categories without

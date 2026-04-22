@@ -239,7 +239,7 @@ def print_comparison_table(all_results, attacks):
     # Summary per provider
     print()
     print(f"  {'Provider':<{name_width + id_width}}", end="")
-    for p in providers:
+    for _p in providers:
         print(f" {'Detection Rate':<{col_width}}", end="")
     print()
     print("  " + "-" * (id_width + name_width + col_width * len(providers)))
@@ -303,7 +303,7 @@ def load_yaml_scenarios(path):
         print("  PyYAML not installed. Install with: pip install pyyaml")
         sys.exit(1)
 
-    with open(path, "r") as f:
+    with open(path) as f:
         data = yaml.safe_load(f)
 
     scenarios = []

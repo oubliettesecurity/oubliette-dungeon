@@ -8,7 +8,6 @@ import os
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
 
 DEFAULT_TARGET_URL = os.getenv("DUNGEON_TARGET_URL", "http://localhost:5000/api/chat")
 
@@ -50,15 +49,15 @@ class AttackScenario:
     category: str
     difficulty: str
     description: str
-    owasp_mapping: List[str]
-    mitre_mapping: List[str]
+    owasp_mapping: list[str]
+    mitre_mapping: list[str]
     prompt: str
-    multi_turn_prompts: Optional[List[str]] = None
+    multi_turn_prompts: list[str] | None = None
     expected_behavior: str = ""
     success_criteria: str = ""
-    bypass_indicators: List[str] = None
-    safe_indicators: List[str] = None
-    metadata: Dict = None
+    bypass_indicators: list[str] = None
+    safe_indicators: list[str] = None
+    metadata: dict = None
 
     def __post_init__(self):
         if self.bypass_indicators is None:
@@ -81,13 +80,13 @@ class AttackTestResult:
     confidence: float  # 0.0 - 1.0
     response: str
     execution_time_ms: float
-    bypass_indicators_found: List[str]
-    safe_indicators_found: List[str]
-    ml_score: Optional[float] = None
-    llm_verdict: Optional[str] = None
+    bypass_indicators_found: list[str]
+    safe_indicators_found: list[str]
+    ml_score: float | None = None
+    llm_verdict: str | None = None
     timestamp: str = None
     notes: str = ""
-    message_path: Optional[List[str]] = None
+    message_path: list[str] | None = None
 
     def __post_init__(self):
         if self.timestamp is None:

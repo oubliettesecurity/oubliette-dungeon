@@ -4,7 +4,6 @@ Scenario loader for Oubliette Dungeon.
 Loads attack scenarios from YAML files with filtering capabilities.
 """
 
-from typing import Dict, List, Optional
 
 import yaml
 
@@ -17,12 +16,12 @@ class ScenarioLoader:
     Supports filtering by category, difficulty, and compliance requirements.
     """
 
-    def __init__(self, scenario_file: Optional[str] = None):
+    def __init__(self, scenario_file: str | None = None):
         if scenario_file is None:
             from oubliette_dungeon.core import _default_scenarios_path
             scenario_file = _default_scenarios_path()
         self.scenario_file = scenario_file
-        self.scenarios: List[AttackScenario] = []
+        self.scenarios: list[AttackScenario] = []
         self.load_scenarios()
 
     def load_scenarios(self) -> None:
@@ -30,7 +29,7 @@ class ScenarioLoader:
         self.scenarios = []
 
         try:
-            with open(self.scenario_file, 'r', encoding='utf-8') as f:
+            with open(self.scenario_file, encoding='utf-8') as f:
                 data = yaml.safe_load(f)
 
             if not data:
@@ -74,31 +73,31 @@ class ScenarioLoader:
             print(f"Error loading scenarios: {e}")
             raise
 
-    def get_all_scenarios(self) -> List[AttackScenario]:
+    def get_all_scenarios(self) -> list[AttackScenario]:
         return self.scenarios
 
-    def list_all(self) -> List[AttackScenario]:
+    def list_all(self) -> list[AttackScenario]:
         return self.get_all_scenarios()
 
-    def get_by_category(self, category: str) -> List[AttackScenario]:
+    def get_by_category(self, category: str) -> list[AttackScenario]:
         return [s for s in self.scenarios if s.category == category]
 
-    def get_by_difficulty(self, difficulty: str) -> List[AttackScenario]:
+    def get_by_difficulty(self, difficulty: str) -> list[AttackScenario]:
         return [s for s in self.scenarios if s.difficulty.lower() == difficulty.lower()]
 
-    def get_by_id(self, scenario_id: str) -> Optional[AttackScenario]:
+    def get_by_id(self, scenario_id: str) -> AttackScenario | None:
         for scenario in self.scenarios:
             if scenario.id == scenario_id:
                 return scenario
         return None
 
-    def get_owasp_scenarios(self, owasp_id: str) -> List[AttackScenario]:
+    def get_owasp_scenarios(self, owasp_id: str) -> list[AttackScenario]:
         return [s for s in self.scenarios if owasp_id in s.owasp_mapping]
 
-    def get_mitre_scenarios(self, technique_id: str) -> List[AttackScenario]:
+    def get_mitre_scenarios(self, technique_id: str) -> list[AttackScenario]:
         return [s for s in self.scenarios if technique_id in s.mitre_mapping]
 
-    def get_statistics(self) -> Dict:
+    def get_statistics(self) -> dict:
         stats = {
             'total': len(self.scenarios),
             'by_category': {},

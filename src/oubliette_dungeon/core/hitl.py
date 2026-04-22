@@ -29,8 +29,8 @@ Usage::
 
 import json
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from oubliette_dungeon.core.models import AttackTestResult
 
@@ -48,11 +48,11 @@ class Review:
     override_confidence: float
     justification: str
     timestamp: str = ""
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         if not self.timestamp:
-            self.timestamp = datetime.now(timezone.utc).isoformat()
+            self.timestamp = datetime.now(UTC).isoformat()
 
 
 @dataclass
@@ -66,11 +66,11 @@ class ReviewableResult:
     automated_result: str
     automated_confidence: float
     response_snippet: str
-    bypass_indicators_found: List[str]
-    safe_indicators_found: List[str]
+    bypass_indicators_found: list[str]
+    safe_indicators_found: list[str]
     needs_review: bool = False
     review_reason: str = ""
-    reviews: List[Review] = field(default_factory=list)
+    reviews: list[Review] = field(default_factory=list)
 
     @property
     def is_reviewed(self) -> bool:
@@ -100,10 +100,10 @@ class ReviewQueue:
     """Manages a queue of results for human review."""
 
     def __init__(self) -> None:
-        self._items: Dict[str, ReviewableResult] = {}
+        self._items: dict[str, ReviewableResult] = {}
 
     @classmethod
-    def from_results(cls, results: List[AttackTestResult]) -> "ReviewQueue":
+    def from_results(cls, results: list[AttackTestResult]) -> "ReviewQueue":
         """Create a review queue from evaluation results."""
         queue = cls()
         for r in results:
@@ -125,7 +125,7 @@ class ReviewQueue:
         self,
         confidence_threshold: float = 0.75,
         flag_partial: bool = True,
-        flag_categories: Optional[List[str]] = None,
+        flag_categories: list[str] | None = None,
     ) -> int:
         """Flag results that need human review.
 
@@ -166,7 +166,7 @@ class ReviewQueue:
         override_result: str,
         override_confidence: float,
         justification: str,
-        tags: Optional[List[str]] = None,
+        tags: list[str] | None = None,
     ) -> bool:
         """Submit a human review for a scenario.
 
@@ -201,7 +201,7 @@ class ReviewQueue:
         return len(self._items)
 
     @property
-    def pending_review(self) -> List[ReviewableResult]:
+    def pending_review(self) -> list[ReviewableResult]:
         """Items flagged for review but not yet reviewed."""
         return [
             item for item in self._items.values()
@@ -209,18 +209,18 @@ class ReviewQueue:
         ]
 
     @property
-    def reviewed(self) -> List[ReviewableResult]:
+    def reviewed(self) -> list[ReviewableResult]:
         """Items that have been reviewed."""
         return [item for item in self._items.values() if item.is_reviewed]
 
     @property
-    def all_items(self) -> List[ReviewableResult]:
+    def all_items(self) -> list[ReviewableResult]:
         return list(self._items.values())
 
-    def get_item(self, scenario_id: str) -> Optional[ReviewableResult]:
+    def get_item(self, scenario_id: str) -> ReviewableResult | None:
         return self._items.get(scenario_id)
 
-    def agreement_rate(self) -> Optional[float]:
+    def agreement_rate(self) -> float | None:
         """Fraction of reviewed items where human agrees with automation."""
         reviewed = self.reviewed
         if not reviewed:
@@ -231,7 +231,7 @@ class ReviewQueue:
         )
         return agreed / len(reviewed)
 
-    def override_rate(self) -> Optional[float]:
+    def override_rate(self) -> float | None:
         """Fraction of reviewed items where human overrode the automated result."""
         reviewed = self.reviewed
         if not reviewed:
@@ -242,7 +242,7 @@ class ReviewQueue:
         )
         return overridden / len(reviewed)
 
-    def inter_rater_reliability(self) -> Optional[float]:
+    def inter_rater_reliability(self) -> float | None:
         """Simple agreement rate between multiple reviewers on the same items.
 
         Returns the fraction of items with multiple reviews where all reviewers
@@ -263,7 +263,7 @@ class ReviewQueue:
 
         return agreed / len(multi_reviewed)
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> dict[str, Any]:
         """Generate review summary statistics."""
         reviewed = self.reviewed
         pending = self.pending_review
@@ -289,13 +289,13 @@ class ReviewQueue:
             "inter_rater_reliability": self.inter_rater_reliability(),
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Export the full review queue as a dict."""
         return {
             "schema_version": "1.0",
             "tool": "oubliette-dungeon",
             "report_type": "hitl_review",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "summary": self.summary(),
             "items": [asdict(item) for item in self._items.values()],
         }
@@ -308,7 +308,7 @@ class ReviewQueue:
     @classmethod
     def load(cls, path: str) -> "ReviewQueue":
         """Load a review queue from JSON."""
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
 
         queue = cls()

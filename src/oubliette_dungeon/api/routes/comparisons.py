@@ -11,7 +11,7 @@ import glob
 import json
 import os
 import threading
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flask import jsonify, request
 
@@ -54,7 +54,7 @@ def list_comparisons():
         # Extract comparison_id from filename: comparison_<id>.json
         cid = fname.replace("comparison_", "").replace(".json", "")
         try:
-            with open(fpath, "r", encoding="utf-8") as f:
+            with open(fpath, encoding="utf-8") as f:
                 data = json.load(f)
             comparisons.append({
                 "comparison_id": cid,
@@ -93,7 +93,7 @@ def get_comparison(comparison_id):
         return jsonify({"error": f"Comparison not found: {comparison_id}"}), 404
 
     try:
-        with open(fpath, "r", encoding="utf-8") as f:
+        with open(fpath, encoding="utf-8") as f:
             data = json.load(f)
     except (json.JSONDecodeError, OSError) as e:
         return jsonify({"error": f"Failed to read comparison: {e}"}), 500
@@ -153,7 +153,7 @@ def run_comparison():
         if not is_safe:
             return jsonify({"error": f"Blocked target URL: {error_msg}"}), 400
 
-    comparison_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    comparison_id = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
     _audit(
         "run_comparison",
@@ -164,7 +164,7 @@ def run_comparison():
     placeholder = {
         "comparison_id": comparison_id,
         "status": "running",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "model_count": len(models),
         "models": models,
         "ranking": [],
@@ -241,7 +241,7 @@ def run_comparison():
                     "comparison_id": comparison_id,
                     "status": "error",
                     "error": str(e),
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "model_count": len(models),
                     "models": models,
                     "ranking": [],

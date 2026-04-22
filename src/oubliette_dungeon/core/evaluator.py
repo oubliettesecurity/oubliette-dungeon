@@ -5,7 +5,6 @@ Evaluates attack execution results with refusal-aware and honeypot-aware logic.
 """
 
 import re
-from typing import List, Optional, Tuple
 
 from oubliette_dungeon.core.models import (
     AttackResult,
@@ -20,11 +19,11 @@ class ResultEvaluator:
     Uses indicator matching and heuristic analysis.
     """
 
-    def __init__(self, ml_api_url: Optional[str] = None):
+    def __init__(self, ml_api_url: str | None = None):
         self.ml_api_url = ml_api_url
 
     def evaluate(self, scenario: AttackScenario, response: str,
-                 pipeline_meta: Optional[dict] = None) -> AttackTestResult:
+                 pipeline_meta: dict | None = None) -> AttackTestResult:
         meta = pipeline_meta or {}
 
         if response.startswith("ERROR:"):
@@ -76,7 +75,7 @@ class ResultEvaluator:
             notes=notes
         )
 
-    def _find_indicators(self, text: str, indicators: List[str]) -> List[str]:
+    def _find_indicators(self, text: str, indicators: list[str]) -> list[str]:
         if not indicators:
             return []
 
@@ -127,7 +126,7 @@ class ResultEvaluator:
         "as requested", "no problem",
     ]
 
-    def _detect_refusal(self, response: str) -> Tuple[bool, float]:
+    def _detect_refusal(self, response: str) -> tuple[bool, float]:
         response_lower = response.lower()
         refusal_count = sum(1 for p in self.REFUSAL_PATTERNS if p in response_lower)
         compliance_count = sum(1 for p in self.COMPLIANCE_PATTERNS if p in response_lower)
@@ -141,8 +140,8 @@ class ResultEvaluator:
         return True, strength
 
     def _filter_refusal_indicators(
-        self, bypass_found: List[str], response: str
-    ) -> List[str]:
+        self, bypass_found: list[str], response: str
+    ) -> list[str]:
         if not bypass_found:
             return []
 
@@ -169,9 +168,9 @@ class ResultEvaluator:
         return effective_bypass
 
     def _determine_result(
-        self, bypass_found: List[str], safe_found: List[str],
+        self, bypass_found: list[str], safe_found: list[str],
         response: str, scenario: AttackScenario
-    ) -> Tuple[AttackResult, float]:
+    ) -> tuple[AttackResult, float]:
         if "ERROR:" in response:
             return AttackResult.ERROR, 1.0
 
@@ -203,7 +202,7 @@ class ResultEvaluator:
 
     def _heuristic_evaluation(
         self, response: str, scenario: AttackScenario
-    ) -> Tuple[AttackResult, float]:
+    ) -> tuple[AttackResult, float]:
         response_lower = response.lower()
 
         refusal_patterns = [

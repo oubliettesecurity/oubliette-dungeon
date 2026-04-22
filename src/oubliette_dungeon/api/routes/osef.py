@@ -7,7 +7,6 @@ Routes:
     POST /api/dungeon/osef/validate      - Validate an OSEF document
 """
 
-from typing import List
 
 from flask import jsonify, request
 
@@ -20,7 +19,7 @@ from oubliette_dungeon.core.models import AttackTestResult
 from oubliette_dungeon.core.osef import OSEF_VERSION, OSEFReport
 
 
-def _build_results_from_session(session_data: dict) -> List[AttackTestResult]:
+def _build_results_from_session(session_data: dict) -> list[AttackTestResult]:
     """Convert raw session result dicts into AttackTestResult objects."""
     results = []
     for r in session_data.get("results", []):

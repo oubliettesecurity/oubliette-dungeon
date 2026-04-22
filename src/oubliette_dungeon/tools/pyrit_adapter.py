@@ -13,9 +13,7 @@ Key classes:
 
 import asyncio
 import json
-import sys
 import time
-from typing import Dict, List, Optional
 
 import requests
 
@@ -25,7 +23,7 @@ from oubliette_dungeon.tools.base import RedTeamToolAdapter
 # ---------------------------------------------------------------------------
 # Lazy imports for pyrit-core (may not be installed)
 # ---------------------------------------------------------------------------
-_pyrit_available: Optional[bool] = None
+_pyrit_available: bool | None = None
 
 
 def _check_pyrit() -> bool:
@@ -51,7 +49,7 @@ class OubliettePromptTarget:
     installed it still works as a standalone HTTP prompt sender.
     """
 
-    def __init__(self, target_url: str, api_key: Optional[str] = None, timeout: int = 30):
+    def __init__(self, target_url: str, api_key: str | None = None, timeout: int = 30):
         self.target_url = target_url
         self.api_key = api_key
         self.timeout = timeout
@@ -61,7 +59,7 @@ class OubliettePromptTarget:
 
     # -- Synchronous helper used by both PyRIT async path and standalone ---
 
-    def _send(self, text: str) -> Dict:
+    def _send(self, text: str) -> dict:
         """POST a prompt and return the parsed JSON body."""
         resp = self._session.post(
             self.target_url,
@@ -126,18 +124,16 @@ class PyRITAdapter(RedTeamToolAdapter):
     name = "pyrit"
     version = "0.11+"
 
-    def __init__(self, api_key: Optional[str] = None, timeout: int = 30):
+    def __init__(self, api_key: str | None = None, timeout: int = 30):
         self.api_key = api_key
         self.timeout = timeout
 
     # -- RedTeamToolAdapter interface ----------------------------------------
 
     def is_available(self) -> bool:
-        if sys.version_info < (3, 10):
-            return False
         return _check_pyrit()
 
-    def get_capabilities(self) -> Dict:
+    def get_capabilities(self) -> dict:
         return {
             "name": self.name,
             "version": self.version,
@@ -198,12 +194,12 @@ class PyRITAdapter(RedTeamToolAdapter):
 
     def run_campaign(
         self,
-        scenarios: List[AttackScenario],
+        scenarios: list[AttackScenario],
         target_url: str,
         **kwargs,
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """Run a batch of AttackScenarios through PyRIT."""
-        results: List[TestResult] = []
+        results: list[TestResult] = []
         for sc in scenarios:
             r = self.run_attack(
                 prompt=sc.prompt,
@@ -224,7 +220,7 @@ class PyRITAdapter(RedTeamToolAdapter):
         target_url: str,
         max_turns: int = 10,
         adversarial_model: str = "gpt-4",
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """Run a PyRIT CrescendoOrchestrator multi-turn escalation.
 
         Requires ``pyrit-core`` and an adversarial LLM (e.g. OpenAI).
@@ -245,7 +241,7 @@ class PyRITAdapter(RedTeamToolAdapter):
 
         target = OubliettePromptTarget(target_url, api_key=self.api_key, timeout=self.timeout)
 
-        results: List[TestResult] = []
+        results: list[TestResult] = []
         start = time.time()
 
         try:
@@ -318,8 +314,8 @@ class PyRITAdapter(RedTeamToolAdapter):
         self,
         prompt: str,
         target_url: str,
-        converters: Optional[List[str]] = None,
-    ) -> List[TestResult]:
+        converters: list[str] | None = None,
+    ) -> list[TestResult]:
         """Apply PyRIT converters (base64, ROT13, leetspeak, etc.) to a prompt.
 
         Each converter variant is sent independently and evaluated.
@@ -337,7 +333,7 @@ class PyRITAdapter(RedTeamToolAdapter):
             raise RuntimeError("pyrit-core is not installed or Python < 3.10")
 
         converters = converters or ["base64", "rot13", "leetspeak", "unicode_confusable"]
-        results: List[TestResult] = []
+        results: list[TestResult] = []
 
         for conv_name in converters:
             try:
@@ -358,7 +354,7 @@ class PyRITAdapter(RedTeamToolAdapter):
 
         return results
 
-    def generate_variations(self, prompt: str, num_variations: int = 10) -> List[str]:
+    def generate_variations(self, prompt: str, num_variations: int = 10) -> list[str]:
         """Generate attack prompt variations using PyRIT converters.
 
         Useful for creating ML training data from a seed prompt.
@@ -377,7 +373,7 @@ class PyRITAdapter(RedTeamToolAdapter):
             "pig_latin", "reverse", "atbash",
         ]
 
-        variations: List[str] = []
+        variations: list[str] = []
         for conv in converter_names[:num_variations]:
             try:
                 variant = self._apply_converter(prompt, conv)
@@ -443,8 +439,8 @@ class PyRITAdapter(RedTeamToolAdapter):
     def _classify_response(
         response: str,
         blocked: bool,
-        ml_score: Optional[float],
-        llm_verdict: Optional[str],
+        ml_score: float | None,
+        llm_verdict: str | None,
     ) -> tuple:
         """Map endpoint metadata to (AttackResult, confidence)."""
         if blocked:

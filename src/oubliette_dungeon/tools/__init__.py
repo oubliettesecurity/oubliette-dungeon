@@ -11,8 +11,8 @@ Usage:
     print(tm.list_tools())
 """
 
-from oubliette_dungeon.tools.base import RedTeamToolAdapter  # noqa: F401
-from oubliette_dungeon.tools.tool_manager import ToolManager  # noqa: F401
+from oubliette_dungeon.tools.base import RedTeamToolAdapter
+from oubliette_dungeon.tools.tool_manager import ToolManager
 
 
 def available_tools():

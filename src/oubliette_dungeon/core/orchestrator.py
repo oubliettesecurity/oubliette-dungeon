@@ -7,7 +7,6 @@ Coordinates scenario loading, execution, evaluation, and reporting.
 import json
 from dataclasses import asdict
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from oubliette_dungeon.core.evaluator import ResultEvaluator
 from oubliette_dungeon.core.executor import AttackExecutor
@@ -28,7 +27,7 @@ class RedTeamOrchestrator:
     def __init__(
         self,
         target_url: str,
-        scenario_file: Optional[str] = None,
+        scenario_file: str | None = None,
         results_db=None,
         timeout: int = 30
     ):
@@ -45,7 +44,7 @@ class RedTeamOrchestrator:
 
         print(f"Executing scenario {scenario_id}: {scenario.name}...")
 
-        response, elapsed_ms, is_multi_turn = self.executor.execute(scenario)
+        response, elapsed_ms, _is_multi_turn = self.executor.execute(scenario)
         pipeline_meta = self.executor.get_last_meta()
         result = self.evaluator.evaluate(scenario, response, pipeline_meta=pipeline_meta)
         result.execution_time_ms = elapsed_ms
@@ -58,7 +57,7 @@ class RedTeamOrchestrator:
 
         return result
 
-    def run_all_scenarios(self) -> List[AttackTestResult]:
+    def run_all_scenarios(self) -> list[AttackTestResult]:
         scenarios = self.loader.get_all_scenarios()
         results = []
 
@@ -82,11 +81,11 @@ class RedTeamOrchestrator:
                     difficulty=scenario.difficulty,
                     result=AttackResult.ERROR.value,
                     confidence=1.0,
-                    response=f"Exception: {str(e)}",
+                    response=f"Exception: {e!s}",
                     execution_time_ms=0,
                     bypass_indicators_found=[],
                     safe_indicators_found=[],
-                    notes=f"Exception during execution: {str(e)}"
+                    notes=f"Exception during execution: {e!s}"
                 )
                 results.append(error_result)
 
@@ -98,7 +97,7 @@ class RedTeamOrchestrator:
 
         return results
 
-    def run_by_category(self, category: str) -> List[AttackTestResult]:
+    def run_by_category(self, category: str) -> list[AttackTestResult]:
         scenarios = self.loader.get_by_category(category)
         results = []
         print(f"\nRunning {len(scenarios)} scenarios in category {category}...")
@@ -107,10 +106,10 @@ class RedTeamOrchestrator:
             results.append(result)
         return results
 
-    def run_category(self, category: str) -> List[AttackTestResult]:
+    def run_category(self, category: str) -> list[AttackTestResult]:
         return self.run_by_category(category)
 
-    def run_by_difficulty(self, difficulty: str) -> List[AttackTestResult]:
+    def run_by_difficulty(self, difficulty: str) -> list[AttackTestResult]:
         scenarios = self.loader.get_by_difficulty(difficulty)
         results = []
         print(f"\nRunning {len(scenarios)} {difficulty} scenarios...")
@@ -120,9 +119,9 @@ class RedTeamOrchestrator:
         return results
 
     def replay(
-        self, results_file: str, scenario_ids: Optional[List[str]] = None
-    ) -> List[AttackTestResult]:
-        with open(results_file, "r", encoding="utf-8") as f:
+        self, results_file: str, scenario_ids: list[str] | None = None
+    ) -> list[AttackTestResult]:
+        with open(results_file, encoding="utf-8") as f:
             prev_data = json.load(f)
 
         if isinstance(prev_data, list):
@@ -155,7 +154,7 @@ class RedTeamOrchestrator:
 
         return new_results
 
-    def generate_summary(self, results: List[AttackTestResult]) -> Dict:
+    def generate_summary(self, results: list[AttackTestResult]) -> dict:
         if not results:
             return {'error': 'No results to summarize'}
 
@@ -210,8 +209,8 @@ class RedTeamOrchestrator:
         return summary
 
     def export_benchmark(
-        self, results: List[AttackTestResult], output_path: str
-    ) -> Dict:
+        self, results: list[AttackTestResult], output_path: str
+    ) -> dict:
         summary = self.generate_summary(results)
         report = {
             "schema_version": "1.0",
@@ -227,7 +226,7 @@ class RedTeamOrchestrator:
         print(f"Benchmark report saved to {output_path}")
         return report
 
-    def print_summary(self, results: List[AttackTestResult]) -> None:
+    def print_summary(self, results: list[AttackTestResult]) -> None:
         summary = self.generate_summary(results)
 
         print("\n" + "=" * 70)

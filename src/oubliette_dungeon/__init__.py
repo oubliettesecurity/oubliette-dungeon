@@ -20,7 +20,7 @@ Quick start::
 __version__ = "1.0.1"
 
 # --- Eager imports (core, always available) ---
-from oubliette_dungeon.core import (  # noqa: F401
+from oubliette_dungeon.core import (
     DEFAULT_TARGET_URL,
     AttackCategory,
     AttackExecutor,
@@ -36,7 +36,7 @@ from oubliette_dungeon.core import (  # noqa: F401
     avg_turns_to_jailbreak,
     pass_at_k,
 )
-from oubliette_dungeon.storage import RedTeamResultsDB  # noqa: F401
+from oubliette_dungeon.storage import RedTeamResultsDB
 
 # --- Lazy imports (optional deps) ---
 _LAZY_MODULES = {

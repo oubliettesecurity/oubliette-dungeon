@@ -8,7 +8,6 @@ to the existing RedTeamResultsDB.
 
 import threading
 from datetime import datetime
-from typing import Dict, List, Optional
 
 from oubliette_dungeon.core.models import AttackScenario, TestResult
 from oubliette_dungeon.tools.base import RedTeamToolAdapter
@@ -23,7 +22,7 @@ class ToolManager:
             results_db: Optional RedTeamResultsDB instance for persisting
                        results.  If None, results are returned but not saved.
         """
-        self._adapters: Dict[str, RedTeamToolAdapter] = {}
+        self._adapters: dict[str, RedTeamToolAdapter] = {}
         self._results_db = results_db
         self._lock = threading.Lock()
         self._discover_tools()
@@ -49,14 +48,14 @@ class ToolManager:
 
     # -- Public API ----------------------------------------------------------
 
-    def list_tools(self) -> List[Dict]:
+    def list_tools(self) -> list[dict]:
         """Return metadata for every discovered adapter.
 
         Returns:
             List of dicts with name, version, available, capabilities.
         """
         tools = []
-        for name, adapter in self._adapters.items():
+        for _name, adapter in self._adapters.items():
             tools.append(adapter.info())
 
         # Always include garak importer (it's not an adapter but a utility)
@@ -79,7 +78,7 @@ class ToolManager:
 
         return tools
 
-    def get_tool(self, name: str) -> Optional[RedTeamToolAdapter]:
+    def get_tool(self, name: str) -> RedTeamToolAdapter | None:
         """Get a specific adapter by name.
 
         Args:
@@ -93,10 +92,10 @@ class ToolManager:
     def run_with_tool(
         self,
         tool_name: str,
-        scenarios: List[AttackScenario],
+        scenarios: list[AttackScenario],
         target_url: str,
         **kwargs,
-    ) -> List[TestResult]:
+    ) -> list[TestResult]:
         """Run a batch of scenarios through a specific tool.
 
         Args:
@@ -127,9 +126,9 @@ class ToolManager:
 
     def run_all_tools(
         self,
-        scenarios: List[AttackScenario],
+        scenarios: list[AttackScenario],
         target_url: str,
-    ) -> Dict[str, List[TestResult]]:
+    ) -> dict[str, list[TestResult]]:
         """Run the same scenarios through every available tool.
 
         Only tools whose ``is_available()`` returns True are used.
@@ -141,7 +140,7 @@ class ToolManager:
         Returns:
             Dict mapping tool name -> list of TestResult.
         """
-        all_results: Dict[str, List[TestResult]] = {}
+        all_results: dict[str, list[TestResult]] = {}
 
         for name, adapter in self._adapters.items():
             if not adapter.is_available():
@@ -169,8 +168,8 @@ class ToolManager:
 
     def compare_results(
         self,
-        all_results: Dict[str, List[TestResult]],
-    ) -> Dict:
+        all_results: dict[str, list[TestResult]],
+    ) -> dict:
         """Generate a comparison summary across tools.
 
         Args:
@@ -179,7 +178,7 @@ class ToolManager:
         Returns:
             Dict with per-tool stats and overall comparison.
         """
-        comparison: Dict = {"tools": {}, "summary": {}}
+        comparison: dict = {"tools": {}, "summary": {}}
 
         for tool_name, results in all_results.items():
             total = len(results)
@@ -222,7 +221,7 @@ class ToolManager:
 
     # -- Internal helpers ----------------------------------------------------
 
-    def _persist(self, results: List[TestResult], tool_name: str) -> None:
+    def _persist(self, results: list[TestResult], tool_name: str) -> None:
         """Save results to the database if one is configured."""
         if self._results_db is None:
             return
