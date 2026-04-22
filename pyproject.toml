@@ -71,4 +71,17 @@ addopts = "-v --tb=short"
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py311"
+extend-exclude = ["__pycache__", "build", "dist", ".venv", "venv", "redteam_results", "dashboard"]
+
+[tool.ruff.lint]
+# Baseline ruleset; expand in Phase 2 to include UP/B/SIM/RUF/N.
+select = ["E", "F", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["F401", "F841"]
+# Third-party adapter integrations collect values that are not yet wired into
+# TestResult. The variables document the intended field mapping; drop them
+# only when the adapter's next pass lands.
+"src/oubliette_dungeon/tools/*_adapter.py" = ["F841"]

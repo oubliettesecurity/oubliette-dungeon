@@ -11,16 +11,15 @@ Key class:
 """
 
 import ast
+import hashlib
 import os
 import re
-import hashlib
 from pathlib import Path
 from typing import Dict, List, Optional
 
 import yaml
 
 from oubliette_dungeon.core.models import AttackScenario
-from oubliette_dungeon.tools.base import RedTeamToolAdapter
 
 # ---------------------------------------------------------------------------
 # Probe category -> our AttackCategory mapping

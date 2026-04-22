@@ -11,16 +11,15 @@ Key classes:
     PyRITAdapter           - RedTeamToolAdapter wrapping PyRIT orchestrators.
 """
 
+import asyncio
+import json
 import sys
 import time
-import json
-import asyncio
-from datetime import datetime
 from typing import Dict, List, Optional
 
 import requests
 
-from oubliette_dungeon.core.models import AttackScenario, TestResult, AttackResult
+from oubliette_dungeon.core.models import AttackResult, AttackScenario, TestResult
 from oubliette_dungeon.tools.base import RedTeamToolAdapter
 
 # ---------------------------------------------------------------------------
@@ -85,7 +84,7 @@ class OubliettePromptTarget:
         if not _check_pyrit():
             raise RuntimeError("pyrit-core is not installed")
 
-        from pyrit.models import PromptRequestResponse, PromptRequestPiece
+        from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
         # Extract prompt text from the request pieces
         pieces = prompt_request.request_pieces if hasattr(prompt_request, "request_pieces") else [prompt_request]
@@ -243,7 +242,6 @@ class PyRITAdapter(RedTeamToolAdapter):
             raise RuntimeError("pyrit-core is not installed or Python < 3.10")
 
         from pyrit.orchestrator import CrescendoOrchestrator
-        from pyrit.common import default_values
 
         target = OubliettePromptTarget(target_url, api_key=self.api_key, timeout=self.timeout)
 

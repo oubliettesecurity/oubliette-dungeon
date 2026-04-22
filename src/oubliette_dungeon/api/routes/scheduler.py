@@ -11,14 +11,14 @@ Routes:
     GET    /api/dungeon/schedule/history        - Get run history
 """
 
-from flask import request, jsonify
+from flask import jsonify, request
 
 from oubliette_dungeon.api.middleware import (
-    dungeon_bp,
-    _require_api_key,
     _audit,
     _get_scheduler,
     _is_safe_webhook_url,
+    _require_api_key,
+    dungeon_bp,
 )
 
 

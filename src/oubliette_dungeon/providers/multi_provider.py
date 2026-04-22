@@ -187,7 +187,7 @@ def run_attacks_with_provider(provider_name, attacks):
                 "name": attack["name"],
                 "category": attack["category"],
                 "expect_blocked": attack["expect_blocked"],
-                "verdict": f"ERROR",
+                "verdict": "ERROR",
                 "blocked": False,
                 "detection_method": "error",
                 "ml_score": None,

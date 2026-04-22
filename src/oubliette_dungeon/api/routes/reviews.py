@@ -13,9 +13,9 @@ Routes:
 from flask import jsonify, request
 
 from oubliette_dungeon.api.middleware import (
-    dungeon_bp,
-    _require_api_key,
     _get_results_db,
+    _require_api_key,
+    dungeon_bp,
 )
 from oubliette_dungeon.core.hitl import ReviewQueue
 from oubliette_dungeon.core.models import AttackTestResult

@@ -9,14 +9,12 @@ Key class:
     DeepTeamAdapter - RedTeamToolAdapter wrapping deepteam.red_team().
 """
 
-import sys
 import time
-from datetime import datetime
 from typing import Callable, Dict, List, Optional
 
 import requests
 
-from oubliette_dungeon.core.models import AttackScenario, TestResult, AttackResult
+from oubliette_dungeon.core.models import AttackResult, AttackScenario, TestResult
 from oubliette_dungeon.tools.base import RedTeamToolAdapter
 
 # ---------------------------------------------------------------------------

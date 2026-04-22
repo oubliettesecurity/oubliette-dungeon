@@ -9,23 +9,23 @@ Routes:
 
 import threading
 
-from flask import request, jsonify
+from flask import jsonify, request
 
-from oubliette_dungeon.core import (
-    RedTeamOrchestrator, DEFAULT_TARGET_URL,
-)
 from oubliette_dungeon.api.middleware import (
-    dungeon_bp,
-    _require_api_key,
+    DEFAULT_TIMEOUT,
+    SCENARIOS_FILE,
     _audit,
     _get_loader,
     _get_results_db,
+    _require_api_key,
     _result_to_dict,
-    _validate_target_url,
-    _running_session,
     _session_lock,
-    SCENARIOS_FILE,
-    DEFAULT_TIMEOUT,
+    _validate_target_url,
+    dungeon_bp,
+)
+from oubliette_dungeon.core import (
+    DEFAULT_TARGET_URL,
+    RedTeamOrchestrator,
 )
 
 
@@ -137,7 +137,7 @@ def execute_scenario(scenario_id):
         result = orchestrator.run_single_scenario(scenario_id)
     except ValueError as e:
         return jsonify({"error": str(e)}), 404
-    except Exception as e:
+    except Exception:
         return jsonify({"error": "Execution failed"}), 500
 
     return jsonify({

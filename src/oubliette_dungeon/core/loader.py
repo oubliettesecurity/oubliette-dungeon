@@ -4,8 +4,9 @@ Scenario loader for Oubliette Dungeon.
 Loads attack scenarios from YAML files with filtering capabilities.
 """
 
+from typing import Dict, List, Optional
+
 import yaml
-from typing import List, Dict, Optional
 
 from oubliette_dungeon.core.models import AttackScenario
 

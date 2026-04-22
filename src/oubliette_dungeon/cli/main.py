@@ -12,8 +12,6 @@ Usage:
     oubliette-dungeon export --format json --output results.json
 """
 
-import json
-import os
 import sys
 
 import click
@@ -156,14 +154,14 @@ def stats(scenarios):
     loader = ScenarioLoader(scenarios_file)
     s = loader.get_statistics()
 
-    click.echo(f"\nScenario Library Statistics")
+    click.echo("\nScenario Library Statistics")
     click.echo(f"{'=' * 40}")
     click.echo(f"Total Scenarios: {s['total']}")
     click.echo(f"Multi-turn Scenarios: {s['multi_turn_count']}")
-    click.echo(f"\nBy Category:")
+    click.echo("\nBy Category:")
     for cat, count in sorted(s['by_category'].items()):
         click.echo(f"  {cat}: {count}")
-    click.echo(f"\nBy Difficulty:")
+    click.echo("\nBy Difficulty:")
     for diff, count in sorted(s['by_difficulty'].items()):
         click.echo(f"  {diff}: {count}")
 

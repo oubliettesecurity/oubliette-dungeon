@@ -16,15 +16,15 @@ from datetime import datetime, timezone
 from flask import jsonify, request
 
 from oubliette_dungeon.api.middleware import (
-    dungeon_bp,
-    _require_api_key,
-    _audit,
-    _get_results_db,
-    _validate_target_url,
-    _session_lock,
+    DEFAULT_TIMEOUT,
     RESULTS_DB_DIR,
     SCENARIOS_FILE,
-    DEFAULT_TIMEOUT,
+    _audit,
+    _get_results_db,
+    _require_api_key,
+    _session_lock,
+    _validate_target_url,
+    dungeon_bp,
 )
 
 
@@ -178,10 +178,11 @@ def run_comparison():
     def _run():
         """Execute the comparison in a background thread."""
         try:
-            from oubliette_dungeon.core.comparison import ModelComparison
             from oubliette_dungeon.core import (
-                RedTeamOrchestrator, AttackTestResult,
+                AttackTestResult,
+                RedTeamOrchestrator,
             )
+            from oubliette_dungeon.core.comparison import ModelComparison
 
             comp = ModelComparison()
 

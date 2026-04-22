@@ -21,13 +21,11 @@ Usage::
     scenarios = importer.import_dict(config_dict)
 """
 
-import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import yaml
 
 from oubliette_dungeon.core.models import AttackScenario
-
 
 # ---------------------------------------------------------------------------
 # Provider mapping

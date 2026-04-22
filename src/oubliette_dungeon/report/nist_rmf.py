@@ -16,10 +16,9 @@ Functions:
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
-from oubliette_dungeon.core.models import AttackScenario, AttackTestResult
-
+from oubliette_dungeon.core.models import AttackScenario
 
 # ---------------------------------------------------------------------------
 # NIST AI RMF sub-category definitions & scenario mapping
@@ -285,7 +284,7 @@ class NISTRMFReport:
         lines.append(f"**Generated:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         if session_id:
             lines.append(f"**Session ID:** {session_id}")
-        lines.append(f"**Framework:** NIST AI Risk Management Framework (AI RMF 1.0)")
+        lines.append("**Framework:** NIST AI Risk Management Framework (AI RMF 1.0)")
         lines.append(f"**Total Scenarios Evaluated:** {len(scenarios)}")
         if results:
             lines.append(f"**Total Test Results:** {len(results)}")

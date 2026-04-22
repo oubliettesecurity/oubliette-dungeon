@@ -18,19 +18,17 @@ Security hardening applied per audit (aix_framework_security_audit.md):
     - All AIX output treated as untrusted
 """
 
-import os
-import re
-import time
 import asyncio
 import json
 import logging
-from datetime import datetime
+import os
+import time
 from typing import Dict, List, Optional
 from urllib.parse import urlparse
 
 import requests
 
-from oubliette_dungeon.core.models import AttackScenario, TestResult, AttackResult
+from oubliette_dungeon.core.models import AttackResult, AttackScenario, TestResult
 from oubliette_dungeon.tools.base import RedTeamToolAdapter
 
 logger = logging.getLogger(__name__)
@@ -533,7 +531,7 @@ class AixAdapter(RedTeamToolAdapter):
                 elapsed = (time.time() - start) * 1000
                 results.append(TestResult(
                     scenario_id="AIX-CHAIN-000",
-                    scenario_name=f"AIX playbook (no findings)",
+                    scenario_name="AIX playbook (no findings)",
                     category="multi_turn_attack",
                     difficulty="medium",
                     result=AttackResult.SUCCESS_DETECTED.value,

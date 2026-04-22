@@ -61,7 +61,6 @@ class ToolManager:
 
         # Always include garak importer (it's not an adapter but a utility)
         try:
-            from oubliette_dungeon.tools.garak_importer import GarakImporter
             tools.append({
                 "name": "garak",
                 "version": "importer",

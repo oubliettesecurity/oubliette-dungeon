@@ -5,11 +5,10 @@ Defines enums, dataclasses, and constants shared across the engine.
 """
 
 import os
-from typing import List, Dict, Optional
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-
+from typing import Dict, List, Optional
 
 DEFAULT_TARGET_URL = os.getenv("DUNGEON_TARGET_URL", "http://localhost:5000/api/chat")
 

@@ -13,19 +13,19 @@ Routes:
 
 import os
 
-from flask import request, jsonify
+from flask import jsonify, request
 
-from oubliette_dungeon.core import DEFAULT_TARGET_URL
 from oubliette_dungeon.api.middleware import (
-    dungeon_bp,
-    _require_api_key,
+    SCENARIOS_FILE,
     _get_loader,
     _get_results_db,
     _get_tool_manager,
+    _require_api_key,
     _result_to_dict,
     _validate_target_url,
-    SCENARIOS_FILE,
+    dungeon_bp,
 )
+from oubliette_dungeon.core import DEFAULT_TARGET_URL
 
 
 @dungeon_bp.route("/api/dungeon/tools")

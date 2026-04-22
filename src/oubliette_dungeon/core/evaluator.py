@@ -8,7 +8,9 @@ import re
 from typing import List, Optional, Tuple
 
 from oubliette_dungeon.core.models import (
-    AttackResult, AttackScenario, AttackTestResult,
+    AttackResult,
+    AttackScenario,
+    AttackTestResult,
 )
 
 

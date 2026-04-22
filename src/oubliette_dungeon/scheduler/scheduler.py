@@ -20,16 +20,14 @@ Usage:
 """
 
 import json
+import os
 import stat
 import sys
-import uuid
-import time
 import threading
-import os
-import re
+import time
+import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional, Dict, List
 
 from oubliette_dungeon.core.models import DEFAULT_TARGET_URL
 

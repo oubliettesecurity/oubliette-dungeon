@@ -7,7 +7,7 @@ ToolManager and API layer.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from oubliette_dungeon.core.models import AttackScenario, TestResult
 

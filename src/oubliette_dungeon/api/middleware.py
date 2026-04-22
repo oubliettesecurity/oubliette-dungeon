@@ -6,22 +6,22 @@ and helper functions for the Oubliette Dungeon REST API.
 All URL prefixes use /api/dungeon/ instead of /api/redteam/.
 """
 
+import functools
+import hmac
 import ipaddress
 import logging
 import os
-import hmac
-import functools
 import socket
 import threading
 import time
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from flask import Blueprint, request, jsonify, Response
+from flask import Blueprint, Response, jsonify, request
 
 from oubliette_dungeon.core import (
-    RedTeamOrchestrator, ScenarioLoader, AttackExecutor, ResultEvaluator,
-    AttackResult, _default_scenarios_path, DEFAULT_TARGET_URL,
+    ScenarioLoader,
+    _default_scenarios_path,
 )
 from oubliette_dungeon.storage import RedTeamResultsDB
 
@@ -452,12 +452,12 @@ def _get_tool_manager():
 
 
 # --- Register route modules (import at bottom to avoid circular imports) ---
-import oubliette_dungeon.api.routes.scenarios  # noqa: E402, F401
+import oubliette_dungeon.api.routes.comparisons  # noqa: E402, F401
 import oubliette_dungeon.api.routes.execution  # noqa: E402, F401
-import oubliette_dungeon.api.routes.sessions   # noqa: E402, F401
+import oubliette_dungeon.api.routes.osef  # noqa: E402, F401
+import oubliette_dungeon.api.routes.reports  # noqa: E402, F401
+import oubliette_dungeon.api.routes.reviews  # noqa: E402, F401
+import oubliette_dungeon.api.routes.scenarios  # noqa: E402, F401
 import oubliette_dungeon.api.routes.scheduler  # noqa: E402, F401
-import oubliette_dungeon.api.routes.tools      # noqa: E402, F401
-import oubliette_dungeon.api.routes.reports      # noqa: E402, F401
-import oubliette_dungeon.api.routes.reviews     # noqa: E402, F401
-import oubliette_dungeon.api.routes.comparisons # noqa: E402, F401
-import oubliette_dungeon.api.routes.osef        # noqa: E402, F401
+import oubliette_dungeon.api.routes.sessions  # noqa: E402, F401
+import oubliette_dungeon.api.routes.tools  # noqa: E402, F401

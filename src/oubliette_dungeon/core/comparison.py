@@ -25,11 +25,10 @@ import html
 import json
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from oubliette_dungeon.core.models import AttackResult, AttackTestResult
 from oubliette_dungeon.core.metrics import pass_at_k
-
+from oubliette_dungeon.core.models import AttackResult, AttackTestResult
 
 # ---------------------------------------------------------------------------
 # Data structures

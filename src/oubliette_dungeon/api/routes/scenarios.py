@@ -7,13 +7,13 @@ Routes:
     GET  /api/dungeon/scenarios/<id>      - Get single scenario detail
 """
 
-from flask import request, jsonify
+from flask import jsonify, request
 
 from oubliette_dungeon.api.middleware import (
-    dungeon_bp,
-    _require_api_key,
     _get_loader,
+    _require_api_key,
     _scenario_to_dict,
+    dungeon_bp,
 )
 
 

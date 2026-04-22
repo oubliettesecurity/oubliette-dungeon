@@ -37,7 +37,6 @@ from oubliette_dungeon.core.evaluator import ResultEvaluator
 from oubliette_dungeon.core.loader import ScenarioLoader
 from oubliette_dungeon.core.models import AttackScenario
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

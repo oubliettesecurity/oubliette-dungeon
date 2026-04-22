@@ -7,18 +7,17 @@ Routes:
     POST /api/dungeon/osef/validate      - Validate an OSEF document
 """
 
-import json
 from typing import List
 
 from flask import jsonify, request
 
 from oubliette_dungeon.api.middleware import (
-    dungeon_bp,
-    _require_api_key,
     _get_results_db,
+    _require_api_key,
+    dungeon_bp,
 )
 from oubliette_dungeon.core.models import AttackTestResult
-from oubliette_dungeon.core.osef import OSEFReport, OSEF_VERSION
+from oubliette_dungeon.core.osef import OSEF_VERSION, OSEFReport
 
 
 def _build_results_from_session(session_data: dict) -> List[AttackTestResult]:

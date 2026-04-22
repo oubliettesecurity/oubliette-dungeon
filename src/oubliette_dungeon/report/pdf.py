@@ -6,9 +6,7 @@ Professional PDF report generation for red team assessments.
 Uses fpdf2 for pure-Python, cross-platform PDF generation.
 """
 
-import io
 from datetime import datetime
-from typing import Optional, Dict, List
 
 try:
     from fpdf import FPDF
@@ -156,8 +154,9 @@ class ReportGenerator:
         _require_fpdf()
 
         if stats is None or results is None:
-            from oubliette_dungeon.storage import RedTeamResultsDB
             import os
+
+            from oubliette_dungeon.storage import RedTeamResultsDB
             db = RedTeamResultsDB(os.getenv("DUNGEON_DB_DIR", "redteam_results"))
             if stats is None:
                 stats = db.get_statistics(session_id)

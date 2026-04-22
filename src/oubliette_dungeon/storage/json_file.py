@@ -8,15 +8,14 @@ Features:
 - Export to various formats (JSON, CSV)
 """
 
+import csv
 import json
-import os
+import re
 import stat
 import sys
-from typing import List, Dict, Optional
 from datetime import datetime
 from pathlib import Path
-import csv
-import re
+from typing import Dict, List, Optional
 
 _SAFE_SESSION_ID = re.compile(r"^[a-zA-Z0-9_\-]{1,128}$")
 
@@ -24,7 +23,7 @@ _SAFE_SESSION_ID = re.compile(r"^[a-zA-Z0-9_\-]{1,128}$")
 def _validate_session_id(session_id: str) -> None:
     """Reject session IDs that could cause path traversal."""
     if not _SAFE_SESSION_ID.match(session_id):
-        raise ValueError(f"Invalid session_id: must be alphanumeric/dash/underscore, 1-128 chars")
+        raise ValueError("Invalid session_id: must be alphanumeric/dash/underscore, 1-128 chars")
 
 
 def _restrict_permissions(path: Path) -> None:
@@ -227,7 +226,7 @@ class RedTeamResultsDB:
         report.append(f"\n**Session ID**: {stats['session_id']}")
         report.append(f"**Started**: {stats['started_at']}")
         report.append(f"**Completed**: {stats.get('updated_at', 'In progress')}")
-        report.append(f"\n## Summary\n")
+        report.append("\n## Summary\n")
         report.append(f"- **Total Tests**: {stats['total_tests']}")
         report.append(f"- **Detection Rate**: {stats['detection_rate']:.1f}%")
         report.append(f"- **Bypass Rate**: {stats['bypass_rate']:.1f}%")
@@ -235,17 +234,17 @@ class RedTeamResultsDB:
         report.append(f"- **Average Execution Time**: {stats['avg_execution_time_ms']:.2f}ms")
         report.append(f"- **High Confidence Tests**: {stats['high_confidence_tests']}")
 
-        report.append(f"\n## Results by Type\n")
+        report.append("\n## Results by Type\n")
         for result_type, count in stats['by_result'].items():
             percentage = (count / stats['total_tests']) * 100
             report.append(f"- **{result_type}**: {count} ({percentage:.1f}%)")
 
-        report.append(f"\n## Results by Category\n")
+        report.append("\n## Results by Category\n")
         for category, count in sorted(stats['by_category'].items()):
             percentage = (count / stats['total_tests']) * 100
             report.append(f"- **{category}**: {count} ({percentage:.1f}%)")
 
-        report.append(f"\n## Results by Difficulty\n")
+        report.append("\n## Results by Difficulty\n")
         for difficulty, count in sorted(stats['by_difficulty'].items()):
             percentage = (count / stats['total_tests']) * 100
             report.append(f"- **{difficulty}**: {count} ({percentage:.1f}%)")

@@ -7,15 +7,16 @@ Coordinates scenario loading, execution, evaluation, and reporting.
 import json
 from dataclasses import asdict
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 
-from oubliette_dungeon.core.models import (
-    AttackResult, AttackTestResult,
-)
-from oubliette_dungeon.core.loader import ScenarioLoader
-from oubliette_dungeon.core.executor import AttackExecutor
 from oubliette_dungeon.core.evaluator import ResultEvaluator
-from oubliette_dungeon.core.metrics import pass_at_k, avg_turns_to_jailbreak, avg_risk_density
+from oubliette_dungeon.core.executor import AttackExecutor
+from oubliette_dungeon.core.loader import ScenarioLoader
+from oubliette_dungeon.core.metrics import avg_risk_density, avg_turns_to_jailbreak, pass_at_k
+from oubliette_dungeon.core.models import (
+    AttackResult,
+    AttackTestResult,
+)
 
 
 class RedTeamOrchestrator:

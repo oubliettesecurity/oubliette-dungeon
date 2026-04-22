@@ -4,11 +4,11 @@ Mock LLM target for demo mode.
 Simulates an LLM endpoint with pre-programmed responses for common attack patterns.
 """
 
-import re
 import random
+import re
 
 try:
-    from flask import Flask, request, jsonify
+    from flask import Flask, jsonify, request
 except ImportError:
     Flask = None
 

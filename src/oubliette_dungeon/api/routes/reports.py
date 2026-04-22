@@ -5,12 +5,12 @@ Routes:
     POST/GET /api/dungeon/results/<session_id>/pdf - Generate a PDF report
 """
 
-from flask import request, jsonify, Response
+from flask import Response, jsonify
 
 from oubliette_dungeon.api.middleware import (
-    dungeon_bp,
-    _require_api_key,
     _get_results_db,
+    _require_api_key,
+    dungeon_bp,
 )
 
 

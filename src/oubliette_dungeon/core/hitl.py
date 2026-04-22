@@ -34,7 +34,6 @@ from typing import Any, Dict, List, Optional
 
 from oubliette_dungeon.core.models import AttackTestResult
 
-
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------

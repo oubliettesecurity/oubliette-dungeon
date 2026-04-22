@@ -214,8 +214,6 @@ class OSEFReport:
     ) -> "OSEFReport":
         """Build an OSEF report from a list of AttackTestResult objects."""
         from oubliette_dungeon.core.metrics import (
-            avg_risk_density,
-            avg_turns_to_jailbreak,
             pass_at_k,
         )
 
