@@ -202,16 +202,29 @@ class _UnifiedStorageAdapter:
         return self._b.cleanup_old_redteam_sessions(keep_latest)
 
 
+_FLY_IO_ULA = ipaddress.ip_network("fdaa::/16")
+
+
 def _is_ip_safe(addr) -> bool:
     """Check if an IP address is safe (not private/loopback/link-local/reserved).
 
     Handles IPv6-mapped IPv4 addresses (e.g., ::ffff:127.0.0.1).
+
+    Python's ``ipaddress.IPv6Address.is_private`` does NOT cover the RFC 4193
+    ULA range ``fc00::/7``, and in particular the Fly.io 6PN range
+    ``fdaa::/16`` is treated as public. Oubliette deploys on Fly.io, so
+    leaving that range reachable would let an authenticated user pivot to
+    neighbouring apps via 6PN. Block it explicitly.
     """
     ip = ipaddress.ip_address(addr)
     # Handle IPv6-mapped IPv4 (::ffff:x.x.x.x)
     if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
         ip = ip.ipv4_mapped
-    return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved)
+    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+        return False
+    if isinstance(ip, ipaddress.IPv6Address) and ip in _FLY_IO_ULA:
+        return False
+    return True
 
 
 def _resolve_and_check(hostname: str) -> Tuple[bool, str]:

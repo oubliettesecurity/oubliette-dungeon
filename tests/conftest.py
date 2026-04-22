@@ -2,6 +2,14 @@
 Shared test fixtures for oubliette-dungeon.
 """
 
+import os
+
+# Tests intentionally use localhost / private targets; opt in to the
+# "private targets allowed" flag so SSRF validators do not block them.
+# Production callers must not set this env var. See
+# src/oubliette_dungeon/api/middleware.py _validate_target_url.
+os.environ.setdefault("DUNGEON_ALLOW_PRIVATE_TARGETS", "true")
+
 import pytest
 import yaml
 from datetime import datetime

@@ -195,3 +195,61 @@ class TestRedTeamScheduler:
         assert scheduler._running is True
         scheduler.stop()
         assert scheduler._running is False
+
+
+class TestSchedulerSSRF:
+    """CRIT regression: SSRF validators must run on every scheduler path
+    that initiates an outbound request (schedule_run, update_job,
+    _execute_run) -- not just on the REST /execute route."""
+
+    @pytest.fixture
+    def strict_scheduler(self, tmp_path, monkeypatch):
+        """Scheduler with SSRF-allow-private disabled so validators bite."""
+        monkeypatch.setenv("DUNGEON_ALLOW_PRIVATE_TARGETS", "false")
+        schedules_file = tmp_path / "schedules.json"
+        history_file = tmp_path / "history.json"
+        return RedTeamScheduler(
+            schedules_file=str(schedules_file),
+            history_file=str(history_file),
+        )
+
+    def test_schedule_run_blocks_metadata_service(self, strict_scheduler):
+        with pytest.raises(ValueError, match=r"Rejected target_url"):
+            strict_scheduler.schedule_run(
+                name="metadata pivot",
+                cron="0 0 * * *",
+                target_url="http://169.254.169.254/latest/meta-data/",
+            )
+
+    def test_schedule_run_blocks_localhost(self, strict_scheduler):
+        with pytest.raises(ValueError, match=r"Rejected target_url"):
+            strict_scheduler.schedule_run(
+                name="lo pivot",
+                cron="0 0 * * *",
+                target_url="http://localhost:5000/api/chat",
+            )
+
+    def test_update_job_blocks_rebind(self, strict_scheduler, monkeypatch):
+        # Create a job with DUNGEON_ALLOW_PRIVATE_TARGETS=true first
+        monkeypatch.setenv("DUNGEON_ALLOW_PRIVATE_TARGETS", "true")
+        job_id = strict_scheduler.schedule_run(
+            name="legit", cron="0 0 * * *",
+            target_url="https://api.example.com/v1/chat",
+        )
+        # Now tighten the environment and try to update to a forbidden target.
+        monkeypatch.setenv("DUNGEON_ALLOW_PRIVATE_TARGETS", "false")
+        with pytest.raises(ValueError, match=r"Rejected target_url"):
+            strict_scheduler.update_job(
+                job_id, target_url="http://169.254.169.254/latest/meta-data/",
+            )
+
+    def test_is_ip_safe_rejects_fly_io_ula(self):
+        from oubliette_dungeon.api.middleware import _is_ip_safe
+        # fdaa::/16 -- Fly.io 6PN range, not covered by ipaddress.is_private
+        assert _is_ip_safe("fdaa::1") is False
+        assert _is_ip_safe("fdaa:abcd:ef01::dead:beef") is False
+
+    def test_is_ip_safe_accepts_public_ipv6(self):
+        from oubliette_dungeon.api.middleware import _is_ip_safe
+        assert _is_ip_safe("2606:4700:4700::1111") is True  # Cloudflare DNS
+        assert _is_ip_safe("2001:4860:4860::8888") is True  # Google DNS

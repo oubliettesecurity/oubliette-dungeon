@@ -34,6 +34,22 @@ from typing import Optional, Dict, List
 from oubliette_dungeon.core.models import DEFAULT_TARGET_URL
 
 
+def _validate_scheduler_target_url(url):
+    """Validate a target_url at every scheduler entry point (CRIT fix).
+
+    The REST API already validates target_url on /execute, but schedule_run,
+    update_job, and _execute_run did not -- authenticated users could
+    schedule a job against an internal host (e.g. the AWS/GCP/Fly.io
+    metadata service) and the orchestrator would POST attack prompts there
+    and store responses. Validate at every path that could initiate an
+    outbound request.
+    """
+    # Imported here to avoid a circular import (middleware imports storage
+    # which can pull this module in).
+    from oubliette_dungeon.api.middleware import _validate_target_url
+    return _validate_target_url(url)
+
+
 CRON_ALIASES = {
     "@yearly": "0 0 1 1 *",
     "@annually": "0 0 1 1 *",
@@ -172,11 +188,16 @@ class RedTeamScheduler:
         cron_obj = CronExpression(cron)
         next_run = cron_obj.next_run()
 
+        effective_url = target_url or os.getenv("DUNGEON_TARGET_URL", DEFAULT_TARGET_URL)
+        is_safe, error = _validate_scheduler_target_url(effective_url)
+        if not is_safe:
+            raise ValueError(f"Rejected target_url at schedule_run: {error}")
+
         job = {
             "job_id": job_id,
             "name": name,
             "cron": cron,
-            "target_url": target_url or os.getenv("DUNGEON_TARGET_URL", DEFAULT_TARGET_URL),
+            "target_url": effective_url,
             "categories": categories or ["all"],
             "difficulty": difficulty or ["all"],
             "scenarios": scenarios or [],
@@ -219,6 +240,12 @@ class RedTeamScheduler:
             return self._jobs.get(job_id)
 
     def update_job(self, job_id, **updates):
+        # Validate target_url BEFORE taking the lock / mutating state.
+        if "target_url" in updates:
+            is_safe, error = _validate_scheduler_target_url(updates["target_url"])
+            if not is_safe:
+                raise ValueError(f"Rejected target_url at update_job: {error}")
+
         with self._lock:
             job = self._jobs.get(job_id)
             if not job:
@@ -286,6 +313,23 @@ class RedTeamScheduler:
             "status": "running",
             "config": config,
         }
+
+        # CRIT-fix: re-validate target_url at the actual outbound call site.
+        # Persisted jobs may have been created before the validator existed
+        # (or by an older code path that skipped validation). This is the
+        # single choke point through which every scheduled run must pass.
+        target_url = config.get("target_url", "")
+        is_safe, error = _validate_scheduler_target_url(target_url)
+        if not is_safe:
+            result["status"] = "blocked"
+            result["ended_at"] = datetime.now().isoformat()
+            result["error"] = f"Rejected target_url at _execute_run: {error}"
+            with self._lock:
+                self._history.append(result)
+                self._save_history()
+            print(f"[SCHEDULER] BLOCKED run {run_id}: {error}")
+            return
+
         try:
             from oubliette_dungeon.core import RedTeamOrchestrator, _default_scenarios_path
             from oubliette_dungeon.storage import RedTeamResultsDB
