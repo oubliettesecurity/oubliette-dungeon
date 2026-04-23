@@ -8,16 +8,15 @@ All URL prefixes use /api/dungeon/ instead of /api/redteam/.
 
 import functools
 import hmac
-import ipaddress
 import logging
 import os
-import socket
 import threading
 import time
 from typing import Any
-from urllib.parse import urlparse
 
 from flask import Blueprint, Response, jsonify, request
+from oubliette_sec_utils import is_ip_safe as _shared_is_ip_safe
+from oubliette_sec_utils import validate_outbound_url
 
 from oubliette_dungeon.core import (
     ScenarioLoader,
@@ -203,161 +202,42 @@ class _UnifiedStorageAdapter:
         return self._b.cleanup_old_redteam_sessions(keep_latest)
 
 
-_FLY_IO_ULA = ipaddress.ip_network("fdaa::/16")
-
-
 def _is_ip_safe(addr) -> bool:
-    """Check if an IP address is safe (not private/loopback/link-local/reserved).
+    """Return True if ``addr`` is a safe outbound IP literal.
 
-    Handles IPv6-mapped IPv4 addresses (e.g., ::ffff:127.0.0.1).
-
-    Python's ``ipaddress.IPv6Address.is_private`` does NOT cover the RFC 4193
-    ULA range ``fc00::/7``, and in particular the Fly.io 6PN range
-    ``fdaa::/16`` is treated as public. Oubliette deploys on Fly.io, so
-    leaving that range reachable would let an authenticated user pivot to
-    neighbouring apps via 6PN. Block it explicitly.
+    Thin wrapper over :func:`oubliette_sec_utils.is_ip_safe` kept for
+    backward compatibility with existing tests and callers. The upstream
+    helper returns ``False`` for non-IP strings (it does not raise), so
+    callers that previously relied on a ``ValueError`` fallthrough should
+    check ``ipaddress.ip_address`` themselves.
     """
-    ip = ipaddress.ip_address(addr)
-    # Handle IPv6-mapped IPv4 (::ffff:x.x.x.x)
-    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
-        ip = ip.ipv4_mapped
-    if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
-        return False
-    if isinstance(ip, ipaddress.IPv6Address) and ip in _FLY_IO_ULA:
-        return False
-    return True
-
-
-def _resolve_and_check(hostname: str) -> tuple[bool, str]:
-    """Resolve a hostname via DNS and verify all resolved IPs are safe.
-
-    Returns (is_safe, error_message).
-    """
-    try:
-        addrinfos = socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM)
-    except socket.gaierror as e:
-        return False, f"DNS resolution failed for {hostname}: {e}"
-    except Exception as e:
-        return False, f"DNS resolution error for {hostname}: {e}"
-
-    if not addrinfos:
-        return False, f"No DNS results for {hostname}"
-
-    for _family, _type, _proto, _canonname, sockaddr in addrinfos:
-        ip_str = sockaddr[0]
-        try:
-            if not _is_ip_safe(ip_str):
-                return False, f"Hostname {hostname} resolves to private/reserved IP {ip_str}"
-        except ValueError:
-            return False, f"Invalid resolved IP: {ip_str}"
-
-    return True, ""
+    return _shared_is_ip_safe(addr)
 
 
 def _is_safe_webhook_url(url: str) -> bool:
     """Validate a webhook URL to prevent SSRF attacks.
 
-    Blocks:
-    - Non-HTTP(S) schemes
-    - Private/internal IP ranges (RFC 1918, loopback, link-local)
-    - Common internal hostnames
-    - DNS names that resolve to private IPs (rebinding protection)
+    Delegates to :func:`oubliette_sec_utils.validate_outbound_url` which
+    applies the full internal-host / private-IP / DNS-rebinding checklist.
     """
-    try:
-        parsed = urlparse(url)
-    except Exception:
-        return False
-
-    # Only allow http/https
-    if parsed.scheme not in ("http", "https"):
-        return False
-
-    hostname = parsed.hostname
-    if not hostname:
-        return False
-
-    # Block known internal hostnames
-    blocked_hostnames = {
-        "localhost",
-        "localhost.localdomain",
-        "metadata.google.internal",
-        "169.254.169.254",
-    }
-    if hostname.lower() in blocked_hostnames:
-        return False
-
-    # Block obvious internal domain patterns
-    lower = hostname.lower()
-    if lower.endswith((".local", ".internal", ".corp", ".lan")):
-        return False
-
-    # Check if the hostname is an IP literal
-    try:
-        if not _is_ip_safe(hostname):
-            return False
-    except ValueError:
-        pass  # Not an IP literal, continue to DNS resolution
-
-    # DNS resolution check: resolve hostname and verify all IPs are safe
-    is_safe, _error = _resolve_and_check(hostname)
-    return is_safe
+    return validate_outbound_url(url).safe
 
 
 def _validate_target_url(url: str) -> tuple[bool, str]:
     """Validate a target URL to prevent SSRF attacks.
 
-    Similar to _is_safe_webhook_url but returns (is_safe, error_message)
-    for use in API endpoint validation.
-
-    Set DUNGEON_ALLOW_PRIVATE_TARGETS=true to allow private IPs (local dev).
+    Returns ``(is_safe, error_message)`` for use in API endpoint
+    validation. Set ``DUNGEON_ALLOW_PRIVATE_TARGETS=true`` to bypass all
+    checks for local development.
     """
-    # Allow private targets for local development
     if os.getenv("DUNGEON_ALLOW_PRIVATE_TARGETS", "").lower() == "true":
         return True, ""
 
     if not url:
         return False, "target_url is required"
 
-    try:
-        parsed = urlparse(url)
-    except Exception:
-        return False, "Invalid URL format"
-
-    if parsed.scheme not in ("http", "https"):
-        return False, f"Invalid URL scheme: {parsed.scheme}. Only http/https allowed."
-
-    hostname = parsed.hostname
-    if not hostname:
-        return False, "URL has no hostname"
-
-    # Block known internal hostnames
-    blocked_hostnames = {
-        "localhost",
-        "localhost.localdomain",
-        "metadata.google.internal",
-        "169.254.169.254",
-    }
-    if hostname.lower() in blocked_hostnames:
-        return False, f"Blocked internal hostname: {hostname}"
-
-    # Block obvious internal domain patterns
-    lower = hostname.lower()
-    if lower.endswith((".local", ".internal", ".corp", ".lan")):
-        return False, f"Blocked internal domain: {hostname}"
-
-    # Check if the hostname is an IP literal
-    try:
-        if not _is_ip_safe(hostname):
-            return False, f"Blocked private/reserved IP: {hostname}"
-    except ValueError:
-        pass  # Not an IP literal, continue to DNS resolution
-
-    # DNS resolution check
-    is_safe, error = _resolve_and_check(hostname)
-    if not is_safe:
-        return False, error
-
-    return True, ""
+    decision = validate_outbound_url(url)
+    return decision.safe, decision.reason
 
 
 def _require_api_key(f):

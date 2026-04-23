@@ -476,60 +476,9 @@ class RedTeamScheduler:
 
     @staticmethod
     def _is_safe_webhook_url(url: str) -> bool:
-        import ipaddress
-        import socket as _socket
-        from urllib.parse import urlparse
+        from oubliette_sec_utils import validate_outbound_url
 
-        try:
-            parsed = urlparse(url)
-        except Exception:
-            return False
-        if parsed.scheme not in ("http", "https"):
-            return False
-        hostname = parsed.hostname
-        if not hostname:
-            return False
-        blocked = {
-            "localhost",
-            "localhost.localdomain",
-            "metadata.google.internal",
-            "169.254.169.254",
-        }
-        if hostname.lower() in blocked:
-            return False
-        lower = hostname.lower()
-        if lower.endswith((".local", ".internal", ".corp", ".lan")):
-            return False
-
-        def _is_ip_safe(addr_str):
-            ip = ipaddress.ip_address(addr_str)
-            if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped:
-                ip = ip.ipv4_mapped
-            return not (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved)
-
-        # Check if hostname is an IP literal
-        try:
-            if not _is_ip_safe(hostname):
-                return False
-        except ValueError:
-            pass  # Not an IP literal
-
-        # DNS resolution check: resolve and verify all IPs are safe
-        try:
-            addrinfos = _socket.getaddrinfo(hostname, None, _socket.AF_UNSPEC, _socket.SOCK_STREAM)
-            for _family, _type, _proto, _canonname, sockaddr in addrinfos:
-                ip_str = sockaddr[0]
-                try:
-                    if not _is_ip_safe(ip_str):
-                        return False
-                except ValueError:
-                    return False
-        except _socket.gaierror:
-            return False
-        except Exception:
-            return False
-
-        return True
+        return validate_outbound_url(url).safe
 
     def start(self):
         if self._running:
