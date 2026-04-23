@@ -8,7 +8,7 @@ version = "1.0.1"
 description = "Standalone AI Red Team Engine - automated adversarial testing for LLM applications"
 readme = "README.md"
 license = "Apache-2.0"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 authors = [
     {name = "Oubliette Security", email = "hello@oubliettesecurity.com"},
 ]
@@ -19,8 +19,6 @@ classifiers = [
     "Intended Audience :: Information Technology",
     "Topic :: Security",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",

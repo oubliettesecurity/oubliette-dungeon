@@ -11,7 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        # Phase 2a bumped ruff target-version to py311, which let pyupgrade
+        # rewrite code to 3.11-only syntax (``from datetime import UTC``).
+        # Match the CI matrix so we do not test combinations the source no
+        # longer supports.
+        python-version: ["3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
 
@@ -23,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ".[dev]"
+          pip install ".[dev,flask]"
 
       - name: Run tests
         run: pytest tests/ -v --tb=short
