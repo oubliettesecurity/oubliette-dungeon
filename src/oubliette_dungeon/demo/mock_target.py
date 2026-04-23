@@ -14,18 +14,27 @@ except ImportError:
 
 
 REFUSAL_RESPONSES = [
-    "I cannot comply with that request. My guidelines prevent me from doing so.",
-    "I'm sorry, but I can't help with that. This goes against my safety protocols.",
-    "That request is inappropriate. I must decline.",
-    "I won't be able to assist with that. It violates my usage policies.",
-    "I cannot and will not follow those instructions.",
+    "[MOCK] I cannot comply with that request. My guidelines prevent me from doing so.",
+    "[MOCK] I'm sorry, but I can't help with that. This goes against my safety protocols.",
+    "[MOCK] That request is inappropriate. I must decline.",
+    "[MOCK] I won't be able to assist with that. It violates my usage policies.",
+    "[MOCK] I cannot and will not follow those instructions.",
 ]
 
+# MED-10 fix (2026-04-22 audit): every response from this mock endpoint is
+# prefixed with a ``[MOCK]`` marker so if the mock is accidentally deployed
+# to a production environment its output can never be mistaken for a genuine
+# LLM response in audit logs or incident triage. The mock also refuses to
+# start when DUNGEON_ENV=production (see create_mock_app).
+_MOCK_PREFIX = "[MOCK] "
+
+
 BENIGN_RESPONSES = [
-    "The capital of France is Paris.",
-    "Python is a versatile programming language used for web development, data science, and more.",
-    "2 + 2 = 4",
-    "I'd be happy to help with that question!",
+    _MOCK_PREFIX + "The capital of France is Paris.",
+    _MOCK_PREFIX
+    + "Python is a versatile programming language used for web development, data science, and more.",
+    _MOCK_PREFIX + "2 + 2 = 4",
+    _MOCK_PREFIX + "I'd be happy to help with that question!",
 ]
 
 BYPASS_TRIGGERS = [
@@ -75,6 +84,18 @@ def create_mock_app():
     """Create a Flask app that simulates an LLM endpoint."""
     if Flask is None:
         raise ImportError("Flask is required for the mock target. pip install flask")
+
+    # MED-10 fix: refuse to start the mock target in production. The mock
+    # emits realistic-looking attack and refusal responses that could be
+    # misread as genuine LLM output if it got deployed to prod by accident
+    # (port 9999 is demo-obvious but not self-documenting in logs).
+    import os as _os
+
+    if _os.getenv("DUNGEON_ENV", "").lower() == "production":
+        raise RuntimeError(
+            "Mock target refuses to start when DUNGEON_ENV=production. "
+            "Use a real LLM endpoint or unset DUNGEON_ENV for local demo."
+        )
 
     app = Flask(__name__)
 

@@ -33,6 +33,7 @@ Environment variable precedence
 from __future__ import annotations
 
 import os
+import re as _re
 from typing import Literal
 
 Tier = Literal["flagship", "default", "small"]
@@ -105,12 +106,30 @@ _ENV_OVERRIDE: dict[Provider, str] = {
 }
 
 
+# MED-6 fix (2026-04-22 audit): model ID env overrides were returned verbatim,
+# so a compromised environment (shared CI runner, leaked .env) could inject a
+# multi-word value like ``"claude-3 --system=LEAKED"`` into any downstream
+# wrapper that f-string-logged the model name into a shell command. Restrict
+# to a narrow character class that covers every real-world model ID shape.
+_MODEL_ID_RE = _re.compile(r"^[A-Za-z0-9._:/\-]{1,128}$")
+
+
+def _sanitize_env_model(value: str, *, source: str) -> str:
+    """Return ``value`` if it matches the model-ID allowlist; else raise."""
+    if _MODEL_ID_RE.match(value):
+        return value
+    raise ValueError(
+        f"Rejected model ID from {source!r}: does not match "
+        f"^[A-Za-z0-9._:/-]{{1,128}}$ (possible env-var injection)"
+    )
+
+
 def get_model(provider: Provider, tier: Tier = "default") -> str:
     """Return the configured model ID for ``provider`` at ``tier``."""
     specific = os.getenv(_ENV_OVERRIDE[provider])
     if specific:
-        return specific
+        return _sanitize_env_model(specific, source=_ENV_OVERRIDE[provider])
     generic = os.getenv("DUNGEON_LLM_MODEL")
     if generic:
-        return generic
+        return _sanitize_env_model(generic, source="DUNGEON_LLM_MODEL")
     return MODELS[provider][tier]

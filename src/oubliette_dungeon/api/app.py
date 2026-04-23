@@ -16,6 +16,17 @@ def create_app(config=None):
     if config:
         app.config.update(config)
 
+    # MED-8 fix (2026-04-22 audit): on Fly.io (and any PaaS that terminates
+    # TLS in a proxy) ``request.remote_addr`` is the proxy's IP, not the
+    # client's -- so the rate limiter keyed every user into a single bucket
+    # and legitimate users could DoS each other. Enable ProxyFix only when
+    # ``DUNGEON_TRUSTED_PROXY=true`` is set explicitly, so we do not trust
+    # upstream headers on deployments that are NOT behind a proxy.
+    if os.getenv("DUNGEON_TRUSTED_PROXY", "").lower() == "true":
+        from werkzeug.middleware.proxy_fix import ProxyFix
+
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
     # Register the dungeon blueprint
     app.register_blueprint(dungeon_bp)
 
