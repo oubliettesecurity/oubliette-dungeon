@@ -54,13 +54,47 @@ class OfflineExecutor:
         ddil_bandwidth_kbps: int = 0,
     ):
         self.model = model
-        self.ollama_url = ollama_url.rstrip("/")
+        # HIGH fix (2026-04-22 audit): the offline executor previously trusted
+        # an arbitrary `--ollama-url`. That meant the full attack corpus
+        # (scenarios intended for a local model) could be silently redirected
+        # to an attacker-controlled HTTP endpoint and exfiltrated. Restrict
+        # the URL to loopback/localhost by default; operators who need a
+        # remote Ollama (e.g. LAN GPU box) must explicitly opt in via
+        # DUNGEON_ALLOW_REMOTE_OLLAMA=true.
+        self.ollama_url = self._validate_ollama_url(ollama_url).rstrip("/")
         self.system_prompt = system_prompt
         self.timeout = timeout
         self.ddil_latency_ms = ddil_latency_ms
         self.ddil_drop_rate = ddil_drop_rate
         self.ddil_bandwidth_kbps = ddil_bandwidth_kbps
         self._last_meta: dict = {}
+
+    @staticmethod
+    def _validate_ollama_url(url: str) -> str:
+        """Reject non-loopback Ollama URLs unless DUNGEON_ALLOW_REMOTE_OLLAMA=true.
+
+        The Offline executor is built around the invariant that prompts never
+        leave the host. A remote URL breaks that invariant and becomes an
+        attack-corpus exfiltration path. Allowing explicit opt-in keeps the
+        feature available for legitimate LAN / air-gapped deployments where
+        the operator has a separate Ollama host.
+        """
+        import os
+        from urllib.parse import urlparse
+
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError(f"Invalid ollama_url scheme: {parsed.scheme}")
+        host = (parsed.hostname or "").lower()
+        loopback = {"localhost", "127.0.0.1", "::1"}
+        allow_remote = os.getenv("DUNGEON_ALLOW_REMOTE_OLLAMA", "").lower() == "true"
+        if host in loopback or allow_remote:
+            return url
+        raise ValueError(
+            f"ollama_url '{url}' is not loopback. Offline executor refuses to "
+            f"send prompts off-host by default. Set DUNGEON_ALLOW_REMOTE_OLLAMA=true "
+            f"to opt into remote endpoints explicitly."
+        )
 
     def check_availability(self) -> tuple[bool, str]:
         """Check if the local model is available."""

@@ -16,6 +16,7 @@ from oubliette_dungeon.api.middleware import (
 )
 from oubliette_dungeon.core.models import AttackTestResult
 from oubliette_dungeon.core.osef import OSEF_VERSION, OSEFReport
+from oubliette_dungeon.storage.json_file import is_valid_session_id
 
 
 def _build_results_from_session(session_data: dict) -> list[AttackTestResult]:
@@ -72,7 +73,7 @@ def osef_latest():
 def osef_for_session(session_id):
     """Generate an OSEF report for a specific session."""
     # Validate session_id
-    if not session_id.replace("_", "").isalnum():
+    if not is_valid_session_id(session_id):
         return jsonify({"error": "Invalid session ID"}), 400
 
     db = _get_results_db()

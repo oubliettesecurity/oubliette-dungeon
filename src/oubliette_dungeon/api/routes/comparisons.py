@@ -10,6 +10,7 @@ Routes:
 import glob
 import json
 import os
+import secrets
 import threading
 from datetime import UTC, datetime
 
@@ -38,6 +39,28 @@ def _comparisons_dir() -> str:
 def _comparison_path(comparison_id: str) -> str:
     """Return the file path for a comparison report."""
     return os.path.join(_comparisons_dir(), f"comparison_{comparison_id}.json")
+
+
+# HIGH fix (2026-04-22 audit): unbounded disk writes -- every new run created
+# a new file with no cap. An attacker (or a buggy client) could fill the disk
+# by repeatedly invoking /run. Enforce a rolling cap: oldest files roll off
+# when the count exceeds this threshold. Override via DUNGEON_MAX_COMPARISONS.
+_MAX_COMPARISONS_ON_DISK = int(os.getenv("DUNGEON_MAX_COMPARISONS", "200"))
+
+
+def _prune_old_comparisons() -> None:
+    """Delete oldest comparison files once the cap is exceeded."""
+    cdir = _comparisons_dir()
+    pattern = os.path.join(cdir, "comparison_*.json")
+    files = glob.glob(pattern)
+    if len(files) <= _MAX_COMPARISONS_ON_DISK:
+        return
+    files.sort(key=os.path.getmtime)
+    for stale in files[: len(files) - _MAX_COMPARISONS_ON_DISK]:
+        try:
+            os.remove(stale)
+        except OSError:
+            pass
 
 
 @dungeon_bp.route("/api/dungeon/comparisons")
@@ -157,7 +180,12 @@ def run_comparison():
         if not is_safe:
             return jsonify({"error": f"Blocked target URL: {error_msg}"}), 400
 
-    comparison_id = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
+    # HIGH (2026-04-22 audit) fix: the prior ID was just strftime to the
+    # second, so two concurrent requests in the same second collided and the
+    # second run overwrote the first file. Append microsecond and a short
+    # CSPRNG-sourced random suffix to guarantee uniqueness even under load.
+    now = datetime.now(UTC)
+    comparison_id = f"{now.strftime('%Y%m%d_%H%M%S')}_{now.microsecond:06d}_{secrets.token_hex(3)}"
 
     _audit(
         "run_comparison",
@@ -178,6 +206,7 @@ def run_comparison():
     fpath = _comparison_path(comparison_id)
     with open(fpath, "w", encoding="utf-8") as f:
         json.dump(placeholder, f, indent=2, default=str)
+    _prune_old_comparisons()
 
     def _run():
         """Execute the comparison in a background thread."""

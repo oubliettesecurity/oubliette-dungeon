@@ -7,6 +7,7 @@ Routes:
     POST /api/dungeon/execute/category/<cat>    - Execute all in category
 """
 
+import re
 import threading
 
 from flask import jsonify, request
@@ -27,6 +28,16 @@ from oubliette_dungeon.core import (
     DEFAULT_TARGET_URL,
     RedTeamOrchestrator,
 )
+
+# HIGH fix (2026-04-22 audit): scenario_id and category flowed through with no
+# validation and landed in audit logs via f-string concatenation -- an
+# attacker could embed \r\n to fabricate additional audit lines (log forging
+# / CRLF log injection). Validate on a narrow regex before anything else.
+_SAFE_IDENT = re.compile(r"^[A-Za-z0-9_\-]{1,128}$")
+
+
+def _safe_ident(value: str) -> bool:
+    return isinstance(value, str) and bool(_SAFE_IDENT.match(value))
 
 
 @dungeon_bp.route("/api/dungeon/start", methods=["POST"])
@@ -121,6 +132,9 @@ def execute_scenario(scenario_id):
         target_url: Override target URL
         timeout: Override timeout
     """
+    if not _safe_ident(scenario_id):
+        return jsonify({"error": "Invalid scenario_id"}), 400
+
     data = request.get_json(silent=True) or {}
     target_url = data.get("target_url", DEFAULT_TARGET_URL)
     timeout = data.get("timeout", DEFAULT_TIMEOUT)
@@ -162,6 +176,9 @@ def execute_category(category):
     Execute all scenarios in a category.
     Runs in background, returns session_id.
     """
+    if not _safe_ident(category):
+        return jsonify({"error": "Invalid category"}), 400
+
     import oubliette_dungeon.api.middleware as mw
 
     with _session_lock:

@@ -19,9 +19,22 @@ from pathlib import Path
 _SAFE_SESSION_ID = re.compile(r"^[a-zA-Z0-9_\-]{1,128}$")
 
 
+def is_valid_session_id(session_id: str) -> bool:
+    """Canonical session_id validator shared by storage and HTTP routes.
+
+    HIGH fix (2026-04-22 audit): route-level validators used
+    ``session_id.replace("_", "").isalnum()``, which rejected dashes, while
+    storage accepted dashes via the regex above. An attacker could thus
+    create a session via an alternate ingress and have it be unreadable
+    through the main API -- or worse, storage could accept inputs that
+    routes thought they had sanitized. Collapse to a single definition.
+    """
+    return isinstance(session_id, str) and bool(_SAFE_SESSION_ID.match(session_id))
+
+
 def _validate_session_id(session_id: str) -> None:
     """Reject session IDs that could cause path traversal."""
-    if not _SAFE_SESSION_ID.match(session_id):
+    if not is_valid_session_id(session_id):
         raise ValueError("Invalid session_id: must be alphanumeric/dash/underscore, 1-128 chars")
 
 

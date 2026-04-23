@@ -17,6 +17,7 @@ from oubliette_dungeon.api.middleware import (
     _session_lock,
     dungeon_bp,
 )
+from oubliette_dungeon.storage.json_file import is_valid_session_id
 
 
 @dungeon_bp.route("/api/dungeon/status")
@@ -65,7 +66,7 @@ def latest_session():
 def get_results(session_id):
     """Get results for a specific session."""
     # Validate session_id
-    if not session_id.replace("_", "").isalnum():
+    if not is_valid_session_id(session_id):
         return jsonify({"error": "Invalid session ID"}), 400
 
     db = _get_results_db()
@@ -79,7 +80,7 @@ def get_results(session_id):
 @_require_api_key
 def get_summary(session_id):
     """Get summary statistics for a session."""
-    if not session_id.replace("_", "").isalnum():
+    if not is_valid_session_id(session_id):
         return jsonify({"error": "Invalid session ID"}), 400
 
     db = _get_results_db()

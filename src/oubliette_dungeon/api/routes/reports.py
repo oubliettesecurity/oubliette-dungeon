@@ -12,13 +12,14 @@ from oubliette_dungeon.api.middleware import (
     _require_api_key,
     dungeon_bp,
 )
+from oubliette_dungeon.storage.json_file import is_valid_session_id
 
 
 @dungeon_bp.route("/api/dungeon/results/<session_id>/pdf", methods=["POST", "GET"])
 @_require_api_key
 def export_pdf(session_id):
     """Generate a PDF report for a red team session."""
-    if not session_id.replace("_", "").isalnum():
+    if not is_valid_session_id(session_id):
         return jsonify({"error": "Invalid session ID"}), 400
 
     try:

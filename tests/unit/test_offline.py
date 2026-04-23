@@ -81,9 +81,20 @@ class TestOfflineExecutorInit:
         assert ddil_executor.ddil_latency_ms == 100
         assert ddil_executor.ddil_bandwidth_kbps == 10
 
-    def test_custom_ollama_url(self):
-        exec = OfflineExecutor(ollama_url="http://custom:9999/")
-        assert exec.ollama_url == "http://custom:9999"
+    def test_custom_ollama_url_loopback_only(self):
+        # Loopback-only by default after the 2026-04-22 HIGH fix.
+        e = OfflineExecutor(ollama_url="http://127.0.0.1:9999/")
+        assert e.ollama_url == "http://127.0.0.1:9999"
+
+    def test_remote_ollama_url_rejected_by_default(self):
+        import pytest
+        with pytest.raises(ValueError, match="not loopback"):
+            OfflineExecutor(ollama_url="http://custom:9999/")
+
+    def test_remote_ollama_url_allowed_with_opt_in(self, monkeypatch):
+        monkeypatch.setenv("DUNGEON_ALLOW_REMOTE_OLLAMA", "true")
+        e = OfflineExecutor(ollama_url="http://custom:9999/")
+        assert e.ollama_url == "http://custom:9999"
 
 
 # ---------------------------------------------------------------------------
