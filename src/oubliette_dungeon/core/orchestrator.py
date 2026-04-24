@@ -25,13 +25,39 @@ class RedTeamOrchestrator:
     """
 
     def __init__(
-        self, target_url: str, scenario_file: str | None = None, results_db=None, timeout: int = 30
+        self,
+        target_url: str,
+        scenario_file: str | None = None,
+        results_db=None,
+        timeout: int = 30,
+        caller_key_hint: str | None = None,
     ):
         self.loader = ScenarioLoader(scenario_file)
         self.executor = AttackExecutor(target_url, timeout)
         self.evaluator = ResultEvaluator()
         self.results_db = results_db
         self.current_session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        # MED-11: remember which API key started this session so save_result
+        # can scope it in storage. None preserves pre-MED-11 behaviour (no
+        # hint = global visibility), required for CLI + test paths that
+        # don't run through the API auth layer.
+        self.caller_key_hint = caller_key_hint
+
+    def _save(self, result) -> None:
+        """Persist a result through whichever backend interface exists.
+
+        Older backends accept (result, session_id); MED-11-aware backends
+        accept an additional caller_key_hint kwarg. We pass it when the
+        signature supports it and fall back quietly otherwise so a CLI
+        with a legacy backend still works.
+        """
+        try:
+            self.results_db.save_result(
+                result, self.current_session_id, caller_key_hint=self.caller_key_hint
+            )
+        except TypeError:
+            # Legacy signature without caller_key_hint
+            self.results_db.save_result(result, self.current_session_id)
 
     def run_single_scenario(self, scenario_id: str) -> AttackTestResult:
         scenario = self.loader.get_by_id(scenario_id)
@@ -46,7 +72,7 @@ class RedTeamOrchestrator:
         result.execution_time_ms = elapsed_ms
 
         if self.results_db:
-            self.results_db.save_result(result, self.current_session_id)
+            self._save(result)
 
         print(f"  Result: {result.result} (confidence: {result.confidence:.2f})")
         print(f"  Execution time: {elapsed_ms:.2f}ms")
@@ -86,7 +112,7 @@ class RedTeamOrchestrator:
                 results.append(error_result)
 
                 if self.results_db:
-                    self.results_db.save_result(error_result, self.current_session_id)
+                    self._save(error_result)
 
         print("\n" + "=" * 70)
         print(f"Testing complete! {len(results)} scenarios executed.")

@@ -71,7 +71,22 @@ class RedTeamResultsDB:
             json.dump(self.index, f, indent=2)
         _restrict_permissions(self.index_file)
 
-    def save_result(self, result, session_id: str) -> None:
+    def save_result(
+        self,
+        result,
+        session_id: str,
+        caller_key_hint: str | None = None,
+    ) -> None:
+        """Save a single attack result.
+
+        MED-11 fix (2026-04-22 audit): when the caller's API-key hint is
+        supplied we persist it on the session record at first save, so
+        subsequent reads can be scoped to the creating key. The hint is
+        never changed after initial write -- key rotation produces a new
+        session. None (dev-mode, unauthenticated) is recorded as the
+        sentinel ``"__anon__"`` so anonymous reads don't leak authed
+        sessions.
+        """
         _validate_session_id(session_id)
         if hasattr(result, "__dict__"):
             result_dict = vars(result)
@@ -87,7 +102,11 @@ class RedTeamResultsDB:
                 "session_id": session_id,
                 "started_at": datetime.now().isoformat(),
                 "results": [],
+                "created_by_key_hint": caller_key_hint or "__anon__",
             }
+
+        # Only stamp the hint on first write; never overwrite a prior value.
+        session_data.setdefault("created_by_key_hint", caller_key_hint or "__anon__")
 
         session_data["results"].append(result_dict)
         session_data["updated_at"] = datetime.now().isoformat()
@@ -102,30 +121,56 @@ class RedTeamResultsDB:
                 "file": str(session_file),
                 "started_at": session_data["started_at"],
                 "total_tests": 0,
+                "created_by_key_hint": session_data["created_by_key_hint"],
             }
 
         self.index["sessions"][session_id]["updated_at"] = session_data["updated_at"]
         self.index["sessions"][session_id]["total_tests"] = session_data["total_tests"]
+        # Backfill the hint on the index for records that pre-date MED-11.
+        self.index["sessions"][session_id].setdefault(
+            "created_by_key_hint", session_data["created_by_key_hint"]
+        )
         self._save_index()
 
-    def get_session(self, session_id: str) -> dict | None:
+    # ------------------------------------------------------------------
+    # Read helpers -- accept an optional caller_key_hint for scoping.
+    # ``None`` preserves the pre-MED-11 behaviour (return everything); a
+    # concrete hint restricts reads to sessions authored by that key.
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _owned_by(session_data: dict, caller_key_hint: str | None) -> bool:
+        if caller_key_hint is None:
+            return True
+        return session_data.get("created_by_key_hint") == caller_key_hint
+
+    def get_session(
+        self, session_id: str, caller_key_hint: str | None = None
+    ) -> dict | None:
         _validate_session_id(session_id)
         session_file = self.db_dir / f"{session_id}.json"
-        if session_file.exists():
-            with open(session_file) as f:
-                return json.load(f)
-        return None
+        if not session_file.exists():
+            return None
+        with open(session_file) as f:
+            session_data = json.load(f)
+        if not self._owned_by(session_data, caller_key_hint):
+            return None
+        return session_data
 
-    def list_sessions(self) -> list[dict]:
+    def list_sessions(self, caller_key_hint: str | None = None) -> list[dict]:
         sessions = []
         for session_id, meta in self.index["sessions"].items():
+            if caller_key_hint is not None and meta.get("created_by_key_hint") != caller_key_hint:
+                continue
             sessions.append({"session_id": session_id, **meta})
         return sorted(sessions, key=lambda x: x["started_at"], reverse=True)
 
-    def get_latest_session(self) -> dict | None:
-        sessions = self.list_sessions()
+    def get_latest_session(self, caller_key_hint: str | None = None) -> dict | None:
+        sessions = self.list_sessions(caller_key_hint=caller_key_hint)
         if sessions:
-            return self.get_session(sessions[0]["session_id"])
+            return self.get_session(
+                sessions[0]["session_id"], caller_key_hint=caller_key_hint
+            )
         return None
 
     def query_by_category(self, category: str, session_id: str | None = None) -> list[dict]:

@@ -9,7 +9,7 @@ Routes:
     GET  /api/dungeon/results/<session>/summary - Get session summary
 """
 
-from flask import jsonify
+from flask import g, jsonify
 
 from oubliette_dungeon.api.middleware import (
     _get_results_db,
@@ -36,12 +36,18 @@ def session_status():
     )
 
 
+def _caller_hint():
+    """Pull the hint stashed by _require_api_key; fall back to None to
+    preserve pre-MED-11 behaviour on routes that haven't been updated."""
+    return getattr(g, "caller_key_hint", None)
+
+
 @dungeon_bp.route("/api/dungeon/sessions")
 @_require_api_key
 def list_sessions():
-    """List all test sessions."""
+    """List all test sessions. Scoped to the caller's API key (MED-11)."""
     db = _get_results_db()
-    sessions = db.list_sessions()
+    sessions = db.list_sessions(caller_key_hint=_caller_hint())
     return jsonify(
         {
             "sessions": sessions,
@@ -53,9 +59,9 @@ def list_sessions():
 @dungeon_bp.route("/api/dungeon/sessions/latest")
 @_require_api_key
 def latest_session():
-    """Get the latest session results."""
+    """Get the latest session results. Scoped to the caller's API key."""
     db = _get_results_db()
-    session = db.get_latest_session()
+    session = db.get_latest_session(caller_key_hint=_caller_hint())
     if not session:
         return jsonify({"error": "No sessions found"}), 404
     return jsonify(session)
@@ -64,14 +70,16 @@ def latest_session():
 @dungeon_bp.route("/api/dungeon/results/<session_id>")
 @_require_api_key
 def get_results(session_id):
-    """Get results for a specific session."""
+    """Get results for a specific session. Scoped to the caller's API key."""
     # Validate session_id
     if not is_valid_session_id(session_id):
         return jsonify({"error": "Invalid session ID"}), 400
 
     db = _get_results_db()
-    session = db.get_session(session_id)
+    session = db.get_session(session_id, caller_key_hint=_caller_hint())
     if not session:
+        # Return 404 for both "doesn't exist" and "exists but not yours" --
+        # do not disclose the existence of another caller's sessions.
         return jsonify({"error": f"Session not found: {session_id}"}), 404
     return jsonify(session)
 
@@ -79,11 +87,16 @@ def get_results(session_id):
 @dungeon_bp.route("/api/dungeon/results/<session_id>/summary")
 @_require_api_key
 def get_summary(session_id):
-    """Get summary statistics for a session."""
+    """Get summary statistics for a session. Scoped to the caller's API key."""
     if not is_valid_session_id(session_id):
         return jsonify({"error": "Invalid session ID"}), 400
 
     db = _get_results_db()
+    # Verify ownership first -- get_statistics doesn't know about key hints,
+    # so we gate via get_session to avoid disclosing another caller's stats.
+    session = db.get_session(session_id, caller_key_hint=_caller_hint())
+    if not session:
+        return jsonify({"error": f"Session not found: {session_id}"}), 404
     stats = db.get_statistics(session_id)
     if "error" in stats:
         return jsonify(stats), 404

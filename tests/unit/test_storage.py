@@ -475,3 +475,81 @@ class TestStorageIntegration:
         with patch('builtins.print'):
             deleted = db.cleanup_old_sessions(keep_latest=2)
         assert deleted == 1
+
+
+class TestPerCallerScoping:
+    """MED-11 regression (2026-04-22 audit): session reads must be scoped
+    to the creating caller's API-key hint. Without scoping, once Dungeon
+    goes multi-tenant (a stated product goal), any API-key holder would
+    see every other tenant's attack sessions -- classic IDOR."""
+
+    def test_save_stamps_hint_on_first_write(self, temp_db_dir, sample_result):
+        db = RedTeamResultsDB(temp_db_dir)
+        db.save_result(sample_result, 'session_a', caller_key_hint='hintA')
+        session = db.get_session('session_a')
+        assert session['created_by_key_hint'] == 'hintA'
+
+    def test_subsequent_saves_do_not_change_hint(self, temp_db_dir, sample_result):
+        db = RedTeamResultsDB(temp_db_dir)
+        db.save_result(sample_result, 'session_a', caller_key_hint='hintA')
+        # Attacker tries to reassign ownership on a later write -- must not succeed.
+        db.save_result(sample_result, 'session_a', caller_key_hint='hintB')
+        session = db.get_session('session_a')
+        assert session['created_by_key_hint'] == 'hintA'
+
+    def test_get_session_scoped_to_caller(self, temp_db_dir, sample_result):
+        db = RedTeamResultsDB(temp_db_dir)
+        db.save_result(sample_result, 'session_a', caller_key_hint='hintA')
+        db.save_result(sample_result, 'session_b', caller_key_hint='hintB')
+
+        # Caller A sees their own session
+        assert db.get_session('session_a', caller_key_hint='hintA') is not None
+        # Caller A does NOT see session B -- returns None, matches "not found"
+        assert db.get_session('session_b', caller_key_hint='hintA') is None
+
+    def test_list_sessions_scoped_to_caller(self, temp_db_dir, sample_result):
+        db = RedTeamResultsDB(temp_db_dir)
+        db.save_result(sample_result, 'session_a', caller_key_hint='hintA')
+        db.save_result(sample_result, 'session_b', caller_key_hint='hintB')
+        db.save_result(sample_result, 'session_c', caller_key_hint='hintA')
+
+        ids_a = {s['session_id'] for s in db.list_sessions(caller_key_hint='hintA')}
+        ids_b = {s['session_id'] for s in db.list_sessions(caller_key_hint='hintB')}
+        assert ids_a == {'session_a', 'session_c'}
+        assert ids_b == {'session_b'}
+
+    def test_unscoped_read_still_returns_everything(self, temp_db_dir, sample_result):
+        """Backwards-compat: CLI and test paths that omit caller_key_hint
+        must continue to see all sessions."""
+        db = RedTeamResultsDB(temp_db_dir)
+        db.save_result(sample_result, 'session_a', caller_key_hint='hintA')
+        db.save_result(sample_result, 'session_b', caller_key_hint='hintB')
+
+        assert db.get_session('session_a') is not None
+        assert db.get_session('session_b') is not None
+        assert len(db.list_sessions()) == 2
+
+    def test_get_latest_session_scoped(self, temp_db_dir, sample_result):
+        db = RedTeamResultsDB(temp_db_dir)
+        db.save_result(sample_result, 'session_old', caller_key_hint='hintA')
+        import time
+
+        time.sleep(0.01)
+        db.save_result(sample_result, 'session_new', caller_key_hint='hintB')
+
+        # Globally latest is session_new (hintB); but hintA should only see session_old.
+        latest_a = db.get_latest_session(caller_key_hint='hintA')
+        latest_b = db.get_latest_session(caller_key_hint='hintB')
+        assert latest_a['session_id'] == 'session_old'
+        assert latest_b['session_id'] == 'session_new'
+
+    def test_anonymous_save_stamps_anon_sentinel(self, temp_db_dir, sample_result):
+        db = RedTeamResultsDB(temp_db_dir)
+        db.save_result(sample_result, 'anon_session', caller_key_hint=None)
+        session = db.get_session('anon_session')
+        assert session['created_by_key_hint'] == '__anon__'
+        # Anonymous caller only sees anonymous sessions, not authed ones.
+        db.save_result(sample_result, 'authed_session', caller_key_hint='hintA')
+        ids = {s['session_id'] for s in db.list_sessions(caller_key_hint='__anon__')}
+        assert 'anon_session' in ids
+        assert 'authed_session' not in ids

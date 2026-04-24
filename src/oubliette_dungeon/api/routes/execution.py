@@ -10,7 +10,7 @@ Routes:
 import re
 import threading
 
-from flask import jsonify, request
+from flask import g, jsonify, request
 
 from oubliette_dungeon.api.middleware import (
     DEFAULT_TIMEOUT,
@@ -81,6 +81,7 @@ def start_session():
         target_url=target_url,
         results_db=results_db,
         timeout=timeout,
+        caller_key_hint=getattr(g, "caller_key_hint", None),
     )
     session_id = orchestrator.current_session_id
 
@@ -152,6 +153,7 @@ def execute_scenario(scenario_id):
         target_url=target_url,
         results_db=results_db,
         timeout=timeout,
+        caller_key_hint=getattr(g, "caller_key_hint", None),
     )
 
     try:
@@ -205,6 +207,7 @@ def execute_category(category):
         target_url=target_url,
         results_db=results_db,
         timeout=timeout,
+        caller_key_hint=getattr(g, "caller_key_hint", None),
     )
     session_id = orchestrator.current_session_id
 

@@ -7,6 +7,7 @@ All URL prefixes use /api/dungeon/ instead of /api/redteam/.
 """
 
 import functools
+import hashlib
 import hmac
 import logging
 import os
@@ -14,7 +15,7 @@ import threading
 import time
 from typing import Any
 
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, Response, g, jsonify, request
 from oubliette_sec_utils import is_ip_safe as _shared_is_ip_safe
 from oubliette_sec_utils import validate_outbound_url
 
@@ -175,22 +176,35 @@ class _UnifiedStorageAdapter:
     def __init__(self, backend):
         self._b = backend
 
-    def save_result(self, result, session_id):
-        self._b.save_redteam_result(
-            result if isinstance(result, dict) else vars(result), session_id
-        )
+    def save_result(self, result, session_id, caller_key_hint=None):
+        payload = result if isinstance(result, dict) else vars(result)
+        # The unified backend does not expose a caller_key_hint arg yet.
+        # Stash the hint on the payload so a future backend migration
+        # (multi-tenant SQL) can pull it off the record instead of a new
+        # signature.
+        if caller_key_hint is not None:
+            payload = {**payload, "_caller_key_hint": caller_key_hint}
+        self._b.save_redteam_result(payload, session_id)
 
-    def get_session(self, session_id):
-        return self._b.get_redteam_session(session_id)
+    def get_session(self, session_id, caller_key_hint=None):
+        data = self._b.get_redteam_session(session_id)
+        if data is None:
+            return None
+        if caller_key_hint is not None and data.get("created_by_key_hint") != caller_key_hint:
+            return None
+        return data
 
-    def list_sessions(self):
-        return self._b.list_redteam_sessions()
-
-    def get_latest_session(self):
+    def list_sessions(self, caller_key_hint=None):
         sessions = self._b.list_redteam_sessions()
+        if caller_key_hint is None:
+            return sessions
+        return [s for s in sessions if s.get("created_by_key_hint") == caller_key_hint]
+
+    def get_latest_session(self, caller_key_hint=None):
+        sessions = self.list_sessions(caller_key_hint=caller_key_hint)
         if not sessions:
             return None
-        return self._b.get_redteam_session(sessions[0]["session_id"])
+        return self.get_session(sessions[0]["session_id"], caller_key_hint=caller_key_hint)
 
     def get_statistics(self, session_id=None):
         return self._b.get_redteam_statistics(session_id)
@@ -240,12 +254,47 @@ def _validate_target_url(url: str) -> tuple[bool, str]:
     return decision.safe, decision.reason
 
 
+# Per-process salt for caller-key hints. Rotating this is equivalent to
+# invalidating every recorded ``created_by_key_hint`` (sessions become
+# orphan-owned). Read from an env var so a persistent deployment can pin
+# it; otherwise generate one at import so single-process test runs stay
+# internally consistent.
+_CALLER_HINT_SALT = os.getenv("DUNGEON_CALLER_HINT_SALT") or os.urandom(32).hex()
+
+
+def _caller_key_hint() -> str:
+    """Stable hint identifying the caller of the current request.
+
+    Returns an HMAC-based hint of the presented ``X-API-Key``. Two
+    requests carrying the same key get the same hint; the hint is not
+    reversible to the key (pepper + SHA-256 truncation) so leaking it
+    via logs / session index is safe. Unauthenticated requests (dev
+    mode only) return the sentinel ``"__anon__"``.
+
+    MED-11 fix (2026-04-22 audit): the storage layer keys every session
+    on this hint so list/get/report reads only surface sessions authored
+    by the calling key. Forward-compat with the multi-tenant direction:
+    today there's a single shared API key so all hints collapse to one
+    value, but the scoping is in place for when that changes.
+    """
+    key = request.headers.get("X-API-Key", "") if request else ""
+    if not key:
+        return "__anon__"
+    # HMAC-SHA256 truncated to 16 hex chars is plenty for a session tag;
+    # the full digest would bloat every index row.
+    digest = hmac.new(_CALLER_HINT_SALT.encode(), key.encode(), hashlib.sha256).hexdigest()
+    return digest[:16]
+
+
 def _require_api_key(f):
     """Require API key authentication.
 
     When OUBLIETTE_API_KEY is not set:
     - In development (FLASK_ENV=development): allow unauthenticated access
     - In production: return 401 with helpful error message
+
+    On success, stashes the caller's key hint on ``flask.g.caller_key_hint``
+    so downstream routes can scope storage reads to the authoring key.
     """
 
     @functools.wraps(f)
@@ -254,6 +303,7 @@ def _require_api_key(f):
         if not api_key:
             flask_env = os.getenv("FLASK_ENV", "production")
             if flask_env == "development":
+                g.caller_key_hint = _caller_key_hint()
                 return f(*args, **kwargs)
             return jsonify(
                 {
@@ -263,6 +313,7 @@ def _require_api_key(f):
         key = request.headers.get("X-API-Key", "")
         if not key or not hmac.compare_digest(key.encode(), api_key.encode()):
             return jsonify({"error": "Unauthorized"}), 401
+        g.caller_key_hint = _caller_key_hint()
         return f(*args, **kwargs)
 
     return decorated
