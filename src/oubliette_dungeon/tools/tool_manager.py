@@ -5,6 +5,8 @@ Discovers available adapters, provides a single interface for the API
 layer to list, select, and run tools, and optionally persists results
 to the existing RedTeamResultsDB.
 """
+from typing import Any
+
 
 import threading
 from datetime import datetime
@@ -48,7 +50,7 @@ class ToolManager:
 
     # -- Public API ----------------------------------------------------------
 
-    def list_tools(self) -> list[dict]:
+    def list_tools(self) -> list[dict[str, Any]]:
         """Return metadata for every discovered adapter.
 
         Returns:
@@ -173,7 +175,7 @@ class ToolManager:
     def compare_results(
         self,
         all_results: dict[str, list[TestResult]],
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Generate a comparison summary across tools.
 
         Args:
@@ -182,7 +184,7 @@ class ToolManager:
         Returns:
             Dict with per-tool stats and overall comparison.
         """
-        comparison: dict = {"tools": {}, "summary": {}}
+        comparison: dict[str, Any] = {"tools": {}, "summary": {}}
 
         for tool_name, results in all_results.items():
             total = len(results)

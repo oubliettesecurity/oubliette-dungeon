@@ -17,6 +17,8 @@ Security hardening applied per audit (aix_framework_security_audit.md):
     - Credentials via env vars, never CLI args
     - All AIX output treated as untrusted
 """
+from typing import Any
+
 
 import asyncio
 import json
@@ -183,7 +185,7 @@ class AixAdapter(RedTeamToolAdapter):
     def is_available(self) -> bool:
         return _check_aix()
 
-    def get_capabilities(self) -> dict:
+    def get_capabilities(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "version": self.version,
@@ -587,7 +589,7 @@ class AixAdapter(RedTeamToolAdapter):
 
         return results
 
-    def get_payloads(self, module_name: str) -> list[dict]:
+    def get_payloads(self, module_name: str) -> list[dict[str, Any]]:
         """Load AIX's built-in payloads for a module.
 
         Useful for extracting attack prompts to use in campaigns
@@ -697,7 +699,7 @@ class AixAdapter(RedTeamToolAdapter):
         blocked: bool,
         ml_score: float | None,
         llm_verdict: str | None,
-    ) -> tuple:
+    ) -> tuple[Any, ...]:
         """Map endpoint metadata to (AttackResult, confidence)."""
         if blocked:
             return AttackResult.SUCCESS_DETECTED, 0.95

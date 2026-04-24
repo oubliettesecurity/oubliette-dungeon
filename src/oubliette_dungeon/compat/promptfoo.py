@@ -50,7 +50,7 @@ PROVIDER_MAP: dict[str, dict[str, str]] = {
 # ---------------------------------------------------------------------------
 
 
-def _assertion_to_bypass_indicators(assertion: dict) -> list[str]:
+def _assertion_to_bypass_indicators(assertion: dict[str, Any]) -> list[str]:
     """Convert a single Promptfoo assertion to bypass indicator strings."""
     atype = assertion.get("type", "")
     value = assertion.get("value", "")
@@ -68,7 +68,7 @@ def _assertion_to_bypass_indicators(assertion: dict) -> list[str]:
     return []
 
 
-def _assertion_to_description(assertion: dict) -> str:
+def _assertion_to_description(assertion: dict[str, Any]) -> str:
     """Extract human-readable description from an assertion."""
     atype = assertion.get("type", "")
     value = assertion.get("value", "")
@@ -94,7 +94,7 @@ def _assertion_to_description(assertion: dict) -> str:
     return f"{atype}: {str(value)[:80]}"
 
 
-def _infer_category(prompt_text: str, assertions: list[dict]) -> str:
+def _infer_category(prompt_text: str, assertions: list[dict[str, Any]]) -> str:
     """Heuristic category assignment from prompt content and assertions."""
     text = prompt_text.lower()
 
@@ -172,7 +172,7 @@ class PromptfooImporter:
         config = yaml.safe_load(yaml_string) or {}
         return self.import_dict(config)
 
-    def import_dict(self, config: dict) -> list[AttackScenario]:
+    def import_dict(self, config: dict[str, Any]) -> list[AttackScenario]:
         """Convert a parsed Promptfoo config dict to Dungeon scenarios.
 
         Args:

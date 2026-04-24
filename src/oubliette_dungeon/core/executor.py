@@ -3,6 +3,8 @@ Attack executor for Oubliette Dungeon.
 
 Executes attack scenarios against target LLM endpoints.
 """
+from typing import Any
+
 
 import time
 
@@ -100,5 +102,5 @@ class AttackExecutor:
             response, elapsed_ms = self.execute_single_turn(scenario)
             return response, elapsed_ms, False
 
-    def get_last_meta(self) -> dict:
+    def get_last_meta(self) -> dict[str, Any]:
         return getattr(self, "_last_meta", {})

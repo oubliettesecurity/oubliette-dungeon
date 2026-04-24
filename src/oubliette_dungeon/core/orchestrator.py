@@ -3,6 +3,8 @@ Red Team Orchestrator for Oubliette Dungeon.
 
 Coordinates scenario loading, execution, evaluation, and reporting.
 """
+from typing import Any
+
 
 import json
 from dataclasses import asdict
@@ -176,7 +178,7 @@ class RedTeamOrchestrator:
 
         return new_results
 
-    def generate_summary(self, results: list[AttackTestResult]) -> dict:
+    def generate_summary(self, results: list[AttackTestResult]) -> dict[str, Any]:
         if not results:
             return {"error": "No results to summarize"}
 
@@ -231,7 +233,7 @@ class RedTeamOrchestrator:
 
         return summary
 
-    def export_benchmark(self, results: list[AttackTestResult], output_path: str) -> dict:
+    def export_benchmark(self, results: list[AttackTestResult], output_path: str) -> dict[str, Any]:
         summary = self.generate_summary(results)
         report = {
             "schema_version": "1.0",

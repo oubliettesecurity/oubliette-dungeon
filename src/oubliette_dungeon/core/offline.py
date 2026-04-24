@@ -19,6 +19,8 @@ Usage::
         ddil_drop_rate=0.1,
     )
 """
+from typing import Any
+
 
 import random
 import time
@@ -67,7 +69,7 @@ class OfflineExecutor:
         self.ddil_latency_ms = ddil_latency_ms
         self.ddil_drop_rate = ddil_drop_rate
         self.ddil_bandwidth_kbps = ddil_bandwidth_kbps
-        self._last_meta: dict = {}
+        self._last_meta: dict[str, Any] = {}
 
     @staticmethod
     def _validate_ollama_url(url: str) -> str:
@@ -192,7 +194,7 @@ class OfflineExecutor:
             raise ValueError(f"Scenario {scenario.id} has no multi-turn prompts")
 
         responses = []
-        context: list[dict] = []
+        context: list[dict[str, Any]] = []
         start_time = time.time()
 
         for prompt in scenario.multi_turn_prompts:
@@ -243,6 +245,6 @@ class OfflineExecutor:
             response, elapsed_ms = self.execute_single_turn(scenario)
             return response, elapsed_ms, False
 
-    def get_last_meta(self) -> dict:
+    def get_last_meta(self) -> dict[str, Any]:
         """Return metadata from the last execution."""
         return self._last_meta

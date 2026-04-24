@@ -3,6 +3,8 @@ Core data models for Oubliette Dungeon.
 
 Defines enums, dataclasses, and constants shared across the engine.
 """
+from typing import Any
+
 
 import os
 from dataclasses import dataclass
@@ -61,7 +63,7 @@ class AttackScenario:
     success_criteria: str = ""
     bypass_indicators: list[str] = None
     safe_indicators: list[str] = None
-    metadata: dict = None
+    metadata: dict[str, Any] = None
 
     def __post_init__(self):
         if self.bypass_indicators is None:

@@ -8,6 +8,8 @@ scan results into TestResult objects.  Degrades gracefully when the
 Key class:
     DeepTeamAdapter - RedTeamToolAdapter wrapping deepteam.red_team().
 """
+from typing import Any
+
 
 import time
 from collections.abc import Callable
@@ -97,7 +99,7 @@ class DeepTeamAdapter(RedTeamToolAdapter):
     def is_available(self) -> bool:
         return _check_deepteam()
 
-    def get_capabilities(self) -> dict:
+    def get_capabilities(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "version": self.version,

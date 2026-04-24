@@ -10,6 +10,8 @@ Key classes:
     OubliettePromptTarget  - PyRIT PromptTarget backed by our /api/chat endpoint.
     PyRITAdapter           - RedTeamToolAdapter wrapping PyRIT orchestrators.
 """
+from typing import Any
+
 
 import asyncio
 import json
@@ -61,7 +63,7 @@ class OubliettePromptTarget:
 
     # -- Synchronous helper used by both PyRIT async path and standalone ---
 
-    def _send(self, text: str) -> dict:
+    def _send(self, text: str) -> dict[str, Any]:
         """POST a prompt and return the parsed JSON body."""
         resp = self._session.post(
             self.target_url,
@@ -139,7 +141,7 @@ class PyRITAdapter(RedTeamToolAdapter):
     def is_available(self) -> bool:
         return _check_pyrit()
 
-    def get_capabilities(self) -> dict:
+    def get_capabilities(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "version": self.version,
@@ -475,7 +477,7 @@ class PyRITAdapter(RedTeamToolAdapter):
         blocked: bool,
         ml_score: float | None,
         llm_verdict: str | None,
-    ) -> tuple:
+    ) -> tuple[Any, ...]:
         """Map endpoint metadata to (AttackResult, confidence)."""
         if blocked:
             return AttackResult.SUCCESS_DETECTED, 0.95

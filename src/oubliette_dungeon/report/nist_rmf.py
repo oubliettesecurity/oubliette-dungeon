@@ -14,6 +14,8 @@ Functions:
     MEASURE - Analysis & monitoring of AI risks
     MANAGE  - Prioritization & treatment of AI risks
 """
+from typing import Any
+
 
 from datetime import datetime
 
@@ -310,7 +312,7 @@ class NISTRMFReport:
     def generate(
         self,
         scenarios: list[AttackScenario],
-        results: list[dict] | None = None,
+        results: list[dict[str, Any]] | None = None,
         session_id: str | None = None,
         organization: str = "Oubliette Security",
     ) -> str:
@@ -426,7 +428,7 @@ class NISTRMFReport:
     def _compute_function_stats(
         self,
         mapping: dict[str, dict[str, list[AttackScenario]]],
-        results: list[dict] | None,
+        results: list[dict[str, Any]] | None,
     ) -> dict[str, dict]:
         """Compute per-function coverage statistics."""
         stats: dict[str, dict] = {}
@@ -461,7 +463,7 @@ class NISTRMFReport:
         self,
         func_name: str,
         mapping: dict[str, dict[str, list[AttackScenario]]],
-        results: list[dict] | None,
+        results: list[dict[str, Any]] | None,
     ) -> list[str]:
         """Generate markdown section for one RMF function."""
         lines: list[str] = []
@@ -506,7 +508,7 @@ class NISTRMFReport:
 
         return lines
 
-    def _results_analysis(self, results: list[dict], scenarios: list[AttackScenario]) -> list[str]:
+    def _results_analysis(self, results: list[dict[str, Any]], scenarios: list[AttackScenario]) -> list[str]:
         """Generate results analysis section."""
         lines: list[str] = []
         lines.append("## Test Results Analysis")
@@ -549,7 +551,7 @@ class NISTRMFReport:
         return lines
 
     def _recommendations(
-        self, func_stats: dict[str, dict], results: list[dict] | None
+        self, func_stats: dict[str, dict], results: list[dict[str, Any]] | None
     ) -> list[str]:
         """Generate recommendations section."""
         lines: list[str] = []

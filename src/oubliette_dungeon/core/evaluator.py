@@ -3,6 +3,8 @@ Result evaluator for Oubliette Dungeon.
 
 Evaluates attack execution results with refusal-aware and honeypot-aware logic.
 """
+from typing import Any
+
 
 import re
 
@@ -23,7 +25,7 @@ class ResultEvaluator:
         self.ml_api_url = ml_api_url
 
     def evaluate(
-        self, scenario: AttackScenario, response: str, pipeline_meta: dict | None = None
+        self, scenario: AttackScenario, response: str, pipeline_meta: dict[str, Any] | None = None
     ) -> AttackTestResult:
         meta = pipeline_meta or {}
 

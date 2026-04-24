@@ -3,6 +3,8 @@ Scenario loader for Oubliette Dungeon.
 
 Loads attack scenarios from YAML files with filtering capabilities.
 """
+from typing import Any
+
 
 import hashlib
 import logging
@@ -156,7 +158,7 @@ class ScenarioLoader:
     def get_mitre_scenarios(self, technique_id: str) -> list[AttackScenario]:
         return [s for s in self.scenarios if technique_id in s.mitre_mapping]
 
-    def get_statistics(self) -> dict:
+    def get_statistics(self) -> dict[str, Any]:
         stats = {
             "total": len(self.scenarios),
             "by_category": {},
