@@ -111,3 +111,32 @@ class TestPerformanceLoader:
         elapsed = time.time() - start
 
         assert elapsed < 1.0  # Should load in under 1 second
+
+
+class TestCustomScenarioGate:
+    """MED-7 regression (2026-04-22 audit): non-bundled scenario YAML is
+    attacker-controllable surface area (loaded payloads flow as live HTTP
+    to any target_url). Loading external scenarios must require an explicit
+    opt-in env flag so the default posture is fail-closed."""
+
+    def test_custom_scenario_refused_without_opt_in(self, mock_yaml_file, monkeypatch):
+        monkeypatch.delenv("DUNGEON_ALLOW_CUSTOM_SCENARIOS", raising=False)
+        with pytest.raises(PermissionError, match="DUNGEON_ALLOW_CUSTOM_SCENARIOS"):
+            ScenarioLoader(mock_yaml_file)
+
+    def test_custom_scenario_refused_with_wrong_value(self, mock_yaml_file, monkeypatch):
+        monkeypatch.setenv("DUNGEON_ALLOW_CUSTOM_SCENARIOS", "yes")
+        with pytest.raises(PermissionError):
+            ScenarioLoader(mock_yaml_file)
+
+    def test_custom_scenario_allowed_with_explicit_true(self, mock_yaml_file, monkeypatch):
+        monkeypatch.setenv("DUNGEON_ALLOW_CUSTOM_SCENARIOS", "true")
+        loader = ScenarioLoader(mock_yaml_file)
+        assert len(loader.scenarios) == 2
+
+    def test_bundled_scenarios_load_without_opt_in(self, monkeypatch):
+        """The shipped default scenarios file is trusted and must always load."""
+        monkeypatch.delenv("DUNGEON_ALLOW_CUSTOM_SCENARIOS", raising=False)
+        # No scenario_file arg -> loader uses the bundled default
+        loader = ScenarioLoader()
+        assert len(loader.scenarios) > 0

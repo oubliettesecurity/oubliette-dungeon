@@ -4,9 +4,16 @@ Scenario loader for Oubliette Dungeon.
 Loads attack scenarios from YAML files with filtering capabilities.
 """
 
+import hashlib
+import logging
+import os
+from pathlib import Path
+
 import yaml
 
 from oubliette_dungeon.core.models import AttackScenario
+
+log = logging.getLogger(__name__)
 
 
 class ScenarioLoader:
@@ -22,7 +29,59 @@ class ScenarioLoader:
             scenario_file = _default_scenarios_path()
         self.scenario_file = scenario_file
         self.scenarios: list[AttackScenario] = []
+        # MED-7 fix (2026-04-22 audit): scenario YAML is trusted input but
+        # was previously loaded from any path via --scenarios / the
+        # ``/api/dungeon/tools/garak/import`` merge flow. A malicious
+        # scenarios file turns Dungeon into a weaponised request generator
+        # aimed at any target_url the user provides (SSRF probes, credential
+        # stuffing, prompt-injection exfil). Gate non-bundled YAML behind an
+        # explicit opt-in env var and log the SHA-256 hash on load so an
+        # operator post-incident can tell which scenario file was used.
+        self._enforce_custom_scenario_gate(scenario_file)
         self.load_scenarios()
+
+    @staticmethod
+    def _enforce_custom_scenario_gate(scenario_file: str) -> None:
+        """Refuse to load non-bundled scenario YAML unless the operator
+        has explicitly set ``DUNGEON_ALLOW_CUSTOM_SCENARIOS=true``.
+
+        The bundled scenario file ships inside the package; external files
+        are attacker-controllable surface area. The gate is fail-closed by
+        default; test suites that need a fixture path set the env var in
+        a fixture / conftest.
+        """
+        from oubliette_dungeon.core import _default_scenarios_path
+
+        try:
+            bundled = Path(_default_scenarios_path()).resolve()
+            resolved = Path(scenario_file).resolve()
+        except (OSError, ValueError):
+            # Can't resolve: treat as external / untrusted.
+            resolved = Path(scenario_file)
+            bundled = Path("<unresolved>")
+
+        if resolved == bundled:
+            return
+
+        if os.getenv("DUNGEON_ALLOW_CUSTOM_SCENARIOS", "").lower() != "true":
+            raise PermissionError(
+                f"Refusing to load custom scenarios from {scenario_file!r}. "
+                "Set DUNGEON_ALLOW_CUSTOM_SCENARIOS=true to opt in to external "
+                "YAML (scenarios are trusted input and flow as live HTTP "
+                "payloads to target_url)."
+            )
+
+        try:
+            digest = hashlib.sha256(resolved.read_bytes()).hexdigest()
+            log.warning(
+                "Loading custom (non-bundled) scenarios from %s (sha256=%s). "
+                "These payloads will be sent live to target_url.",
+                resolved,
+                digest,
+            )
+        except OSError:
+            # Let load_scenarios() produce the real error below.
+            pass
 
     def load_scenarios(self) -> None:
         """Load scenarios from YAML file"""

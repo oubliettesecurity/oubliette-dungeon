@@ -10,6 +10,13 @@ import os
 # src/oubliette_dungeon/api/middleware.py _validate_target_url.
 os.environ.setdefault("DUNGEON_ALLOW_PRIVATE_TARGETS", "true")
 
+# MED-7 (2026-04-22 audit) gates custom scenario YAML behind an explicit
+# env flag. Tests legitimately load fixtures from tmp_path; production
+# callers loading external scenarios must set this themselves. Keep this
+# in conftest so the default behaviour (refuse non-bundled YAML) still
+# surfaces to anyone who imports ScenarioLoader outside the test suite.
+os.environ.setdefault("DUNGEON_ALLOW_CUSTOM_SCENARIOS", "true")
+
 import pytest
 import yaml
 from datetime import datetime
