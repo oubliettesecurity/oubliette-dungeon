@@ -73,7 +73,50 @@ def create_app(config=None):
             return send_from_directory(dashboard_dir, path)
         index = os.path.join(dashboard_dir, "index.html")
         if os.path.exists(index):
-            return send_from_directory(dashboard_dir, "index.html")
+            # MED-9 fix (2026-04-22 audit): the React dashboard historically
+            # fetched the API with no X-API-Key header, so the /demo
+            # deployment was forced into FLASK_ENV=development (auth off)
+            # to function at all -- shipping an "AI security" product
+            # with its own auth disabled. Inject the configured API key
+            # into the HTML via a <meta> tag so the SPA can read it at
+            # load time and attach it to every request. The key is only
+            # sent when the index is served by this server (same-origin),
+            # so a third-party site can't trigger the meta injection.
+            try:
+                with open(index, encoding="utf-8") as fh:
+                    html = fh.read()
+            except OSError:
+                return send_from_directory(dashboard_dir, "index.html")
+
+            api_key = os.getenv("OUBLIETTE_DASHBOARD_API_KEY") or os.getenv(
+                "OUBLIETTE_API_KEY", ""
+            )
+            meta_tag = (
+                '<meta name="oubliette-api-key" content="'
+                + _html_escape(api_key)
+                + '">'
+            )
+            if "</head>" in html:
+                html = html.replace("</head>", f"    {meta_tag}\n  </head>", 1)
+            else:
+                html = meta_tag + html
+            response = app.make_response(html)
+            response.headers["Content-Type"] = "text/html; charset=utf-8"
+            # Same Cache-Control the static file handler uses, so the meta
+            # tag refreshes when the operator rotates the key.
+            response.headers["Cache-Control"] = "no-store"
+            return response
         return {"message": "Oubliette Dungeon API", "version": "1.0.0"}
 
     return app
+
+
+def _html_escape(value: str) -> str:
+    """Escape a string for safe inclusion in an HTML attribute value."""
+    return (
+        value.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+        .replace("'", "&#x27;")
+    )

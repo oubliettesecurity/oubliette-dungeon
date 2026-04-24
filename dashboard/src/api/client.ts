@@ -1,5 +1,22 @@
 const BASE = "/api/dungeon";
 
+// MED-9 fix (2026-04-22 audit): the dashboard previously sent no X-API-Key
+// header, so the hosted /demo had to run with FLASK_ENV=development (auth
+// disabled) to function. The server now injects the operator's key into
+// the HTML via <meta name="oubliette-api-key" content="..."> at index
+// render time; read it once at module load and attach to every fetch.
+// Empty content (unset key in dev mode) produces no header so the request
+// still works against a dev-mode backend.
+function _readApiKey(): string {
+  if (typeof document === "undefined") return "";
+  const meta = document.querySelector<HTMLMetaElement>(
+    'meta[name="oubliette-api-key"]'
+  );
+  return meta?.content ?? "";
+}
+
+const API_KEY = _readApiKey();
+
 export interface ScenarioSummary {
   id: string;
   name: string;
@@ -70,9 +87,14 @@ export interface ScheduleJob {
 }
 
 async function api<T>(path: string, opts?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (API_KEY) headers["X-API-Key"] = API_KEY;
+  // Merge any caller-supplied headers after ours so they can override if
+  // they really need to (e.g., test harness sending a different key).
+  const merged = { ...headers, ...(opts?.headers as Record<string, string>) };
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...opts,
+    headers: merged,
   });
   if (!res.ok) throw new Error(`API ${res.status}: ${await res.text()}`);
   return res.json();
@@ -122,8 +144,11 @@ export const createScheduleJob = (job: Partial<ScheduleJob>) =>
     body: JSON.stringify(job),
   });
 
-export const downloadPdf = (id: string) =>
-  fetch(`${BASE}/results/${id}/pdf`).then((r) => r.blob());
+export const downloadPdf = (id: string) => {
+  const headers: Record<string, string> = {};
+  if (API_KEY) headers["X-API-Key"] = API_KEY;
+  return fetch(`${BASE}/results/${id}/pdf`, { headers }).then((r) => r.blob());
+};
 
 // --- Comparisons ---
 
