@@ -17,7 +17,7 @@ model version that produced the recorded numbers.
 
 Update cadence
 --------------
-Last verified: 2026-04-22.
+Last verified: 2026-04-27.
 
 A scheduled "model-freshness" agent updates the tier maps below by opening a
 PR when a provider releases a newer flagship / mid / small model.
@@ -49,7 +49,7 @@ Provider = Literal[
 ]
 
 
-# Last verified: 2026-04-22 -- update via scheduled model-freshness trigger
+# Last verified: 2026-04-27 -- update via scheduled model-freshness trigger
 MODELS: dict[Provider, dict[Tier, str]] = {
     "anthropic": {
         "flagship": "claude-opus-4-7",
@@ -57,12 +57,12 @@ MODELS: dict[Provider, dict[Tier, str]] = {
         "small": "claude-haiku-4-5-20251001",
     },
     "openai": {
-        "flagship": "gpt-5.4",
+        "flagship": "gpt-5.5",
         "default": "gpt-5.4-mini",
         "small": "gpt-5.4-nano",
     },
     "azure_openai": {
-        "flagship": "gpt-5.4",
+        "flagship": "gpt-5.5",
         "default": "gpt-5.4-mini",
         "small": "gpt-5.4-nano",
     },
@@ -82,9 +82,9 @@ MODELS: dict[Provider, dict[Tier, str]] = {
         "small": "gemini-3.1-flash-lite-preview",
     },
     "google_gemma": {
-        "flagship": "gemma4:27b",
-        "default": "gemma3:12b",
-        "small": "gemma3:1b",
+        "flagship": "gemma4:31b",
+        "default": "gemma4:26b",
+        "small": "gemma4:e4b",
     },
     "ollama_llama": {
         "flagship": "llama4:maverick",
