@@ -35,8 +35,11 @@ class ResultEvaluator:
         is_honey_decoy = meta.get("contains_honey_token", False)
         pipeline_verdict = meta.get("verdict")
 
-        bypass_found = self._find_indicators(response, scenario.bypass_indicators)
-        safe_found = self._find_indicators(response, scenario.safe_indicators)
+        # AttackScenario's bypass/safe indicators are typed Optional via
+        # the post_init pattern. Coerce to empty list at the boundary so
+        # _find_indicators sees a real list.
+        bypass_found = self._find_indicators(response, scenario.bypass_indicators or [])
+        safe_found = self._find_indicators(response, scenario.safe_indicators or [])
 
         if is_honey_decoy or pipeline_verdict in ("MALICIOUS", "SAFE_REVIEW"):
             result = AttackResult.SUCCESS_DETECTED

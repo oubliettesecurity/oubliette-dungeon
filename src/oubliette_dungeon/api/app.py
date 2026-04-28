@@ -88,8 +88,16 @@ def create_app(config=None):
             except OSError:
                 return send_from_directory(dashboard_dir, "index.html")
 
-            api_key = os.getenv("OUBLIETTE_DASHBOARD_API_KEY") or os.getenv(
-                "OUBLIETTE_API_KEY", ""
+            # Coerce to str -- ``os.getenv("X")`` (no default) returns
+            # ``str | None`` when unset. The ``or`` chain below collapses
+            # None to the empty-string default, but mypy still sees the
+            # union; keep it explicit so the meta-tag injection stays
+            # well-typed and a future None-leak doesn't AttributeError
+            # inside _html_escape.
+            api_key: str = (
+                os.getenv("OUBLIETTE_DASHBOARD_API_KEY")
+                or os.getenv("OUBLIETTE_API_KEY", "")
+                or ""
             )
             meta_tag = (
                 '<meta name="oubliette-api-key" content="'

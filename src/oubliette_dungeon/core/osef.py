@@ -285,10 +285,13 @@ class OSEFReport:
                 ),
             }
 
-        # Severity breakdown
+        # Severity breakdown -- iterating osef_results, NOT results.
+        # Rename loop var to avoid the mypy + reader confusion with
+        # the AttackTestResult ``r`` used above. (Caught a latent
+        # readability cliff during the mypy rollout.)
         by_severity: dict[str, int] = {}
-        for r in osef_results:
-            by_severity[r.severity] = by_severity.get(r.severity, 0) + 1
+        for osef_r in osef_results:
+            by_severity[osef_r.severity] = by_severity.get(osef_r.severity, 0) + 1
 
         aggregate = OSEFAggregate(
             total_scenarios=total,
@@ -309,11 +312,11 @@ class OSEFReport:
         )
 
         # Framework coverage summary
-        all_owasp = set()
-        all_atlas = set()
-        for r in osef_results:
-            all_owasp.update(r.framework_mappings.get("owasp_llm_top_10", []))
-            all_atlas.update(r.framework_mappings.get("mitre_atlas", []))
+        all_owasp: set[str] = set()
+        all_atlas: set[str] = set()
+        for osef_r in osef_results:
+            all_owasp.update(osef_r.framework_mappings.get("owasp_llm_top_10", []))
+            all_atlas.update(osef_r.framework_mappings.get("mitre_atlas", []))
 
         framework_coverage = {
             "owasp_llm_top_10": {

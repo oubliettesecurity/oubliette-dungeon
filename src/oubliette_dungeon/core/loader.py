@@ -159,17 +159,21 @@ class ScenarioLoader:
         return [s for s in self.scenarios if technique_id in s.mitre_mapping]
 
     def get_statistics(self) -> dict[str, Any]:
-        stats = {
+        # Annotate the inner buckets explicitly so the indexed
+        # assignments below survive mypy strict mode (otherwise the
+        # outer dict's value-type collapses to ``object`` and the
+        # ``stats["by_category"][...] = ...`` mutation fails the index
+        # check).
+        by_category: dict[str, int] = {}
+        by_difficulty: dict[str, int] = {}
+        for scenario in self.scenarios:
+            by_category[scenario.category] = by_category.get(scenario.category, 0) + 1
+            by_difficulty[scenario.difficulty] = (
+                by_difficulty.get(scenario.difficulty, 0) + 1
+            )
+        return {
             "total": len(self.scenarios),
-            "by_category": {},
-            "by_difficulty": {},
+            "by_category": by_category,
+            "by_difficulty": by_difficulty,
             "multi_turn_count": sum(1 for s in self.scenarios if s.multi_turn_prompts),
         }
-        for scenario in self.scenarios:
-            stats["by_category"][scenario.category] = (
-                stats["by_category"].get(scenario.category, 0) + 1
-            )
-            stats["by_difficulty"][scenario.difficulty] = (
-                stats["by_difficulty"].get(scenario.difficulty, 0) + 1
-            )
-        return stats

@@ -148,20 +148,21 @@ class RedTeamOrchestrator:
         with open(results_file, encoding="utf-8") as f:
             prev_data = json.load(f)
 
+        # JSON shape varies by tool (list, {"results": [...]}, or
+        # {"suites": {...}}); normalise to a flat list of dicts.
+        prev_results: list[Any] = []
         if isinstance(prev_data, list):
-            prev_results = prev_data
+            prev_results = list(prev_data)
         elif isinstance(prev_data, dict):
-            prev_results = prev_data.get("results", prev_data.get("suites", []))
-            if isinstance(prev_results, dict):
-                flat = []
-                for suite_results in prev_results.values():
+            raw = prev_data.get("results", prev_data.get("suites", []))
+            if isinstance(raw, list):
+                prev_results = list(raw)
+            elif isinstance(raw, dict):
+                for suite_results in raw.values():
                     if isinstance(suite_results, list):
-                        flat.extend(suite_results)
-                prev_results = flat
-        else:
-            prev_results = []
+                        prev_results.extend(suite_results)
 
-        ids_to_replay = set()
+        ids_to_replay: set[str] = set()
         for r in prev_results:
             sid = r.get("scenario_id", "")
             if sid and (scenario_ids is None or sid in scenario_ids):
@@ -182,7 +183,7 @@ class RedTeamOrchestrator:
         if not results:
             return {"error": "No results to summarize"}
 
-        summary = {
+        summary: dict[str, Any] = {
             "schema_version": "1.0",
             "tool": "oubliette-dungeon",
             "tool_version": "1.0.0",
@@ -192,14 +193,14 @@ class RedTeamOrchestrator:
             "by_result": {},
             "by_category": {},
             "by_difficulty": {},
-            "avg_execution_time_ms": 0,
-            "detection_rate": 0,
-            "bypass_rate": 0,
-            "avg_confidence": 0,
+            "avg_execution_time_ms": 0.0,
+            "detection_rate": 0.0,
+            "bypass_rate": 0.0,
+            "avg_confidence": 0.0,
         }
 
-        total_time = 0
-        total_confidence = 0
+        total_time: float = 0.0
+        total_confidence: float = 0.0
         detected_count = 0
         bypass_count = 0
 

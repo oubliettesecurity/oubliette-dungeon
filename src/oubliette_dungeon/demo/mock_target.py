@@ -10,7 +10,7 @@ import re
 try:
     from flask import Flask, jsonify, request
 except ImportError:
-    Flask = None
+    Flask = None  # type: ignore[assignment, misc]
 
 
 REFUSAL_RESPONSES = [

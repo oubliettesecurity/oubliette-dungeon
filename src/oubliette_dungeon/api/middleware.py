@@ -69,8 +69,11 @@ _rate_limit_request_counter = 0
 _RATE_LIMIT_CLEANUP_INTERVAL = 500
 
 
-def _check_rate_limit() -> Response | None:
-    """Return a 429 Response if the client has exceeded the rate limit, else None."""
+def _check_rate_limit() -> Response | tuple[Response, int] | None:
+    """Return a 429 (Response, status) tuple if the client has exceeded the
+    rate limit, else None. Flask accepts the tuple form natively in
+    before-request handlers; the type annotation now matches what the
+    function actually returns."""
     global _rate_limit_request_counter
 
     if RATE_LIMIT_MAX <= 0:
@@ -139,8 +142,12 @@ _loader = None
 _results_db = None
 _init_lock = threading.Lock()
 
-# Track running sessions to prevent concurrent runs
-_running_session = None
+# Track running sessions to prevent concurrent runs.
+# Type as Optional[str] so the assignment in execution.py routes
+# (``mw._running_session = session_id``) doesn't fail strict-mode
+# narrowing -- mypy was inferring this as ``None`` from the literal
+# default and then refused later string assignments.
+_running_session: str | None = None
 _session_lock = threading.Lock()
 
 

@@ -13,6 +13,7 @@ Usage:
 """
 
 import sys
+from typing import Any
 
 import click
 
@@ -106,8 +107,11 @@ def run(
             results_db=results_db,
             timeout=timeout,
         )
-        # Swap in the offline executor
-        orchestrator.executor = offline_exec
+        # Swap in the offline executor. The orchestrator's executor
+        # attribute is annotated AttackExecutor; OfflineExecutor is a
+        # drop-in for the same protocol but isn't a subclass. Treat
+        # this as a duck-typed slot.
+        orchestrator.executor = offline_exec  # type: ignore[assignment]
 
         effective_model_id = osef_model_id or f"ollama/{model}"
     else:
@@ -137,7 +141,7 @@ def run(
     if osef:
         from oubliette_dungeon.core.osef import OSEFReport
 
-        context = {
+        context: dict[str, Any] = {
             "evaluation_type": "adversarial_robustness",
             "scorer": "refusal_aware",
             "environment": "air_gapped" if offline else "unclassified",
@@ -322,7 +326,7 @@ def compare(
             results_db=results_db,
             timeout=timeout,
         )
-        orchestrator.executor = executor
+        orchestrator.executor = executor  # type: ignore[assignment]
 
         if category:
             results = orchestrator.run_by_category(category)

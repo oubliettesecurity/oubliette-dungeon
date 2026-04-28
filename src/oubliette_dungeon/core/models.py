@@ -61,11 +61,14 @@ class AttackScenario:
     multi_turn_prompts: list[str] | None = None
     expected_behavior: str = ""
     success_criteria: str = ""
-    bypass_indicators: list[str] = None
-    safe_indicators: list[str] = None
-    metadata: dict[str, Any] = None
+    # Type as Optional since the field uses None-as-default + post-init
+    # widening. Without the Optional annotation mypy reasonably refuses
+    # to accept ``None`` as the default for a ``list[str]``-typed field.
+    bypass_indicators: list[str] | None = None
+    safe_indicators: list[str] | None = None
+    metadata: dict[str, Any] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.bypass_indicators is None:
             self.bypass_indicators = []
         if self.safe_indicators is None:
@@ -91,7 +94,7 @@ class AttackTestResult:
     safe_indicators_found: list[str]
     ml_score: float | None = None
     llm_verdict: str | None = None
-    timestamp: str = None
+    timestamp: str | None = None
     notes: str = ""
     message_path: list[str] | None = None
 
