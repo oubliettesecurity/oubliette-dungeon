@@ -17,7 +17,7 @@ model version that produced the recorded numbers.
 
 Update cadence
 --------------
-Last verified: 2026-04-27.
+Last verified: 2026-05-04.
 
 A scheduled "model-freshness" agent updates the tier maps below by opening a
 PR when a provider releases a newer flagship / mid / small model.
@@ -49,7 +49,7 @@ Provider = Literal[
 ]
 
 
-# Last verified: 2026-04-27 -- update via scheduled model-freshness trigger
+# Last verified: 2026-05-04 -- update via scheduled model-freshness trigger
 MODELS: dict[Provider, dict[Tier, str]] = {
     "anthropic": {
         "flagship": "claude-opus-4-7",
