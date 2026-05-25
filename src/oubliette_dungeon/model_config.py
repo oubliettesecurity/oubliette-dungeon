@@ -17,7 +17,7 @@ model version that produced the recorded numbers.
 
 Update cadence
 --------------
-Last verified: 2026-05-11.
+Last verified: 2026-05-25.
 
 A scheduled "model-freshness" agent updates the tier maps below by opening a
 PR when a provider releases a newer flagship / mid / small model.
@@ -49,7 +49,7 @@ Provider = Literal[
 ]
 
 
-# Last verified: 2026-05-11 -- update via scheduled model-freshness trigger
+# Last verified: 2026-05-25 -- update via scheduled model-freshness trigger
 MODELS: dict[Provider, dict[Tier, str]] = {
     "anthropic": {
         "flagship": "claude-opus-4-7",
@@ -73,12 +73,12 @@ MODELS: dict[Provider, dict[Tier, str]] = {
     },
     "google_gemini": {
         "flagship": "gemini-3.1-pro-preview",
-        "default": "gemini-3.1-flash",
+        "default": "gemini-3.5-flash",
         "small": "gemini-3.1-flash-lite",
     },
     "google_vertex": {
         "flagship": "gemini-3.1-pro-preview",
-        "default": "gemini-3.1-flash",
+        "default": "gemini-3.5-flash",
         "small": "gemini-3.1-flash-lite",
     },
     "google_gemma": {
