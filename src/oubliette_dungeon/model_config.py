@@ -17,7 +17,7 @@ model version that produced the recorded numbers.
 
 Update cadence
 --------------
-Last verified: 2026-05-25.
+Last verified: 2026-06-01.
 
 A scheduled "model-freshness" agent updates the tier maps below by opening a
 PR when a provider releases a newer flagship / mid / small model.
@@ -49,10 +49,10 @@ Provider = Literal[
 ]
 
 
-# Last verified: 2026-05-25 -- update via scheduled model-freshness trigger
+# Last verified: 2026-06-01 -- update via scheduled model-freshness trigger
 MODELS: dict[Provider, dict[Tier, str]] = {
     "anthropic": {
-        "flagship": "claude-opus-4-7",
+        "flagship": "claude-opus-4-8",
         "default": "claude-sonnet-4-6",
         "small": "claude-haiku-4-5-20251001",
     },
@@ -67,18 +67,18 @@ MODELS: dict[Provider, dict[Tier, str]] = {
         "small": "gpt-5.4-nano",
     },
     "bedrock_anthropic": {
-        "flagship": "anthropic.claude-opus-4-7",
+        "flagship": "anthropic.claude-opus-4-8",
         "default": "anthropic.claude-sonnet-4-6",
         "small": "anthropic.claude-haiku-4-5",
     },
     "google_gemini": {
-        "flagship": "gemini-3.1-pro-preview",
-        "default": "gemini-3.5-flash",
+        "flagship": "gemini-3.5-flash",
+        "default": "gemini-3.1-flash",
         "small": "gemini-3.1-flash-lite",
     },
     "google_vertex": {
-        "flagship": "gemini-3.1-pro-preview",
-        "default": "gemini-3.5-flash",
+        "flagship": "gemini-3.5-flash",
+        "default": "gemini-3.1-flash",
         "small": "gemini-3.1-flash-lite",
     },
     "google_gemma": {
