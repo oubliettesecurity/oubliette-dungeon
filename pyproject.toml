@@ -50,6 +50,13 @@ dev = [
     "twine",
 ]
 
+# Full test environment: dev tools + integration deps the test suite imports
+# (flask for the dashboard/API tests, inspect-ai for the inspect adapter tests).
+# `uv pip install -e ".[test]"` gives a clean green with no manual --with flags.
+test = [
+    "oubliette-dungeon[dev,flask,inspect]",
+]
+
 [project.scripts]
 oubliette-dungeon = "oubliette_dungeon.cli.main:cli"
 
