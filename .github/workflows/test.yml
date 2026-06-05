@@ -1,0 +1,31 @@
+# Unified suite test gate — identical across every Oubliette repo.
+# Mirrors the local contract: Python 3.13 + `uv pip install -e ".[test]"` + pytest.
+# Repo-specific lint/mypy/build/release live in other workflow files.
+name: test
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Create env (Python 3.13)
+        run: uv venv --python 3.13
+
+      - name: Install package + test deps
+        run: uv pip install -e ".[test]"
+
+      # Call the venv interpreter directly. NOT `uv run pytest`: that re-syncs
+      # and universally resolves the project, which fails on heavy optional
+      # extras (crewai/pyrit) that don't support every Python in requires-python.
+      - name: Run tests
+        run: .venv/bin/pytest -q
