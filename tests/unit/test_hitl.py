@@ -11,7 +11,6 @@ import pytest
 from oubliette_dungeon.core.hitl import Review, ReviewableResult, ReviewQueue
 from oubliette_dungeon.core.models import AttackTestResult
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

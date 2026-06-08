@@ -114,7 +114,7 @@ def _load_yaml_scenarios(
         List of raw scenario dictionaries as parsed from YAML.
     """
     path = Path(path) if path is not None else _SCENARIOS_FILE
-    with open(path, "r", encoding="utf-8") as fh:
+    with open(path, encoding="utf-8") as fh:
         data = yaml.safe_load(fh)
     if isinstance(data, dict) and "scenarios" in data:
         return data["scenarios"]

@@ -3,12 +3,12 @@ Tests for the multi-turn crescendo attack scenarios.
 """
 
 import os
+
 import pytest
 import yaml
 
 from oubliette_dungeon.core import ScenarioLoader
 from oubliette_dungeon.core.models import AttackScenario
-
 
 # ========================================================================
 # Fixtures
@@ -34,7 +34,7 @@ def crescendo_scenarios(crescendo_yaml_path):
 @pytest.fixture
 def crescendo_raw(crescendo_yaml_path):
     """Load raw YAML data."""
-    with open(crescendo_yaml_path, "r", encoding="utf-8") as f:
+    with open(crescendo_yaml_path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 

@@ -6,13 +6,12 @@ import pytest
 
 from oubliette_dungeon.core.models import AttackScenario
 from oubliette_dungeon.report.nist_rmf import (
-    NISTRMFReport,
     RMF_TAXONOMY,
-    map_scenario_to_subcategories,
+    NISTRMFReport,
     _normalize_category,
     _sub_to_function,
+    map_scenario_to_subcategories,
 )
-
 
 # ========================================================================
 # Fixtures

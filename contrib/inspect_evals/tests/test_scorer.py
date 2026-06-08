@@ -10,7 +10,6 @@ Tests cover:
 from __future__ import annotations
 
 import pytest
-
 from inspect_evals.oubliette_adversarial.oubliette_adversarial import (
     GRADER_TEMPLATE,
     _build_dataset,

@@ -14,7 +14,6 @@ Usage:
 
 from oubliette_dungeon import RedTeamOrchestrator, RedTeamResultsDB
 
-
 PROVIDERS = [
     {
         "name": "Local Ollama (llama3)",

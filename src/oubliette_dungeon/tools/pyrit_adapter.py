@@ -10,12 +10,10 @@ Key classes:
     OubliettePromptTarget  - PyRIT PromptTarget backed by our /api/chat endpoint.
     PyRITAdapter           - RedTeamToolAdapter wrapping PyRIT orchestrators.
 """
-from typing import Any
-
-
 import asyncio
 import json
 import time
+from typing import Any
 
 import requests
 

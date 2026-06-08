@@ -19,11 +19,9 @@ Usage::
         ddil_drop_rate=0.1,
     )
 """
-from typing import Any
-
-
 import random
 import time
+from typing import Any
 
 import requests
 

@@ -3,8 +3,9 @@ Tests for Red Team Scheduler.
 Migrated from oubliette_redteam/tests/test_scheduler.py
 """
 
-import pytest
 from datetime import datetime, timedelta
+
+import pytest
 
 from oubliette_dungeon.scheduler import CronExpression, RedTeamScheduler
 

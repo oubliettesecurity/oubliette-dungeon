@@ -3,13 +3,14 @@ Tests for core data models (AttackScenario, TestResult, AttackResult, enums).
 Migrated from oubliette_redteam/tests/test_engine.py
 """
 
-import pytest
 from dataclasses import asdict
 
+import pytest
+
 from oubliette_dungeon.core import (
+    AttackResult,
     AttackScenario,
     TestResult,
-    AttackResult,
 )
 
 

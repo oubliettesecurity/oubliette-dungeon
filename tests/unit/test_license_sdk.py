@@ -1,6 +1,6 @@
 """Verify the ported revenue SDK works in Dungeon (issuer -> validator round-trip)."""
 
-from oubliette_dungeon.license import LicenseManager, PRO_FEATURES
+from oubliette_dungeon.license import PRO_FEATURES, LicenseManager
 from oubliette_dungeon.license_issuer import issue_license
 from oubliette_dungeon.license_webhook import license_for_sale
 

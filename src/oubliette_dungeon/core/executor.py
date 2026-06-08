@@ -3,10 +3,8 @@ Attack executor for Oubliette Dungeon.
 
 Executes attack scenarios against target LLM endpoints.
 """
-from typing import Any
-
-
 import time
+from typing import Any
 
 import requests
 

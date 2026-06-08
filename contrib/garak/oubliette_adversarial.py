@@ -47,7 +47,6 @@ References:
 
 import garak.probes
 
-
 # ============================================================================
 # Prompt Injection  (CAT-01)
 # ATK-001 through ATK-005, ATK-028 (direct injection variant),

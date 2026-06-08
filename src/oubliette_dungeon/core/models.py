@@ -3,13 +3,11 @@ Core data models for Oubliette Dungeon.
 
 Defines enums, dataclasses, and constants shared across the engine.
 """
-from typing import Any
-
-
 import os
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 DEFAULT_TARGET_URL = os.getenv("DUNGEON_TARGET_URL", "http://localhost:5000/api/chat")
 

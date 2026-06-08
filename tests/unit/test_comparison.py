@@ -11,7 +11,6 @@ import pytest
 from oubliette_dungeon.core.comparison import ModelComparison, ModelScore, ScenarioComparison
 from oubliette_dungeon.core.models import AttackTestResult
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

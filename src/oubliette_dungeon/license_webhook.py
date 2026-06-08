@@ -12,11 +12,12 @@ server-side. Deploy ``create_license_webhook_blueprint`` behind the existing
 Flask app or a tiny standalone service.
 """
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from .license_issuer import issue_license
 
-_TRUTHY = {"true", "1", "yes", True, 1}
+_TRUTHY = {"true", "1", "yes", True}
 
 
 def _is_true(v: Any) -> bool:

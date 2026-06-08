@@ -3,13 +3,11 @@ Scenario loader for Oubliette Dungeon.
 
 Loads attack scenarios from YAML files with filtering capabilities.
 """
-from typing import Any
-
-
 import hashlib
 import logging
 import os
 from pathlib import Path
+from typing import Any
 
 import yaml
 

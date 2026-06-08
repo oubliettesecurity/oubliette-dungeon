@@ -3,12 +3,10 @@ Red Team Orchestrator for Oubliette Dungeon.
 
 Coordinates scenario loading, execution, evaluation, and reporting.
 """
-from typing import Any
-
-
 import json
 from dataclasses import asdict
 from datetime import datetime
+from typing import Any
 
 from oubliette_dungeon.core.evaluator import ResultEvaluator
 from oubliette_dungeon.core.executor import AttackExecutor

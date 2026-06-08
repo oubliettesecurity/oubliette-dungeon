@@ -15,12 +15,11 @@ from oubliette_dungeon.core.osef import (
     MITRE_ATLAS_TECHNIQUES,
     OSEF_VERSION,
     OWASP_LLM_TOP_10,
+    SEVERITY_MAP,
     OSEFCategoryScore,
     OSEFReport,
     OSEFScenarioResult,
-    SEVERITY_MAP,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

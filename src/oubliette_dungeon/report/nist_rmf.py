@@ -14,10 +14,8 @@ Functions:
     MEASURE - Analysis & monitoring of AI risks
     MANAGE  - Prioritization & treatment of AI risks
 """
-from typing import Any
-
-
 from datetime import datetime
+from typing import Any
 
 from oubliette_dungeon.core.models import AttackScenario
 

@@ -8,7 +8,6 @@ Routes:
 """
 from typing import Any
 
-
 from flask import jsonify, request
 
 from oubliette_dungeon.api.middleware import (

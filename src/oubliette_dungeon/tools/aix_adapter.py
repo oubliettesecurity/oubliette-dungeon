@@ -17,14 +17,12 @@ Security hardening applied per audit (aix_framework_security_audit.md):
     - Credentials via env vars, never CLI args
     - All AIX output treated as untrusted
 """
-from typing import Any
-
-
 import asyncio
 import json
 import logging
 import os
 import time
+from typing import Any
 from urllib.parse import urlparse
 
 import requests

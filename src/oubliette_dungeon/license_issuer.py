@@ -20,7 +20,7 @@ import hashlib
 import hmac
 import json
 import os
-from typing import Sequence
+from collections.abc import Sequence
 
 from .license import PRO_FEATURES
 

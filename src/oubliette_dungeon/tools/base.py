@@ -5,10 +5,8 @@ All third-party red team tool integrations (PyRIT, DeepTeam, Garak, etc.)
 must implement RedTeamToolAdapter to ensure a consistent interface for the
 ToolManager and API layer.
 """
-from typing import Any
-
-
 from abc import ABC, abstractmethod
+from typing import Any
 
 from oubliette_dungeon.core.models import AttackScenario, TestResult
 

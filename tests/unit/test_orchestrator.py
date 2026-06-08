@@ -3,13 +3,14 @@ Tests for RedTeamOrchestrator and metrics functions.
 Migrated from oubliette_redteam/tests/test_engine.py
 """
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 from oubliette_dungeon.core import (
     AttackResult,
-    TestResult,
     RedTeamOrchestrator,
+    TestResult,
 )
 
 
@@ -44,7 +45,7 @@ class TestRedTeamOrchestrator:
 
     def test_run_single_scenario_not_found(self, orchestrator):
         """Test running non-existent scenario"""
-        with pytest.raises(ValueError, match='Scenario.*not found'):
+        with pytest.raises(ValueError, match=r'Scenario.*not found'):
             orchestrator.run_single_scenario('ATK-999')
 
     def test_run_category(self, orchestrator):

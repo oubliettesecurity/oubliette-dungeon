@@ -17,16 +17,17 @@ os.environ.setdefault("DUNGEON_ALLOW_PRIVATE_TARGETS", "true")
 # surfaces to anyone who imports ScenarioLoader outside the test suite.
 os.environ.setdefault("DUNGEON_ALLOW_CUSTOM_SCENARIOS", "true")
 
-import pytest
-import yaml
 from datetime import datetime
 
+import pytest
+import yaml
+
 from oubliette_dungeon.core import (
-    AttackScenario,
-    TestResult,
     AttackResult,
-    ScenarioLoader,
+    AttackScenario,
     RedTeamOrchestrator,
+    ScenarioLoader,
+    TestResult,
 )
 
 

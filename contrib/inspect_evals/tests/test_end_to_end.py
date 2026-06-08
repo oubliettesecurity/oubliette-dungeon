@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import pytest
 from inspect_ai import eval
-
 from inspect_evals.oubliette_adversarial import oubliette_adversarial
 
 

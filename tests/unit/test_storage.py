@@ -3,12 +3,13 @@ Tests for RedTeamResultsDB (JSON file storage).
 Migrated from oubliette_redteam/tests/test_results_db.py
 """
 
-import pytest
-import json
 import csv
-from pathlib import Path
+import json
 from datetime import datetime
+from pathlib import Path
 from unittest.mock import Mock, patch
+
+import pytest
 
 from oubliette_dungeon.storage import RedTeamResultsDB
 
@@ -239,12 +240,12 @@ class TestStatistics:
     def test_statistics_mixed_results(self, temp_db_dir, sample_result):
         db = RedTeamResultsDB(temp_db_dir)
 
-        for i in range(3):
+        for _i in range(3):
             result = sample_result.copy()
             result['result'] = 'bypass'
             db.save_result(result, 'test_session')
 
-        for i in range(2):
+        for _i in range(2):
             result = sample_result.copy()
             result['result'] = 'detected'
             db.save_result(result, 'test_session')
@@ -265,7 +266,7 @@ class TestExportFunctions:
             populated_db.export_to_json(str(output_file), 'session_001')
 
         assert output_file.exists()
-        with open(output_file, 'r') as f:
+        with open(output_file) as f:
             data = json.load(f)
         assert data['session_id'] == 'session_001'
         assert len(data['results']) == 5
@@ -283,7 +284,7 @@ class TestExportFunctions:
             populated_db.export_to_csv(str(output_file), 'session_001')
 
         assert output_file.exists()
-        with open(output_file, 'r', encoding='utf-8') as f:
+        with open(output_file, encoding='utf-8') as f:
             reader = csv.DictReader(f)
             rows = list(reader)
         assert len(rows) == 5

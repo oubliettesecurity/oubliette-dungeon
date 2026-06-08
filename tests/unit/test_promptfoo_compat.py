@@ -9,16 +9,15 @@ import pytest
 import yaml
 
 from oubliette_dungeon.compat.promptfoo import (
+    PROVIDER_MAP,
     PromptfooImporter,
     _assertion_to_bypass_indicators,
     _assertion_to_description,
     _infer_category,
     _infer_difficulty,
     _render_template,
-    PROVIDER_MAP,
 )
 from oubliette_dungeon.core.models import AttackScenario
-
 
 # ========================================================================
 # Fixtures

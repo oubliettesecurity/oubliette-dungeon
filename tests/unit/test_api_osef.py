@@ -5,10 +5,10 @@ Tests for the OSEF API endpoints.
 import json
 
 import pytest
-
 from flask import Flask
-from oubliette_dungeon.api import dungeon_bp
+
 import oubliette_dungeon.api.middleware as mw
+from oubliette_dungeon.api import dungeon_bp
 
 
 @pytest.fixture

@@ -5,27 +5,27 @@ Tests scenario conversion, scorer logic, and task construction
 without requiring a live model (uses mocked Inspect components).
 """
 
-import pytest
 from unittest.mock import MagicMock
 
-from oubliette_dungeon.core.models import AttackScenario, AttackResult
-from oubliette_dungeon.core.loader import ScenarioLoader
-from oubliette_dungeon.core.evaluator import ResultEvaluator
-from oubliette_dungeon.tools.inspect_adapter import (
-    _scenarios_to_dataset,
-    _load_scenarios,
-    oubliette_attacks,
-    oubliette_prompt_injection,
-    oubliette_jailbreaking,
-    oubliette_information_extraction,
-    oubliette_social_engineering,
-    oubliette_context_manipulation,
-    oubliette_model_exploitation,
-    oubliette_tool_exploitation,
-    oubliette_compliance,
-    oubliette_full_suite,
-)
+import pytest
 
+from oubliette_dungeon.core.evaluator import ResultEvaluator
+from oubliette_dungeon.core.loader import ScenarioLoader
+from oubliette_dungeon.core.models import AttackResult, AttackScenario
+from oubliette_dungeon.tools.inspect_adapter import (
+    _load_scenarios,
+    _scenarios_to_dataset,
+    oubliette_attacks,
+    oubliette_compliance,
+    oubliette_context_manipulation,
+    oubliette_full_suite,
+    oubliette_information_extraction,
+    oubliette_jailbreaking,
+    oubliette_model_exploitation,
+    oubliette_prompt_injection,
+    oubliette_social_engineering,
+    oubliette_tool_exploitation,
+)
 
 # ---------------------------------------------------------------------------
 # Fixtures

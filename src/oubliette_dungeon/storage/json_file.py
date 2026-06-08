@@ -7,9 +7,6 @@ Features:
 - Generate reports and statistics
 - Export to various formats (JSON, CSV)
 """
-from typing import Any
-
-
 import csv
 import json
 import re
@@ -17,6 +14,7 @@ import stat
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 _SAFE_SESSION_ID = re.compile(r"^[a-zA-Z0-9_\-]{1,128}$")
 

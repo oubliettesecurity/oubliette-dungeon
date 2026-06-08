@@ -10,7 +10,6 @@ import pytest
 from oubliette_dungeon.core.models import AttackScenario
 from oubliette_dungeon.core.offline import OfflineExecutor
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -163,7 +162,7 @@ class TestSingleTurnExecution:
     @patch("oubliette_dungeon.core.offline.requests.post")
     def test_http_error(self, mock_post, executor, scenario):
         mock_post.return_value = MagicMock(status_code=500)
-        response, elapsed = executor.execute_single_turn(scenario)
+        response, _elapsed = executor.execute_single_turn(scenario)
         assert "ERROR" in response
         assert "500" in response
 
@@ -171,14 +170,14 @@ class TestSingleTurnExecution:
     def test_timeout(self, mock_post, executor, scenario):
         import requests
         mock_post.side_effect = requests.exceptions.Timeout()
-        response, elapsed = executor.execute_single_turn(scenario)
+        response, _elapsed = executor.execute_single_turn(scenario)
         assert "timeout" in response.lower()
 
     @patch("oubliette_dungeon.core.offline.requests.post")
     def test_connection_error(self, mock_post, executor, scenario):
         import requests
         mock_post.side_effect = requests.exceptions.ConnectionError()
-        response, elapsed = executor.execute_single_turn(scenario)
+        response, _elapsed = executor.execute_single_turn(scenario)
         assert "ERROR" in response
 
 
@@ -190,7 +189,7 @@ class TestDDILSimulation:
 
     def test_packet_drop(self, scenario):
         exec = OfflineExecutor(model="llama3", ddil_drop_rate=1.0)
-        response, elapsed = exec.execute_single_turn(scenario)
+        response, _elapsed = exec.execute_single_turn(scenario)
         assert "DDIL simulated packet drop" in response
 
     @patch("oubliette_dungeon.core.offline.requests.post")
@@ -201,7 +200,7 @@ class TestDDILSimulation:
             json=lambda: {"response": long_text, "model": "llama3"},
         )
         exec = OfflineExecutor(model="llama3", ddil_bandwidth_kbps=1)
-        response, elapsed = exec.execute_single_turn(scenario)
+        response, _elapsed = exec.execute_single_turn(scenario)
         assert "[DDIL: truncated]" in response
         assert len(response) < len(long_text)
 
@@ -213,7 +212,7 @@ class TestDDILSimulation:
             json=lambda: {"response": short_text, "model": "llama3"},
         )
         exec = OfflineExecutor(model="llama3", ddil_bandwidth_kbps=100)
-        response, elapsed = exec.execute_single_turn(scenario)
+        response, _elapsed = exec.execute_single_turn(scenario)
         assert response == "OK"
 
 
@@ -250,7 +249,7 @@ class TestExecuteDispatch:
             status_code=200,
             json=lambda: {"response": "OK", "model": "llama3"},
         )
-        response, elapsed, is_multi = executor.execute(scenario)
+        response, _elapsed, is_multi = executor.execute(scenario)
         assert is_multi is False
         assert response == "OK"
 
@@ -260,7 +259,7 @@ class TestExecuteDispatch:
             status_code=200,
             json=lambda: {"message": {"content": "Response"}},
         )
-        response, elapsed, is_multi = executor.execute(multi_turn_scenario)
+        response, _elapsed, is_multi = executor.execute(multi_turn_scenario)
         assert is_multi is True
         assert "---TURN---" in response
 

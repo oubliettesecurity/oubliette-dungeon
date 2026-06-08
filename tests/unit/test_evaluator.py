@@ -6,8 +6,8 @@ Migrated from oubliette_redteam/tests/test_engine.py
 import pytest
 
 from oubliette_dungeon.core import (
-    AttackScenario,
     AttackResult,
+    AttackScenario,
     ResultEvaluator,
 )
 
