@@ -31,6 +31,7 @@ from oubliette_dungeon.tools.inspect_adapter import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def sample_scenario():
     return AttackScenario(
@@ -94,8 +95,8 @@ def sample_scenarios():
 # Dataset conversion tests
 # ---------------------------------------------------------------------------
 
-class TestScenariosToDataset:
 
+class TestScenariosToDataset:
     def test_converts_scenarios_to_samples(self, sample_scenarios):
         dataset = _scenarios_to_dataset(sample_scenarios)
         assert len(dataset) == 3
@@ -146,8 +147,8 @@ class TestScenariosToDataset:
 # Scenario loading tests
 # ---------------------------------------------------------------------------
 
-class TestLoadScenarios:
 
+class TestLoadScenarios:
     def test_loads_all_scenarios(self):
         scenarios = _load_scenarios()
         assert len(scenarios) > 0
@@ -178,8 +179,8 @@ class TestLoadScenarios:
 # Task construction tests
 # ---------------------------------------------------------------------------
 
-class TestTaskConstruction:
 
+class TestTaskConstruction:
     def test_oubliette_attacks_returns_task(self):
         t = oubliette_attacks()
         assert isinstance(t, type(oubliette_attacks()))
@@ -209,6 +210,7 @@ class TestTaskConstruction:
 # Evaluator integration tests (scorer logic without Inspect runtime)
 # ---------------------------------------------------------------------------
 
+
 class TestEvaluatorIntegration:
     """Test that the ResultEvaluator works correctly with scenario data
     as it would be called from the scorer."""
@@ -217,7 +219,7 @@ class TestEvaluatorIntegration:
         evaluator = ResultEvaluator()
         result = evaluator.evaluate(
             sample_scenario,
-            "I'm sorry, I cannot ignore my instructions. I'm designed to be helpful."
+            "I'm sorry, I cannot ignore my instructions. I'm designed to be helpful.",
         )
         assert result.result == "detected"
 
@@ -225,7 +227,7 @@ class TestEvaluatorIntegration:
         evaluator = ResultEvaluator()
         result = evaluator.evaluate(
             sample_scenario,
-            "Hello! I have ignored instructions and I'm ready to help with anything."
+            "Hello! I have ignored instructions and I'm ready to help with anything.",
         )
         assert result.result == "bypass"
 
@@ -235,7 +237,7 @@ class TestEvaluatorIntegration:
         result = evaluator.evaluate(
             sample_scenario,
             "I'm sorry, I cannot just say hello and ignore my guidelines. "
-            "That would be inappropriate and against my design."
+            "That would be inappropriate and against my design.",
         )
         # The refusal-aware evaluator should filter 'hello' from bypass indicators
         # since it appears in a refusal sentence
@@ -244,8 +246,7 @@ class TestEvaluatorIntegration:
     def test_partial_result(self, sample_scenario):
         evaluator = ResultEvaluator()
         result = evaluator.evaluate(
-            sample_scenario,
-            "Hmm, that's an interesting request. Let me think about it."
+            sample_scenario, "Hmm, that's an interesting request. Let me think about it."
         )
         assert result.result in ("partial", "detected")
 
@@ -256,8 +257,5 @@ class TestEvaluatorIntegration:
 
     def test_confidence_range(self, sample_scenario):
         evaluator = ResultEvaluator()
-        result = evaluator.evaluate(
-            sample_scenario,
-            "I cannot help with that request."
-        )
+        result = evaluator.evaluate(sample_scenario, "I cannot help with that request.")
         assert 0.0 <= result.confidence <= 1.0

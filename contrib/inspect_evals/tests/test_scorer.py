@@ -47,17 +47,15 @@ class TestLoadYamlScenarios:
             prompt = s.get("prompt", "")
             if "[..." in prompt:
                 # Allow if it's the RAG context overflow scenario
-                assert "documents omitted" in prompt.lower() or "omitted for brevity" in prompt.lower(), (
-                    f"Unexplained placeholder text in {s['id']}: {prompt[:100]}"
-                )
+                assert (
+                    "documents omitted" in prompt.lower() or "omitted for brevity" in prompt.lower()
+                ), f"Unexplained placeholder text in {s['id']}: {prompt[:100]}"
 
     def test_no_success_rate_field(self):
         """Ensure no scenario contains unverified success_rate claims."""
         scenarios = _load_yaml_scenarios()
         for s in scenarios:
-            assert "success_rate" not in s, (
-                f"Unverified success_rate found in {s['id']}"
-            )
+            assert "success_rate" not in s, f"Unverified success_rate found in {s['id']}"
 
     def test_no_advanced_difficulty(self):
         """'advanced' was renamed to 'expert'."""
@@ -71,9 +69,7 @@ class TestLoadYamlScenarios:
         valid = {"easy", "medium", "hard", "expert"}
         scenarios = _load_yaml_scenarios()
         for s in scenarios:
-            assert s["difficulty"] in valid, (
-                f"Invalid difficulty '{s['difficulty']}' in {s['id']}"
-            )
+            assert s["difficulty"] in valid, f"Invalid difficulty '{s['difficulty']}' in {s['id']}"
 
     def test_scenarios_with_system_prompt_have_ground_truth(self):
         """Most scenarios with system prompts should have ground truth secrets."""
@@ -270,11 +266,7 @@ class TestScenarioQuality:
 
     def test_ground_truth_secrets_are_unique(self):
         scenarios = _load_yaml_scenarios()
-        secrets = [
-            s["ground_truth_secret"]
-            for s in scenarios
-            if s.get("ground_truth_secret")
-        ]
+        secrets = [s["ground_truth_secret"] for s in scenarios if s.get("ground_truth_secret")]
         assert len(secrets) == len(set(secrets)), "Duplicate ground truth secrets found"
 
     def test_scenario_ids_are_unique(self):
@@ -300,20 +292,23 @@ class TestScenarioQuality:
             prompt = s.get("prompt", "")
             messages = s.get("messages")
             if not messages:
-                assert len(prompt) >= 20, (
-                    f"{s['id']} has a suspiciously short prompt: '{prompt}'"
-                )
+                assert len(prompt) >= 20, f"{s['id']} has a suspiciously short prompt: '{prompt}'"
 
     def test_all_categories_represented(self):
         scenarios = _load_yaml_scenarios()
         categories = {s["category"] for s in scenarios}
         expected = {
-            "prompt_injection", "jailbreak", "information_extraction",
-            "social_engineering", "context_manipulation",
-            "model_exploitation", "tool_exploitation",
-            "resource_abuse", "compliance_testing",
-            "agent_exploitation", "evasion", "rag_exploitation",
+            "prompt_injection",
+            "jailbreak",
+            "information_extraction",
+            "social_engineering",
+            "context_manipulation",
+            "model_exploitation",
+            "tool_exploitation",
+            "resource_abuse",
+            "compliance_testing",
+            "agent_exploitation",
+            "evasion",
+            "rag_exploitation",
         }
-        assert categories == expected, (
-            f"Missing categories: {expected - categories}"
-        )
+        assert categories == expected, f"Missing categories: {expected - categories}"

@@ -18,13 +18,13 @@ class TestScenarioLoader:
         loader.load_scenarios()
 
         assert len(loader.scenarios) == 2
-        assert loader.scenarios[0].id == 'ATK-001'
-        assert loader.scenarios[1].id == 'ATK-002'
+        assert loader.scenarios[0].id == "ATK-001"
+        assert loader.scenarios[1].id == "ATK-002"
 
     def test_load_scenarios_file_not_found(self):
         """Test loading from non-existent file"""
         with pytest.raises(FileNotFoundError):
-            ScenarioLoader('nonexistent.yaml')
+            ScenarioLoader("nonexistent.yaml")
 
     def test_load_scenarios_invalid_yaml(self, tmp_path):
         """Test loading invalid YAML"""
@@ -39,30 +39,30 @@ class TestScenarioLoader:
         loader = ScenarioLoader(mock_yaml_file)
         loader.load_scenarios()
 
-        injection_scenarios = loader.get_by_category('prompt_injection')
+        injection_scenarios = loader.get_by_category("prompt_injection")
         assert len(injection_scenarios) == 1
-        assert injection_scenarios[0].category == 'prompt_injection'
+        assert injection_scenarios[0].category == "prompt_injection"
 
     def test_get_by_difficulty(self, mock_yaml_file):
         """Test filtering by difficulty"""
         loader = ScenarioLoader(mock_yaml_file)
         loader.load_scenarios()
 
-        easy_scenarios = loader.get_by_difficulty('easy')
+        easy_scenarios = loader.get_by_difficulty("easy")
         assert len(easy_scenarios) == 1
-        assert easy_scenarios[0].difficulty == 'easy'
+        assert easy_scenarios[0].difficulty == "easy"
 
     def test_get_by_id(self, mock_yaml_file):
         """Test getting scenario by ID"""
         loader = ScenarioLoader(mock_yaml_file)
         loader.load_scenarios()
 
-        scenario = loader.get_by_id('ATK-001')
+        scenario = loader.get_by_id("ATK-001")
         assert scenario is not None
-        assert scenario.id == 'ATK-001'
+        assert scenario.id == "ATK-001"
 
         # Test non-existent ID
-        assert loader.get_by_id('ATK-999') is None
+        assert loader.get_by_id("ATK-999") is None
 
     def test_list_all(self, mock_yaml_file):
         """Test listing all scenarios"""
@@ -88,10 +88,10 @@ class TestEdgeCasesLoader:
 
     def test_scenario_missing_required_fields(self, tmp_path):
         """Test scenario with missing required fields"""
-        bad_data = [{'id': 'ATK-001'}]  # Missing required fields
+        bad_data = [{"id": "ATK-001"}]  # Missing required fields
 
         yaml_file = tmp_path / "bad.yaml"
-        with open(yaml_file, 'w') as f:
+        with open(yaml_file, "w") as f:
             yaml.dump(bad_data, f)
 
         with pytest.raises(KeyError):

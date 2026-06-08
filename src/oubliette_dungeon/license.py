@@ -30,15 +30,15 @@ log = logging.getLogger(__name__)
 # Features that require Pro tier (Dungeon red-team engine)
 PRO_FEATURES = frozenset(
     {
-        "scheduler",            # continuous / scheduled adversarial runs
-        "pdf_reports",          # PDF + NIST RMF report generation
+        "scheduler",  # continuous / scheduled adversarial runs
+        "pdf_reports",  # PDF + NIST RMF report generation
         "multi_provider_compare",  # cross-provider robustness comparison
-        "rest_api",             # REST API + dashboard server
-        "webhooks",             # run-complete webhook notifications
-        "custom_scenarios",     # author/import custom attack scenarios
+        "rest_api",  # REST API + dashboard server
+        "webhooks",  # run-complete webhook notifications
+        "custom_scenarios",  # author/import custom attack scenarios
         "full_scenario_library",  # the complete 57-scenario library
-        "rbac",                 # role-based access control
-        "tenant_manager",       # multi-tenant isolation
+        "rbac",  # role-based access control
+        "tenant_manager",  # multi-tenant isolation
     }
 )
 

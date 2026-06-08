@@ -14,13 +14,12 @@ from oubliette_dungeon.core.models import AttackScenario
 # Fixtures
 # ========================================================================
 
+
 @pytest.fixture
 def crescendo_yaml_path():
     """Path to the crescendo scenario file."""
     here = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(
-        here, "..", "..", "src", "oubliette_dungeon", "scenarios", "crescendo.yaml"
-    )
+    path = os.path.join(here, "..", "..", "src", "oubliette_dungeon", "scenarios", "crescendo.yaml")
     return os.path.normpath(path)
 
 
@@ -42,6 +41,7 @@ def crescendo_raw(crescendo_yaml_path):
 # Tests: File structure
 # ========================================================================
 
+
 class TestCrescendoFile:
     def test_file_exists(self, crescendo_yaml_path):
         assert os.path.isfile(crescendo_yaml_path)
@@ -58,6 +58,7 @@ class TestCrescendoFile:
 # Tests: Scenario structure
 # ========================================================================
 
+
 class TestCrescendoStructure:
     def test_all_have_required_fields(self, crescendo_raw):
         required = {"id", "name", "category", "difficulty", "description"}
@@ -67,10 +68,12 @@ class TestCrescendoStructure:
 
     def test_all_have_multi_turn(self, crescendo_raw):
         for scenario in crescendo_raw:
-            assert "multi_turn_sequence" in scenario, \
+            assert "multi_turn_sequence" in scenario, (
                 f"Scenario {scenario['id']} missing multi_turn_sequence"
-            assert len(scenario["multi_turn_sequence"]) >= 5, \
+            )
+            assert len(scenario["multi_turn_sequence"]) >= 5, (
                 f"Scenario {scenario['id']} has < 5 turns"
+            )
 
     def test_id_range(self, crescendo_raw):
         ids = [s["id"] for s in crescendo_raw]
@@ -90,8 +93,7 @@ class TestCrescendoStructure:
     def test_all_have_tags(self, crescendo_raw):
         for s in crescendo_raw:
             assert "tags" in s, f"Scenario {s['id']} missing tags"
-            assert "multi_turn" in s["tags"], \
-                f"Scenario {s['id']} missing 'multi_turn' tag"
+            assert "multi_turn" in s["tags"], f"Scenario {s['id']} missing 'multi_turn' tag"
 
     def test_all_have_owasp_mapping(self, crescendo_raw):
         for s in crescendo_raw:
@@ -102,6 +104,7 @@ class TestCrescendoStructure:
 # ========================================================================
 # Tests: Scenario categories
 # ========================================================================
+
 
 class TestCrescendoCategories:
     def test_all_multi_turn_attack(self, crescendo_raw):
@@ -143,6 +146,7 @@ class TestCrescendoCategories:
 # Tests: Loading via ScenarioLoader
 # ========================================================================
 
+
 class TestCrescendoLoading:
     def test_loader_parses_all(self, crescendo_scenarios):
         assert len(crescendo_scenarios) == 15
@@ -154,10 +158,8 @@ class TestCrescendoLoading:
     def test_loader_multi_turn_prompts(self, crescendo_scenarios):
         """All scenarios should have multi_turn_prompts populated."""
         for sc in crescendo_scenarios:
-            assert sc.multi_turn_prompts is not None, \
-                f"Scenario {sc.id} has no multi_turn_prompts"
-            assert len(sc.multi_turn_prompts) >= 5, \
-                f"Scenario {sc.id} has < 5 multi_turn_prompts"
+            assert sc.multi_turn_prompts is not None, f"Scenario {sc.id} has no multi_turn_prompts"
+            assert len(sc.multi_turn_prompts) >= 5, f"Scenario {sc.id} has < 5 multi_turn_prompts"
 
     def test_loader_statistics(self, crescendo_yaml_path):
         loader = ScenarioLoader(crescendo_yaml_path)
@@ -182,23 +184,28 @@ class TestCrescendoLoading:
 # Tests: Turn content quality
 # ========================================================================
 
+
 class TestTurnContent:
     def test_turns_have_prompts(self, crescendo_raw):
         for s in crescendo_raw:
             for turn in s["multi_turn_sequence"]:
-                assert "prompt" in turn, \
+                assert "prompt" in turn, (
                     f"Scenario {s['id']} turn {turn.get('turn', '?')} missing prompt"
-                assert len(turn["prompt"]) > 10, \
+                )
+                assert len(turn["prompt"]) > 10, (
                     f"Scenario {s['id']} turn {turn['turn']} has very short prompt"
+                )
 
     def test_turns_have_expected(self, crescendo_raw):
         for s in crescendo_raw:
             for turn in s["multi_turn_sequence"]:
-                assert "expected" in turn, \
+                assert "expected" in turn, (
                     f"Scenario {s['id']} turn {turn.get('turn', '?')} missing expected"
+                )
 
     def test_turns_numbered_sequentially(self, crescendo_raw):
         for s in crescendo_raw:
             turns = [t["turn"] for t in s["multi_turn_sequence"]]
-            assert turns == list(range(1, len(turns) + 1)), \
+            assert turns == list(range(1, len(turns) + 1)), (
                 f"Scenario {s['id']} has non-sequential turns: {turns}"
+            )

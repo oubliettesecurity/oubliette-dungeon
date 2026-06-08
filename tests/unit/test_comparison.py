@@ -15,6 +15,7 @@ from oubliette_dungeon.core.models import AttackTestResult
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 def _make_results(detection_rate=0.8):
     """Create sample results with a target detection rate."""
     results = []
@@ -26,18 +27,20 @@ def _make_results(detection_rate=0.8):
         else:
             result, conf = "partial", 0.50
 
-        results.append(AttackTestResult(
-            scenario_id=f"ATK-{i+1:03d}",
-            scenario_name=f"Scenario {i+1}",
-            category="prompt_injection" if i < 5 else "jailbreak",
-            difficulty="easy" if i < 3 else "medium" if i < 7 else "hard",
-            result=result,
-            confidence=conf,
-            response=f"Response {i}",
-            execution_time_ms=100 + i * 10,
-            bypass_indicators_found=["bypass"] if result == "bypass" else [],
-            safe_indicators_found=["safe"] if result == "detected" else [],
-        ))
+        results.append(
+            AttackTestResult(
+                scenario_id=f"ATK-{i + 1:03d}",
+                scenario_name=f"Scenario {i + 1}",
+                category="prompt_injection" if i < 5 else "jailbreak",
+                difficulty="easy" if i < 3 else "medium" if i < 7 else "hard",
+                result=result,
+                confidence=conf,
+                response=f"Response {i}",
+                execution_time_ms=100 + i * 10,
+                bypass_indicators_found=["bypass"] if result == "bypass" else [],
+                safe_indicators_found=["safe"] if result == "detected" else [],
+            )
+        )
     return results
 
 
@@ -54,8 +57,8 @@ def comparison():
 # ModelScore tests
 # ---------------------------------------------------------------------------
 
-class TestModelScore:
 
+class TestModelScore:
     def test_from_results_basic(self):
         results = _make_results(0.8)
         score = ModelScore.from_results("test", results)
@@ -85,8 +88,8 @@ class TestModelScore:
 # ModelComparison tests
 # ---------------------------------------------------------------------------
 
-class TestModelComparison:
 
+class TestModelComparison:
     def test_add_results(self, comparison):
         assert len(comparison.model_ids) == 3
 

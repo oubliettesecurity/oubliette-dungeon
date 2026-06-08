@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -39,8 +40,10 @@ from oubliette_dungeon.core.models import AttackScenario
 
 # ── Provider clients ─────────────────────────────────────────────────
 
+
 def query_openai(prompt, model="gpt-4o-mini"):
     from openai import OpenAI
+
     client = OpenAI()
     resp = client.chat.completions.create(
         model=model,
@@ -53,6 +56,7 @@ def query_openai(prompt, model="gpt-4o-mini"):
 
 def query_anthropic(prompt, model="claude-sonnet-4-5-20250929"):
     import anthropic
+
     client = anthropic.Anthropic()
     resp = client.messages.create(
         model=model,
@@ -64,6 +68,7 @@ def query_anthropic(prompt, model="claude-sonnet-4-5-20250929"):
 
 def query_gemini(prompt, model="gemini-2.0-flash"):
     import google.generativeai as genai
+
     genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
     m = genai.GenerativeModel(model)
     resp = m.generate_content(prompt)
@@ -72,6 +77,7 @@ def query_gemini(prompt, model="gemini-2.0-flash"):
 
 def query_ollama(prompt, model="llama3"):
     import requests
+
     resp = requests.post(
         "http://localhost:11434/api/generate",
         json={"model": model, "prompt": prompt, "stream": False},
@@ -83,7 +89,11 @@ def query_ollama(prompt, model="llama3"):
 
 PROVIDERS = {
     "openai": {"func": query_openai, "model": "gpt-4o-mini", "env": "OPENAI_API_KEY"},
-    "anthropic": {"func": query_anthropic, "model": "claude-sonnet-4-5-20250929", "env": "ANTHROPIC_API_KEY"},
+    "anthropic": {
+        "func": query_anthropic,
+        "model": "claude-sonnet-4-5-20250929",
+        "env": "ANTHROPIC_API_KEY",
+    },
     "gemini": {"func": query_gemini, "model": "gemini-2.0-flash", "env": "GOOGLE_API_KEY"},
     "ollama": {"func": query_ollama, "model": "llama3", "env": None},
 }
@@ -95,6 +105,7 @@ def detect_available():
         if name == "ollama":
             try:
                 import requests
+
                 r = requests.get("http://localhost:11434/api/tags", timeout=3)
                 if r.status_code == 200:
                     avail[name] = cfg
@@ -106,6 +117,7 @@ def detect_available():
 
 
 # ── Naive evaluator (keyword-only, no refusal filtering) ────────────
+
 
 def naive_evaluate(response, bypass_indicators, safe_indicators):
     """Simple keyword matching without any refusal filtering."""
@@ -141,6 +153,7 @@ def naive_evaluate(response, bypass_indicators, safe_indicators):
 
 
 # ── Scenario loader ─────────────────────────────────────────────────
+
 
 def _extract_prompts(item):
     """Extract usable prompts from a scenario item (various YAML formats)."""
@@ -181,7 +194,13 @@ def _extract_prompts(item):
 
 def load_scenarios():
     """Load scenarios from default.yaml, extracting prompts from various formats."""
-    yaml_path = Path(__file__).resolve().parent.parent / "src" / "oubliette_dungeon" / "scenarios" / "default.yaml"
+    yaml_path = (
+        Path(__file__).resolve().parent.parent
+        / "src"
+        / "oubliette_dungeon"
+        / "scenarios"
+        / "default.yaml"
+    )
     with open(yaml_path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
 
@@ -195,19 +214,21 @@ def load_scenarios():
             continue
 
         # Use first prompt for benchmark (variants get first variant)
-        scenarios.append(AttackScenario(
-            id=item["id"],
-            name=item["name"],
-            category=item.get("category", "unknown"),
-            difficulty=item.get("difficulty", "medium"),
-            description=item.get("description", ""),
-            prompt=prompts[0],
-            bypass_indicators=item.get("bypass_indicators", []),
-            safe_indicators=item.get("safe_indicators", []),
-            multi_turn_prompts=prompts[1:] if len(prompts) > 1 else None,
-            owasp_mapping=item.get("owasp_mapping", []),
-            mitre_mapping=item.get("mitre_mapping", []),
-        ))
+        scenarios.append(
+            AttackScenario(
+                id=item["id"],
+                name=item["name"],
+                category=item.get("category", "unknown"),
+                difficulty=item.get("difficulty", "medium"),
+                description=item.get("description", ""),
+                prompt=prompts[0],
+                bypass_indicators=item.get("bypass_indicators", []),
+                safe_indicators=item.get("safe_indicators", []),
+                multi_turn_prompts=prompts[1:] if len(prompts) > 1 else None,
+                owasp_mapping=item.get("owasp_mapping", []),
+                mitre_mapping=item.get("mitre_mapping", []),
+            )
+        )
 
     if skipped:
         print(f"  (Skipped {skipped} reference-only scenarios with no executable prompt)")
@@ -215,6 +236,7 @@ def load_scenarios():
 
 
 # ── Main benchmark ──────────────────────────────────────────────────
+
 
 def run_benchmark(providers_filter=None, output_path=None):
     scenarios = load_scenarios()
@@ -235,9 +257,9 @@ def run_benchmark(providers_filter=None, output_path=None):
     all_results = {}
 
     for prov_name, prov_cfg in available.items():
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"  Provider: {prov_name} ({prov_cfg['model']})")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         prov_results = []
         errors = 0
@@ -247,7 +269,9 @@ def run_benchmark(providers_filter=None, output_path=None):
             if scenario.multi_turn_prompts:
                 prompt = scenario.multi_turn_prompts[0] if scenario.multi_turn_prompts else prompt
 
-            sys.stdout.write(f"\r  [{i+1}/{len(scenarios)}] {scenario.id} {scenario.name[:40]}...")
+            sys.stdout.write(
+                f"\r  [{i + 1}/{len(scenarios)}] {scenario.id} {scenario.name[:40]}..."
+            )
             sys.stdout.flush()
 
             start = time.time()
@@ -272,7 +296,11 @@ def run_benchmark(providers_filter=None, output_path=None):
             # Compare: did refusal-aware filtering change the verdict?
             ra_bypass = evaluator._find_indicators(response, scenario.bypass_indicators)
             is_refusal, _ = evaluator._detect_refusal(response)
-            effective_bypass = evaluator._filter_refusal_indicators(ra_bypass, response) if is_refusal else ra_bypass
+            effective_bypass = (
+                evaluator._filter_refusal_indicators(ra_bypass, response)
+                if is_refusal
+                else ra_bypass
+            )
             filtered_count = len(ra_bypass) - len(effective_bypass)
 
             false_positive = (
@@ -281,41 +309,45 @@ def run_benchmark(providers_filter=None, output_path=None):
                 and filtered_count > 0
             )
 
-            prov_results.append({
-                "scenario_id": scenario.id,
-                "scenario_name": scenario.name,
-                "category": scenario.category,
-                "difficulty": scenario.difficulty,
-                "response_length": len(response),
-                "elapsed_ms": round(elapsed_ms, 1),
-                "error": response.startswith("ERROR:"),
-                # Refusal-aware results
-                "ra_verdict": ra_result.result,
-                "ra_confidence": ra_result.confidence,
-                "ra_bypass_indicators": ra_result.bypass_indicators_found,
-                "ra_safe_indicators": ra_result.safe_indicators_found,
-                "ra_notes": ra_result.notes,
-                # Naive results
-                "naive_verdict": naive_verdict,
-                "naive_confidence": naive_conf,
-                "naive_bypass_found": naive_bypass,
-                "naive_safe_found": naive_safe,
-                # Comparison
-                "is_refusal": is_refusal,
-                "total_bypass_indicators": len(ra_bypass),
-                "effective_bypass_indicators": len(effective_bypass),
-                "filtered_indicators": filtered_count,
-                "false_positive_corrected": false_positive,
-                # Raw response (truncated for storage)
-                "response_preview": response[:500],
-            })
+            prov_results.append(
+                {
+                    "scenario_id": scenario.id,
+                    "scenario_name": scenario.name,
+                    "category": scenario.category,
+                    "difficulty": scenario.difficulty,
+                    "response_length": len(response),
+                    "elapsed_ms": round(elapsed_ms, 1),
+                    "error": response.startswith("ERROR:"),
+                    # Refusal-aware results
+                    "ra_verdict": ra_result.result,
+                    "ra_confidence": ra_result.confidence,
+                    "ra_bypass_indicators": ra_result.bypass_indicators_found,
+                    "ra_safe_indicators": ra_result.safe_indicators_found,
+                    "ra_notes": ra_result.notes,
+                    # Naive results
+                    "naive_verdict": naive_verdict,
+                    "naive_confidence": naive_conf,
+                    "naive_bypass_found": naive_bypass,
+                    "naive_safe_found": naive_safe,
+                    # Comparison
+                    "is_refusal": is_refusal,
+                    "total_bypass_indicators": len(ra_bypass),
+                    "effective_bypass_indicators": len(effective_bypass),
+                    "filtered_indicators": filtered_count,
+                    "false_positive_corrected": false_positive,
+                    # Raw response (truncated for storage)
+                    "response_preview": response[:500],
+                }
+            )
 
             # Rate limit protection
             if prov_name != "ollama":
                 time.sleep(0.3)
 
         sys.stdout.write("\r" + " " * 80 + "\r")
-        print(f"  Completed: {len(scenarios) - errors}/{len(scenarios)} successful, {errors} errors")
+        print(
+            f"  Completed: {len(scenarios) - errors}/{len(scenarios)} successful, {errors} errors"
+        )
         all_results[prov_name] = prov_results
 
     # ── Compute aggregate metrics ────────────────────────────────
@@ -402,9 +434,9 @@ def run_benchmark(providers_filter=None, output_path=None):
                 "false_positive_rate_pct": round(fp_corrected / n * 100, 1) if n else 0,
                 "refusals_with_bypass_keywords": refusals_with_bypass_keywords,
                 "total_indicators_filtered": total_filtered,
-                "fp_reduction_pct": round(
-                    (naive_bypass - ra_bypass) / naive_bypass * 100, 1
-                ) if naive_bypass > 0 else 0,
+                "fp_reduction_pct": round((naive_bypass - ra_bypass) / naive_bypass * 100, 1)
+                if naive_bypass > 0
+                else 0,
             },
             "by_category_ra": dict(by_cat_ra),
             "by_category_naive": dict(by_cat_naive),
@@ -437,7 +469,9 @@ def run_benchmark(providers_filter=None, output_path=None):
                 sum(
                     report["per_provider"][p]["false_positive_analysis"]["fp_reduction_pct"]
                     for p in providers_list
-                ) / len(providers_list), 1
+                )
+                / len(providers_list),
+                1,
             ),
         }
 
@@ -450,10 +484,12 @@ def run_benchmark(providers_filter=None, output_path=None):
     print(f"\nResults saved to: {output_path}")
 
     # Print summary table
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * 70}")
     print("BENCHMARK SUMMARY")
-    print(f"{'='*70}")
-    print(f"\n{'Provider':<20} {'Model':<28} {'RA Det%':>8} {'Naive Det%':>11} {'FP Fixed':>9} {'FP Red%':>8}")
+    print(f"{'=' * 70}")
+    print(
+        f"\n{'Provider':<20} {'Model':<28} {'RA Det%':>8} {'Naive Det%':>11} {'FP Fixed':>9} {'FP Red%':>8}"
+    )
     print("-" * 84)
     for p in providers_list:
         d = report["per_provider"][p]

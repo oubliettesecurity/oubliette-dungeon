@@ -25,6 +25,7 @@ from oubliette_dungeon.core.osef import (
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def sample_results():
     return [
@@ -87,8 +88,8 @@ def single_result():
 # Schema version
 # ---------------------------------------------------------------------------
 
-class TestOSEFVersion:
 
+class TestOSEFVersion:
     def test_version_format(self):
         parts = OSEF_VERSION.split(".")
         assert len(parts) == 3
@@ -99,8 +100,8 @@ class TestOSEFVersion:
 # Framework mappings
 # ---------------------------------------------------------------------------
 
-class TestFrameworkMappings:
 
+class TestFrameworkMappings:
     def test_owasp_has_10_entries(self):
         assert len(OWASP_LLM_TOP_10) == 10
 
@@ -124,8 +125,8 @@ class TestFrameworkMappings:
 # OSEFScenarioResult
 # ---------------------------------------------------------------------------
 
-class TestOSEFScenarioResult:
 
+class TestOSEFScenarioResult:
     def test_from_test_result(self, single_result):
         osef = OSEFScenarioResult.from_test_result(single_result)
         assert osef.scenario_id == "ATK-TEST"
@@ -146,20 +147,32 @@ class TestOSEFScenarioResult:
     def test_response_snippet_truncated(self):
         long_response = "A" * 500
         result = AttackTestResult(
-            scenario_id="X", scenario_name="X", category="jailbreak",
-            difficulty="easy", result="bypass", confidence=0.9,
-            response=long_response, execution_time_ms=100,
-            bypass_indicators_found=[], safe_indicators_found=[],
+            scenario_id="X",
+            scenario_name="X",
+            category="jailbreak",
+            difficulty="easy",
+            result="bypass",
+            confidence=0.9,
+            response=long_response,
+            execution_time_ms=100,
+            bypass_indicators_found=[],
+            safe_indicators_found=[],
         )
         osef = OSEFScenarioResult.from_test_result(result)
         assert len(osef.response_snippet) == 300
 
     def test_bypass_severity_is_critical(self):
         result = AttackTestResult(
-            scenario_id="X", scenario_name="X", category="jailbreak",
-            difficulty="easy", result="bypass", confidence=0.9,
-            response="bad", execution_time_ms=100,
-            bypass_indicators_found=["bad"], safe_indicators_found=[],
+            scenario_id="X",
+            scenario_name="X",
+            category="jailbreak",
+            difficulty="easy",
+            result="bypass",
+            confidence=0.9,
+            response="bad",
+            execution_time_ms=100,
+            bypass_indicators_found=["bad"],
+            safe_indicators_found=[],
         )
         osef = OSEFScenarioResult.from_test_result(result)
         assert osef.severity == "critical"
@@ -169,8 +182,8 @@ class TestOSEFScenarioResult:
 # OSEFReport
 # ---------------------------------------------------------------------------
 
-class TestOSEFReport:
 
+class TestOSEFReport:
     def test_from_results(self, sample_results):
         report = OSEFReport.from_results(sample_results, model_id="test/model")
         assert report.osef_version == OSEF_VERSION
@@ -217,9 +230,7 @@ class TestOSEFReport:
 
     def test_save_and_load(self, sample_results):
         report = OSEFReport.from_results(sample_results, model_id="test")
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             path = f.name
 
         try:
@@ -233,9 +244,7 @@ class TestOSEFReport:
 
     def test_validate_valid_report(self, sample_results):
         report = OSEFReport.from_results(sample_results)
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             path = f.name
 
         try:
@@ -246,9 +255,7 @@ class TestOSEFReport:
             os.unlink(path)
 
     def test_validate_missing_fields(self):
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump({"tool": "test"}, f)
             path = f.name
 
@@ -260,9 +267,7 @@ class TestOSEFReport:
             os.unlink(path)
 
     def test_validate_invalid_json(self):
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("not json")
             path = f.name
 

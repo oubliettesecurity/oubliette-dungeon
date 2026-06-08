@@ -14,6 +14,7 @@ from oubliette_dungeon.core.offline import OfflineExecutor
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def executor():
     return OfflineExecutor(model="llama3")
@@ -66,8 +67,8 @@ def multi_turn_scenario():
 # Initialization tests
 # ---------------------------------------------------------------------------
 
-class TestOfflineExecutorInit:
 
+class TestOfflineExecutorInit:
     def test_default_values(self, executor):
         assert executor.model == "llama3"
         assert executor.ollama_url == "http://localhost:11434"
@@ -87,6 +88,7 @@ class TestOfflineExecutorInit:
 
     def test_remote_ollama_url_rejected_by_default(self):
         import pytest
+
         with pytest.raises(ValueError, match="not loopback"):
             OfflineExecutor(ollama_url="http://custom:9999/")
 
@@ -100,8 +102,8 @@ class TestOfflineExecutorInit:
 # Availability check tests
 # ---------------------------------------------------------------------------
 
-class TestCheckAvailability:
 
+class TestCheckAvailability:
     @patch("oubliette_dungeon.core.offline.requests.get")
     def test_available(self, mock_get, executor):
         mock_get.return_value = MagicMock(
@@ -125,6 +127,7 @@ class TestCheckAvailability:
     @patch("oubliette_dungeon.core.offline.requests.get")
     def test_connection_error(self, mock_get, executor):
         import requests
+
         mock_get.side_effect = requests.exceptions.ConnectionError()
         ok, msg = executor.check_availability()
         assert ok is False
@@ -142,8 +145,8 @@ class TestCheckAvailability:
 # Single-turn execution tests
 # ---------------------------------------------------------------------------
 
-class TestSingleTurnExecution:
 
+class TestSingleTurnExecution:
     @patch("oubliette_dungeon.core.offline.requests.post")
     def test_successful_execution(self, mock_post, executor, scenario):
         mock_post.return_value = MagicMock(
@@ -169,6 +172,7 @@ class TestSingleTurnExecution:
     @patch("oubliette_dungeon.core.offline.requests.post")
     def test_timeout(self, mock_post, executor, scenario):
         import requests
+
         mock_post.side_effect = requests.exceptions.Timeout()
         response, _elapsed = executor.execute_single_turn(scenario)
         assert "timeout" in response.lower()
@@ -176,6 +180,7 @@ class TestSingleTurnExecution:
     @patch("oubliette_dungeon.core.offline.requests.post")
     def test_connection_error(self, mock_post, executor, scenario):
         import requests
+
         mock_post.side_effect = requests.exceptions.ConnectionError()
         response, _elapsed = executor.execute_single_turn(scenario)
         assert "ERROR" in response
@@ -185,8 +190,8 @@ class TestSingleTurnExecution:
 # DDIL simulation tests
 # ---------------------------------------------------------------------------
 
-class TestDDILSimulation:
 
+class TestDDILSimulation:
     def test_packet_drop(self, scenario):
         exec = OfflineExecutor(model="llama3", ddil_drop_rate=1.0)
         response, _elapsed = exec.execute_single_turn(scenario)
@@ -220,8 +225,8 @@ class TestDDILSimulation:
 # Multi-turn execution tests
 # ---------------------------------------------------------------------------
 
-class TestMultiTurnExecution:
 
+class TestMultiTurnExecution:
     @patch("oubliette_dungeon.core.offline.requests.post")
     def test_multi_turn_success(self, mock_post, executor, multi_turn_scenario):
         mock_post.return_value = MagicMock(
@@ -241,8 +246,8 @@ class TestMultiTurnExecution:
 # Execute dispatch tests
 # ---------------------------------------------------------------------------
 
-class TestExecuteDispatch:
 
+class TestExecuteDispatch:
     @patch("oubliette_dungeon.core.offline.requests.post")
     def test_single_turn_dispatch(self, mock_post, executor, scenario):
         mock_post.return_value = MagicMock(

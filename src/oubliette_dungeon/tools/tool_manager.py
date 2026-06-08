@@ -5,6 +5,7 @@ Discovers available adapters, provides a single interface for the API
 layer to list, select, and run tools, and optionally persists results
 to the existing RedTeamResultsDB.
 """
+
 import threading
 from datetime import datetime
 from typing import Any

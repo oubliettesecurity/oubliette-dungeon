@@ -28,7 +28,6 @@ def client(tmp_path, monkeypatch):
 
 
 class TestOSEFLatest:
-
     def test_no_sessions(self, client):
         resp = client.get("/api/dungeon/osef/latest")
         assert resp.status_code == 404
@@ -36,7 +35,6 @@ class TestOSEFLatest:
 
 
 class TestOSEFSession:
-
     def test_invalid_session_id(self, client):
         resp = client.get("/api/dungeon/osef/bad!id@here")
         assert resp.status_code == 400
@@ -47,7 +45,6 @@ class TestOSEFSession:
 
 
 class TestOSEFValidate:
-
     def test_empty_body(self, client):
         resp = client.post(
             "/api/dungeon/osef/validate",

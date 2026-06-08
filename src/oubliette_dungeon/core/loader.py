@@ -3,6 +3,7 @@ Scenario loader for Oubliette Dungeon.
 
 Loads attack scenarios from YAML files with filtering capabilities.
 """
+
 import hashlib
 import logging
 import os
@@ -166,9 +167,7 @@ class ScenarioLoader:
         by_difficulty: dict[str, int] = {}
         for scenario in self.scenarios:
             by_category[scenario.category] = by_category.get(scenario.category, 0) + 1
-            by_difficulty[scenario.difficulty] = (
-                by_difficulty.get(scenario.difficulty, 0) + 1
-            )
+            by_difficulty[scenario.difficulty] = by_difficulty.get(scenario.difficulty, 0) + 1
         return {
             "total": len(self.scenarios),
             "by_category": by_category,

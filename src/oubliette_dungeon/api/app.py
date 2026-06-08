@@ -95,15 +95,9 @@ def create_app(config=None):
             # well-typed and a future None-leak doesn't AttributeError
             # inside _html_escape.
             api_key: str = (
-                os.getenv("OUBLIETTE_DASHBOARD_API_KEY")
-                or os.getenv("OUBLIETTE_API_KEY", "")
-                or ""
+                os.getenv("OUBLIETTE_DASHBOARD_API_KEY") or os.getenv("OUBLIETTE_API_KEY", "") or ""
             )
-            meta_tag = (
-                '<meta name="oubliette-api-key" content="'
-                + _html_escape(api_key)
-                + '">'
-            )
+            meta_tag = '<meta name="oubliette-api-key" content="' + _html_escape(api_key) + '">'
             if "</head>" in html:
                 html = html.replace("</head>", f"    {meta_tag}\n  </head>", 1)
             else:

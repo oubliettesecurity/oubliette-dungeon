@@ -3,6 +3,7 @@ Core data models for Oubliette Dungeon.
 
 Defines enums, dataclasses, and constants shared across the engine.
 """
+
 import os
 from dataclasses import dataclass
 from datetime import datetime

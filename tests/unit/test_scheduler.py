@@ -234,23 +234,27 @@ class TestSchedulerSSRF:
         # Create a job with DUNGEON_ALLOW_PRIVATE_TARGETS=true first
         monkeypatch.setenv("DUNGEON_ALLOW_PRIVATE_TARGETS", "true")
         job_id = strict_scheduler.schedule_run(
-            name="legit", cron="0 0 * * *",
+            name="legit",
+            cron="0 0 * * *",
             target_url="https://api.example.com/v1/chat",
         )
         # Now tighten the environment and try to update to a forbidden target.
         monkeypatch.setenv("DUNGEON_ALLOW_PRIVATE_TARGETS", "false")
         with pytest.raises(ValueError, match=r"Rejected target_url"):
             strict_scheduler.update_job(
-                job_id, target_url="http://169.254.169.254/latest/meta-data/",
+                job_id,
+                target_url="http://169.254.169.254/latest/meta-data/",
             )
 
     def test_is_ip_safe_rejects_fly_io_ula(self):
         from oubliette_dungeon.api.middleware import _is_ip_safe
+
         # fdaa::/16 -- Fly.io 6PN range, not covered by ipaddress.is_private
         assert _is_ip_safe("fdaa::1") is False
         assert _is_ip_safe("fdaa:abcd:ef01::dead:beef") is False
 
     def test_is_ip_safe_accepts_public_ipv6(self):
         from oubliette_dungeon.api.middleware import _is_ip_safe
+
         assert _is_ip_safe("2606:4700:4700::1111") is True  # Cloudflare DNS
         assert _is_ip_safe("2001:4860:4860::8888") is True  # Google DNS

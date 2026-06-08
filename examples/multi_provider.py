@@ -35,10 +35,10 @@ def main():
     all_results = {}
 
     for provider in PROVIDERS:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Testing: {provider['name']}")
         print(f"Target:  {provider['url']}")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         orch = RedTeamOrchestrator(
             scenario_file=None,
@@ -52,9 +52,9 @@ def main():
         orch.print_summary(results)
 
     # Compare results
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print("COMPARISON SUMMARY")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"{'Provider':<30} {'Detected':<10} {'Bypassed':<10} {'Rate':<10}")
     print("-" * 60)
 

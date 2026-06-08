@@ -31,7 +31,6 @@ def client(tmp_path, monkeypatch):
 
 
 class TestListComparisons:
-
     def test_empty_list(self, client):
         resp = client.get("/api/dungeon/comparisons")
         assert resp.status_code == 200
@@ -63,7 +62,6 @@ class TestListComparisons:
 
 
 class TestGetComparison:
-
     def test_not_found(self, client):
         resp = client.get("/api/dungeon/comparisons/nonexistent")
         assert resp.status_code == 404
@@ -91,7 +89,6 @@ class TestGetComparison:
 
 
 class TestRunComparison:
-
     def test_missing_models(self, client):
         resp = client.post(
             "/api/dungeon/comparisons/run",

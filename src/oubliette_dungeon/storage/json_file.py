@@ -7,6 +7,7 @@ Features:
 - Generate reports and statistics
 - Export to various formats (JSON, CSV)
 """
+
 import csv
 import json
 import re
@@ -144,9 +145,7 @@ class RedTeamResultsDB:
             return True
         return session_data.get("created_by_key_hint") == caller_key_hint
 
-    def get_session(
-        self, session_id: str, caller_key_hint: str | None = None
-    ) -> dict | None:
+    def get_session(self, session_id: str, caller_key_hint: str | None = None) -> dict | None:
         _validate_session_id(session_id)
         session_file = self.db_dir / f"{session_id}.json"
         if not session_file.exists():
@@ -168,24 +167,28 @@ class RedTeamResultsDB:
     def get_latest_session(self, caller_key_hint: str | None = None) -> dict | None:
         sessions = self.list_sessions(caller_key_hint=caller_key_hint)
         if sessions:
-            return self.get_session(
-                sessions[0]["session_id"], caller_key_hint=caller_key_hint
-            )
+            return self.get_session(sessions[0]["session_id"], caller_key_hint=caller_key_hint)
         return None
 
-    def query_by_category(self, category: str, session_id: str | None = None) -> list[dict[str, Any]]:
+    def query_by_category(
+        self, category: str, session_id: str | None = None
+    ) -> list[dict[str, Any]]:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
         if not session_data:
             return []
         return [r for r in session_data["results"] if r["category"] == category]
 
-    def query_by_result(self, result_type: str, session_id: str | None = None) -> list[dict[str, Any]]:
+    def query_by_result(
+        self, result_type: str, session_id: str | None = None
+    ) -> list[dict[str, Any]]:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
         if not session_data:
             return []
         return [r for r in session_data["results"] if r["result"] == result_type]
 
-    def query_by_difficulty(self, difficulty: str, session_id: str | None = None) -> list[dict[str, Any]]:
+    def query_by_difficulty(
+        self, difficulty: str, session_id: str | None = None
+    ) -> list[dict[str, Any]]:
         session_data = self.get_session(session_id) if session_id else self.get_latest_session()
         if not session_data:
             return []

@@ -5,6 +5,7 @@ All third-party red team tool integrations (PyRIT, DeepTeam, Garak, etc.)
 must implement RedTeamToolAdapter to ensure a consistent interface for the
 ToolManager and API layer.
 """
+
 from abc import ABC, abstractmethod
 from typing import Any
 

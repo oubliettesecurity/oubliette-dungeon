@@ -70,9 +70,7 @@ class TestDashboardMetaInjection:
         assert 'name="oubliette-api-key"' in html
         assert 'content=""' in html
 
-    def test_separate_dashboard_key_overrides_server_key(
-        self, dashboard_dir, monkeypatch
-    ):
+    def test_separate_dashboard_key_overrides_server_key(self, dashboard_dir, monkeypatch):
         """OUBLIETTE_DASHBOARD_API_KEY lets operators hand the dashboard a
         different key than the one the CLI / CI uses -- so a browser-
         facing key can be rotated independently of automation keys."""

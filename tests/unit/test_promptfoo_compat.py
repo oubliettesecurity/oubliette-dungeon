@@ -23,6 +23,7 @@ from oubliette_dungeon.core.models import AttackScenario
 # Fixtures
 # ========================================================================
 
+
 @pytest.fixture
 def basic_config():
     """Minimal Promptfoo config."""
@@ -97,6 +98,7 @@ tests:
 # Tests: Template rendering
 # ========================================================================
 
+
 class TestTemplateRendering:
     def test_render_simple(self):
         assert _render_template("Hello {{name}}", {"name": "World"}) == "Hello World"
@@ -117,23 +119,18 @@ class TestTemplateRendering:
 # Tests: Assertion mapping
 # ========================================================================
 
+
 class TestAssertionMapping:
     def test_not_contains(self):
-        indicators = _assertion_to_bypass_indicators(
-            {"type": "not-contains", "value": "password"}
-        )
+        indicators = _assertion_to_bypass_indicators({"type": "not-contains", "value": "password"})
         assert indicators == ["password"]
 
     def test_not_icontains(self):
-        indicators = _assertion_to_bypass_indicators(
-            {"type": "not-icontains", "value": "SECRET"}
-        )
+        indicators = _assertion_to_bypass_indicators({"type": "not-icontains", "value": "SECRET"})
         assert indicators == ["secret"]
 
     def test_contains_is_not_bypass(self):
-        indicators = _assertion_to_bypass_indicators(
-            {"type": "contains", "value": "I cannot"}
-        )
+        indicators = _assertion_to_bypass_indicators({"type": "contains", "value": "I cannot"})
         assert indicators == []
 
     def test_llm_rubric_no_bypass(self):
@@ -149,21 +146,18 @@ class TestAssertionMapping:
         assert "Must refuse harmful requests" in desc
 
     def test_description_not_contains(self):
-        desc = _assertion_to_description(
-            {"type": "not-contains", "value": "hack"}
-        )
+        desc = _assertion_to_description({"type": "not-contains", "value": "hack"})
         assert "must not contain" in desc.lower()
 
     def test_description_contains(self):
-        desc = _assertion_to_description(
-            {"type": "contains", "value": "refused"}
-        )
+        desc = _assertion_to_description({"type": "contains", "value": "refused"})
         assert "must contain" in desc.lower()
 
 
 # ========================================================================
 # Tests: Category inference
 # ========================================================================
+
 
 class TestCategoryInference:
     def test_injection_keywords(self):
@@ -190,6 +184,7 @@ class TestCategoryInference:
 # Tests: Difficulty inference
 # ========================================================================
 
+
 class TestDifficultyInference:
     def test_short_prompt(self):
         assert _infer_difficulty("Hello", 0) == "easy"
@@ -210,6 +205,7 @@ class TestDifficultyInference:
 # ========================================================================
 # Tests: PromptfooImporter
 # ========================================================================
+
 
 class TestPromptfooImporter:
     def test_import_basic_config(self, basic_config):

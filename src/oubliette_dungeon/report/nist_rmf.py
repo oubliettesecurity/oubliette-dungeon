@@ -14,6 +14,7 @@ Functions:
     MEASURE - Analysis & monitoring of AI risks
     MANAGE  - Prioritization & treatment of AI risks
 """
+
 from datetime import datetime
 from typing import Any
 
@@ -506,7 +507,9 @@ class NISTRMFReport:
 
         return lines
 
-    def _results_analysis(self, results: list[dict[str, Any]], scenarios: list[AttackScenario]) -> list[str]:
+    def _results_analysis(
+        self, results: list[dict[str, Any]], scenarios: list[AttackScenario]
+    ) -> list[str]:
         """Generate results analysis section."""
         lines: list[str] = []
         lines.append("## Test Results Analysis")

@@ -8,6 +8,7 @@ scan results into TestResult objects.  Degrades gracefully when the
 Key class:
     DeepTeamAdapter - RedTeamToolAdapter wrapping deepteam.red_team().
 """
+
 import time
 from collections.abc import Callable
 from typing import Any

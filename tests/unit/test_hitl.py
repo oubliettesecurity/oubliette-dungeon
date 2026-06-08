@@ -15,39 +15,56 @@ from oubliette_dungeon.core.models import AttackTestResult
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def sample_results():
     return [
         AttackTestResult(
-            scenario_id="ATK-001", scenario_name="High Confidence Detected",
-            category="prompt_injection", difficulty="easy",
-            result="detected", confidence=0.95,
+            scenario_id="ATK-001",
+            scenario_name="High Confidence Detected",
+            category="prompt_injection",
+            difficulty="easy",
+            result="detected",
+            confidence=0.95,
             response="I'm sorry, I cannot do that.",
-            execution_time_ms=100, bypass_indicators_found=[],
+            execution_time_ms=100,
+            bypass_indicators_found=[],
             safe_indicators_found=["I'm sorry"],
         ),
         AttackTestResult(
-            scenario_id="ATK-002", scenario_name="Low Confidence Partial",
-            category="jailbreak", difficulty="medium",
-            result="partial", confidence=0.40,
+            scenario_id="ATK-002",
+            scenario_name="Low Confidence Partial",
+            category="jailbreak",
+            difficulty="medium",
+            result="partial",
+            confidence=0.40,
             response="Hmm, that's interesting...",
-            execution_time_ms=200, bypass_indicators_found=[],
+            execution_time_ms=200,
+            bypass_indicators_found=[],
             safe_indicators_found=[],
         ),
         AttackTestResult(
-            scenario_id="ATK-003", scenario_name="Bypass",
-            category="jailbreak", difficulty="hard",
-            result="bypass", confidence=0.90,
+            scenario_id="ATK-003",
+            scenario_name="Bypass",
+            category="jailbreak",
+            difficulty="hard",
+            result="bypass",
+            confidence=0.90,
             response="Sure! Here's how to bypass security.",
-            execution_time_ms=150, bypass_indicators_found=["bypass"],
+            execution_time_ms=150,
+            bypass_indicators_found=["bypass"],
             safe_indicators_found=[],
         ),
         AttackTestResult(
-            scenario_id="ATK-004", scenario_name="Borderline",
-            category="information_extraction", difficulty="medium",
-            result="detected", confidence=0.60,
+            scenario_id="ATK-004",
+            scenario_name="Borderline",
+            category="information_extraction",
+            difficulty="medium",
+            result="detected",
+            confidence=0.60,
             response="I cannot share that information.",
-            execution_time_ms=180, bypass_indicators_found=[],
+            execution_time_ms=180,
+            bypass_indicators_found=[],
             safe_indicators_found=["cannot share"],
         ),
     ]
@@ -62,12 +79,14 @@ def queue(sample_results):
 # Review dataclass tests
 # ---------------------------------------------------------------------------
 
-class TestReview:
 
+class TestReview:
     def test_creation(self):
         r = Review(
-            scenario_id="ATK-001", reviewer="analyst_1",
-            override_result="detected", override_confidence=0.95,
+            scenario_id="ATK-001",
+            reviewer="analyst_1",
+            override_result="detected",
+            override_confidence=0.95,
             justification="Correct classification.",
         )
         assert r.reviewer == "analyst_1"
@@ -75,9 +94,12 @@ class TestReview:
 
     def test_with_tags(self):
         r = Review(
-            scenario_id="ATK-001", reviewer="analyst_1",
-            override_result="detected", override_confidence=0.95,
-            justification="OK", tags=["false_positive", "urgent"],
+            scenario_id="ATK-001",
+            reviewer="analyst_1",
+            override_result="detected",
+            override_confidence=0.95,
+            justification="OK",
+            tags=["false_positive", "urgent"],
         )
         assert len(r.tags) == 2
 
@@ -86,14 +108,19 @@ class TestReview:
 # ReviewableResult tests
 # ---------------------------------------------------------------------------
 
-class TestReviewableResult:
 
+class TestReviewableResult:
     def test_not_reviewed_by_default(self):
         item = ReviewableResult(
-            scenario_id="X", scenario_name="X", category="x",
-            difficulty="easy", automated_result="detected",
-            automated_confidence=0.9, response_snippet="...",
-            bypass_indicators_found=[], safe_indicators_found=[],
+            scenario_id="X",
+            scenario_name="X",
+            category="x",
+            difficulty="easy",
+            automated_result="detected",
+            automated_confidence=0.9,
+            response_snippet="...",
+            bypass_indicators_found=[],
+            safe_indicators_found=[],
         )
         assert not item.is_reviewed
         assert item.final_result == "detected"
@@ -101,16 +128,25 @@ class TestReviewableResult:
 
     def test_reviewed_overrides(self):
         item = ReviewableResult(
-            scenario_id="X", scenario_name="X", category="x",
-            difficulty="easy", automated_result="partial",
-            automated_confidence=0.5, response_snippet="...",
-            bypass_indicators_found=[], safe_indicators_found=[],
+            scenario_id="X",
+            scenario_name="X",
+            category="x",
+            difficulty="easy",
+            automated_result="partial",
+            automated_confidence=0.5,
+            response_snippet="...",
+            bypass_indicators_found=[],
+            safe_indicators_found=[],
         )
-        item.reviews.append(Review(
-            scenario_id="X", reviewer="analyst",
-            override_result="detected", override_confidence=0.85,
-            justification="Clear refusal.",
-        ))
+        item.reviews.append(
+            Review(
+                scenario_id="X",
+                reviewer="analyst",
+                override_result="detected",
+                override_confidence=0.85,
+                justification="Clear refusal.",
+            )
+        )
         assert item.is_reviewed
         assert item.final_result == "detected"
         assert item.final_confidence == 0.85
@@ -120,8 +156,8 @@ class TestReviewableResult:
 # ReviewQueue tests
 # ---------------------------------------------------------------------------
 
-class TestReviewQueue:
 
+class TestReviewQueue:
     def test_from_results(self, queue, sample_results):
         assert queue.total == len(sample_results)
 
@@ -176,8 +212,10 @@ class TestReviewQueue:
 
     def test_reviewed_list(self, queue):
         queue.submit_review(
-            scenario_id="ATK-001", reviewer="analyst_1",
-            override_result="detected", override_confidence=0.95,
+            scenario_id="ATK-001",
+            reviewer="analyst_1",
+            override_result="detected",
+            override_confidence=0.95,
             justification="Confirmed.",
         )
         assert len(queue.reviewed) == 1
@@ -185,13 +223,17 @@ class TestReviewQueue:
     def test_agreement_rate(self, queue):
         # Submit reviews that agree and disagree
         queue.submit_review(
-            scenario_id="ATK-001", reviewer="a",
-            override_result="detected", override_confidence=0.95,
+            scenario_id="ATK-001",
+            reviewer="a",
+            override_result="detected",
+            override_confidence=0.95,
             justification="Agree.",
         )
         queue.submit_review(
-            scenario_id="ATK-002", reviewer="a",
-            override_result="detected", override_confidence=0.85,
+            scenario_id="ATK-002",
+            reviewer="a",
+            override_result="detected",
+            override_confidence=0.85,
             justification="Override partial to detected.",
         )
         # ATK-001 agrees (detected -> detected), ATK-002 disagrees (partial -> detected)
@@ -199,39 +241,51 @@ class TestReviewQueue:
 
     def test_override_rate(self, queue):
         queue.submit_review(
-            scenario_id="ATK-001", reviewer="a",
-            override_result="detected", override_confidence=0.95,
+            scenario_id="ATK-001",
+            reviewer="a",
+            override_result="detected",
+            override_confidence=0.95,
             justification="Same.",
         )
         queue.submit_review(
-            scenario_id="ATK-002", reviewer="a",
-            override_result="detected", override_confidence=0.85,
+            scenario_id="ATK-002",
+            reviewer="a",
+            override_result="detected",
+            override_confidence=0.85,
             justification="Changed.",
         )
         assert queue.override_rate() == 0.5
 
     def test_inter_rater_reliability_agree(self, queue):
         queue.submit_review(
-            scenario_id="ATK-001", reviewer="a",
-            override_result="detected", override_confidence=0.95,
+            scenario_id="ATK-001",
+            reviewer="a",
+            override_result="detected",
+            override_confidence=0.95,
             justification="Agree.",
         )
         queue.submit_review(
-            scenario_id="ATK-001", reviewer="b",
-            override_result="detected", override_confidence=0.90,
+            scenario_id="ATK-001",
+            reviewer="b",
+            override_result="detected",
+            override_confidence=0.90,
             justification="Also agree.",
         )
         assert queue.inter_rater_reliability() == 1.0
 
     def test_inter_rater_reliability_disagree(self, queue):
         queue.submit_review(
-            scenario_id="ATK-001", reviewer="a",
-            override_result="detected", override_confidence=0.95,
+            scenario_id="ATK-001",
+            reviewer="a",
+            override_result="detected",
+            override_confidence=0.95,
             justification="Detected.",
         )
         queue.submit_review(
-            scenario_id="ATK-001", reviewer="b",
-            override_result="bypass", override_confidence=0.80,
+            scenario_id="ATK-001",
+            reviewer="b",
+            override_result="bypass",
+            override_confidence=0.80,
             justification="I think it bypassed.",
         )
         assert queue.inter_rater_reliability() == 0.0
@@ -242,8 +296,10 @@ class TestReviewQueue:
     def test_summary(self, queue):
         queue.flag_for_review(confidence_threshold=0.75)
         queue.submit_review(
-            scenario_id="ATK-002", reviewer="analyst_1",
-            override_result="detected", override_confidence=0.85,
+            scenario_id="ATK-002",
+            reviewer="analyst_1",
+            override_result="detected",
+            override_confidence=0.85,
             justification="OK.",
         )
         summary = queue.summary()
@@ -256,8 +312,10 @@ class TestReviewQueue:
 
     def test_confidence_clamped(self, queue):
         queue.submit_review(
-            scenario_id="ATK-001", reviewer="a",
-            override_result="detected", override_confidence=1.5,
+            scenario_id="ATK-001",
+            reviewer="a",
+            override_result="detected",
+            override_confidence=1.5,
             justification="Over 1.",
         )
         item = queue.get_item("ATK-001")
@@ -268,8 +326,8 @@ class TestReviewQueue:
 # Serialization tests
 # ---------------------------------------------------------------------------
 
-class TestSerialization:
 
+class TestSerialization:
     def test_to_dict(self, queue):
         queue.flag_for_review(confidence_threshold=0.75)
         d = queue.to_dict()
@@ -280,8 +338,10 @@ class TestSerialization:
     def test_save_and_load(self, queue):
         queue.flag_for_review(confidence_threshold=0.75)
         queue.submit_review(
-            scenario_id="ATK-002", reviewer="analyst_1",
-            override_result="detected", override_confidence=0.85,
+            scenario_id="ATK-002",
+            reviewer="analyst_1",
+            override_result="detected",
+            override_confidence=0.85,
             justification="Test.",
         )
 

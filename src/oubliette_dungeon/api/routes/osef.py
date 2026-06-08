@@ -6,6 +6,7 @@ Routes:
     GET  /api/dungeon/osef/latest        - Generate OSEF report for latest session
     POST /api/dungeon/osef/validate      - Validate an OSEF document
 """
+
 from typing import Any
 
 from flask import jsonify, request

@@ -17,6 +17,7 @@ from oubliette_dungeon.report.nist_rmf import (
 # Fixtures
 # ========================================================================
 
+
 @pytest.fixture
 def injection_scenario():
     return AttackScenario(
@@ -93,10 +94,16 @@ def tool_scenario():
 
 
 @pytest.fixture
-def all_scenarios(injection_scenario, jailbreak_scenario, compliance_scenario,
-                  extraction_scenario, tool_scenario):
-    return [injection_scenario, jailbreak_scenario, compliance_scenario,
-            extraction_scenario, tool_scenario]
+def all_scenarios(
+    injection_scenario, jailbreak_scenario, compliance_scenario, extraction_scenario, tool_scenario
+):
+    return [
+        injection_scenario,
+        jailbreak_scenario,
+        compliance_scenario,
+        extraction_scenario,
+        tool_scenario,
+    ]
 
 
 @pytest.fixture
@@ -133,6 +140,7 @@ def sample_results():
 # Tests: Helpers
 # ========================================================================
 
+
 class TestHelpers:
     def test_normalize_category(self):
         assert _normalize_category("prompt_injection") == "prompt_injection"
@@ -153,6 +161,7 @@ class TestHelpers:
 # ========================================================================
 # Tests: Scenario mapping
 # ========================================================================
+
 
 class TestScenarioMapping:
     def test_injection_maps_to_subcategories(self, injection_scenario):
@@ -189,6 +198,7 @@ class TestScenarioMapping:
 # Tests: NISTRMFReport
 # ========================================================================
 
+
 class TestNISTRMFReport:
     def test_generate_without_results(self, all_scenarios):
         report = NISTRMFReport()
@@ -217,7 +227,10 @@ class TestNISTRMFReport:
         report = NISTRMFReport()
         md = report.generate(scenarios=all_scenarios)
 
-        assert "| Function | Sub-categories Tested | Total Sub-categories | Coverage | Risk Level |" in md
+        assert (
+            "| Function | Sub-categories Tested | Total Sub-categories | Coverage | Risk Level |"
+            in md
+        )
         assert "| GOVERN" in md
         assert "| MAP" in md
         assert "| MEASURE" in md
@@ -283,8 +296,5 @@ class TestNISTRMFReport:
         assert "MANAGE" in mapping
 
         # At least some sub-categories should have scenarios
-        total_mapped = sum(
-            len(scs) for subcats in mapping.values()
-            for scs in subcats.values()
-        )
+        total_mapped = sum(len(scs) for subcats in mapping.values() for scs in subcats.values())
         assert total_mapped > 0
