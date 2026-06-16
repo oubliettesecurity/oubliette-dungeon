@@ -4,7 +4,7 @@ Standalone adversarial testing engine for LLM applications. Run red team attack 
 
 ## Features
 
-- **57 built-in attack scenarios** across 9 categories (prompt injection, jailbreak, information extraction, social engineering, model exploitation, context manipulation, tool exploitation, resource abuse, compliance testing)
+- **72 built-in attack scenarios** across 10 categories (prompt injection, jailbreak, information extraction, social engineering, model exploitation, context manipulation, tool exploitation, resource abuse, compliance testing, multi-turn attack)
 - **Refusal-aware evaluation** - reduces false positive bypasses when LLMs mention attack keywords in refusal context
 - **Honeypot-aware scoring** - detects honey token decoys from pipeline metadata
 - **Multi-turn attack support** - escalating conversation sequences
