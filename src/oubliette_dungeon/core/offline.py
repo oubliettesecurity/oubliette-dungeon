@@ -26,6 +26,7 @@ from typing import Any
 
 import requests
 
+from oubliette_dungeon.core.executor import aggregate_turn_meta
 from oubliette_dungeon.core.models import AttackScenario
 
 
@@ -194,6 +195,7 @@ class OfflineExecutor:
 
         responses = []
         context: list[dict[str, Any]] = []
+        turn_metas: list[dict[str, Any]] = []
         start_time = time.time()
 
         for prompt in scenario.multi_turn_prompts:
@@ -224,12 +226,24 @@ class OfflineExecutor:
                     responses.append(response_text)
                     context.append({"role": "user", "content": prompt})
                     context.append({"role": "assistant", "content": response_text})
+                    turn_metas.append(
+                        {
+                            "contains_honey_token": data.get("contains_honey_token", False),
+                            "verdict": data.get("verdict"),
+                            "ml_score": data.get("ml_score"),
+                            "llm_verdict": data.get("llm_verdict"),
+                        }
+                    )
                 else:
                     responses.append(f"ERROR: HTTP {resp.status_code}")
 
             except Exception as e:
                 responses.append(f"ERROR: {e}")
 
+        # MED fix (2026-07-02 review): propagate aggregated pipeline metadata
+        # so multi-turn scenarios reach the evaluator's honey-token / verdict
+        # shortcut instead of always falling through to indicator heuristics.
+        self._last_meta = {**aggregate_turn_meta(turn_metas), "offline": True}
         elapsed_ms = (time.time() - start_time) * 1000
         return responses, elapsed_ms
 

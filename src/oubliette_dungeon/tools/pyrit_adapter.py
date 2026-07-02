@@ -60,6 +60,24 @@ class OubliettePromptTarget:
         if api_key:
             self._session.headers["X-API-Key"] = api_key
 
+    def close(self) -> None:
+        """Close the underlying HTTP session and free its connection pool."""
+        session = getattr(self, "_session", None)
+        if session is not None:
+            session.close()
+
+    def __enter__(self) -> "OubliettePromptTarget":
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self.close()
+
+    def __del__(self) -> None:
+        try:
+            self.close()
+        except Exception:
+            pass
+
     # -- Synchronous helper used by both PyRIT async path and standalone ---
 
     def _send(self, text: str) -> dict[str, Any]:
@@ -179,6 +197,8 @@ class PyRITAdapter(RedTeamToolAdapter):
                 safe_indicators_found=[],
                 notes=f"PyRIT adapter error: {exc}",
             )
+        finally:
+            target.close()
 
         # Determine result from endpoint metadata
         result_enum, confidence = self._classify_response(

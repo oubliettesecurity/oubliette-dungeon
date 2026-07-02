@@ -16,6 +16,7 @@ from oubliette_dungeon.api.middleware import (
     _require_api_key,
     dungeon_bp,
 )
+from oubliette_dungeon.api.routes.sessions import _caller_hint
 from oubliette_dungeon.core.models import AttackTestResult
 from oubliette_dungeon.core.osef import OSEF_VERSION, OSEFReport
 from oubliette_dungeon.storage.json_file import is_valid_session_id
@@ -50,7 +51,7 @@ def _build_results_from_session(session_data: dict[str, Any]) -> list[AttackTest
 def osef_latest():
     """Generate an OSEF report for the most recent session."""
     db = _get_results_db()
-    session_data = db.get_latest_session()
+    session_data = db.get_latest_session(caller_key_hint=_caller_hint())
     if not session_data:
         return jsonify({"error": "No sessions found"}), 404
 
@@ -79,7 +80,7 @@ def osef_for_session(session_id):
         return jsonify({"error": "Invalid session ID"}), 400
 
     db = _get_results_db()
-    session_data = db.get_session(session_id)
+    session_data = db.get_session(session_id, caller_key_hint=_caller_hint())
     if not session_data:
         return jsonify({"error": f"Session not found: {session_id}"}), 404
 

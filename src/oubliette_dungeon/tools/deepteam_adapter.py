@@ -145,6 +145,8 @@ class DeepTeamAdapter(RedTeamToolAdapter):
                 safe_indicators_found=[],
                 notes=f"tool=deepteam error: {exc}",
             )
+        finally:
+            session.close()
 
         result_enum = AttackResult.SUCCESS_DETECTED if blocked else AttackResult.SUCCESS_BYPASS
         confidence = 0.90 if blocked else 0.70
@@ -201,17 +203,17 @@ class DeepTeamAdapter(RedTeamToolAdapter):
             loop = asyncio.get_running_loop()
 
             def _sync():
-                sess = requests.Session()
-                if api_key:
-                    sess.headers["X-API-Key"] = api_key
-                resp = sess.post(
-                    target_url,
-                    json={"message": prompt},
-                    timeout=timeout,
-                    headers={"Content-Type": "application/json"},
-                )
-                resp.raise_for_status()
-                return resp.json().get("response", "")
+                with requests.Session() as sess:
+                    if api_key:
+                        sess.headers["X-API-Key"] = api_key
+                    resp = sess.post(
+                        target_url,
+                        json={"message": prompt},
+                        timeout=timeout,
+                        headers={"Content-Type": "application/json"},
+                    )
+                    resp.raise_for_status()
+                    return resp.json().get("response", "")
 
             return await loop.run_in_executor(None, _sync)
 
