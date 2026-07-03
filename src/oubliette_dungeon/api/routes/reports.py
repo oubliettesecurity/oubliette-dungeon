@@ -12,6 +12,7 @@ from oubliette_dungeon.api.middleware import (
     _require_api_key,
     dungeon_bp,
 )
+from oubliette_dungeon.api.routes.sessions import _caller_hint
 from oubliette_dungeon.storage.json_file import is_valid_session_id
 
 
@@ -28,7 +29,7 @@ def export_pdf(session_id):
         return jsonify({"error": "PDF generation not available (pip install fpdf2)"}), 503
 
     db = _get_results_db()
-    session_data = db.get_session(session_id)
+    session_data = db.get_session(session_id, caller_key_hint=_caller_hint())
     if not session_data:
         return jsonify({"error": f"Session not found: {session_id}"}), 404
 

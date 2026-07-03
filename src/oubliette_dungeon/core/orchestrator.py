@@ -5,6 +5,7 @@ Coordinates scenario loading, execution, evaluation, and reporting.
 """
 
 import json
+import uuid
 from dataclasses import asdict
 from datetime import datetime
 from typing import Any
@@ -37,7 +38,13 @@ class RedTeamOrchestrator:
         self.executor = AttackExecutor(target_url, timeout)
         self.evaluator = ResultEvaluator()
         self.results_db = results_db
-        self.current_session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        # HIGH fix (2026-07-02 review): a bare %Y%m%d_%H%M%S timestamp
+        # collides for any two sessions started in the same second, causing
+        # their results to be merged into one session file. Append a short
+        # random suffix to make the id effectively unique.
+        self.current_session_id = (
+            f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+        )
         # MED-11: remember which API key started this session so save_result
         # can scope it in storage. None preserves pre-MED-11 behaviour (no
         # hint = global visibility), required for CLI + test paths that

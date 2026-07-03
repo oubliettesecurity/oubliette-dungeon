@@ -10,14 +10,51 @@ Features:
 
 import csv
 import json
+import os
 import re
 import stat
 import sys
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 _SAFE_SESSION_ID = re.compile(r"^[a-zA-Z0-9_\-]{1,128}$")
+
+# Serialize the read-modify-write cycle in save_result per session id so
+# concurrent writers to the same session file don't silently drop results.
+# A single module-level registry (guarded by _SESSION_LOCKS_GUARD) hands out
+# one lock per session id, shared across all RedTeamResultsDB instances that
+# target the same file.
+_SESSION_LOCKS_GUARD = threading.Lock()
+_SESSION_LOCKS: dict[str, threading.Lock] = {}
+
+# Serializes mutation + persistence of the shared session index.
+_INDEX_GUARD = threading.Lock()
+
+
+def _session_lock(session_id: str) -> threading.Lock:
+    with _SESSION_LOCKS_GUARD:
+        lock = _SESSION_LOCKS.get(session_id)
+        if lock is None:
+            lock = threading.Lock()
+            _SESSION_LOCKS[session_id] = lock
+        return lock
+
+
+def _atomic_write_json(path: Path, data: Any) -> None:
+    """Write JSON to ``path`` via a temp file + atomic rename.
+
+    Prevents torn/partial files if the process dies mid-write and prevents a
+    concurrent reader from observing a half-written document.
+    """
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    _restrict_permissions(tmp)
+    os.replace(tmp, path)
 
 
 def is_valid_session_id(session_id: str) -> bool:
@@ -68,9 +105,7 @@ class RedTeamResultsDB:
         return default
 
     def _save_index(self) -> None:
-        with open(self.index_file, "w") as f:
-            json.dump(self.index, f, indent=2)
-        _restrict_permissions(self.index_file)
+        _atomic_write_json(self.index_file, self.index)
 
     def save_result(
         self,
@@ -95,43 +130,48 @@ class RedTeamResultsDB:
             result_dict = result
 
         session_file = self.db_dir / f"{session_id}.json"
-        if session_file.exists():
-            with open(session_file) as f:
-                session_data = json.load(f)
-        else:
-            session_data = {
-                "session_id": session_id,
-                "started_at": datetime.now().isoformat(),
-                "results": [],
-                "created_by_key_hint": caller_key_hint or "__anon__",
-            }
 
-        # Only stamp the hint on first write; never overwrite a prior value.
-        session_data.setdefault("created_by_key_hint", caller_key_hint or "__anon__")
+        # HIGH fix (2026-07-02 review): serialize the read-modify-write per
+        # session id and write atomically. Concurrent writers previously read
+        # the same stale document, each appended one result, and the last
+        # writer clobbered the others -- silently dropping results.
+        with _session_lock(session_id):
+            if session_file.exists():
+                with open(session_file) as f:
+                    session_data = json.load(f)
+            else:
+                session_data = {
+                    "session_id": session_id,
+                    "started_at": datetime.now().isoformat(),
+                    "results": [],
+                    "created_by_key_hint": caller_key_hint or "__anon__",
+                }
 
-        session_data["results"].append(result_dict)
-        session_data["updated_at"] = datetime.now().isoformat()
-        session_data["total_tests"] = len(session_data["results"])
+            # Only stamp the hint on first write; never overwrite a prior value.
+            session_data.setdefault("created_by_key_hint", caller_key_hint or "__anon__")
 
-        with open(session_file, "w") as f:
-            json.dump(session_data, f, indent=2)
-        _restrict_permissions(session_file)
+            session_data["results"].append(result_dict)
+            session_data["updated_at"] = datetime.now().isoformat()
+            session_data["total_tests"] = len(session_data["results"])
 
-        if session_id not in self.index["sessions"]:
-            self.index["sessions"][session_id] = {
-                "file": str(session_file),
-                "started_at": session_data["started_at"],
-                "total_tests": 0,
-                "created_by_key_hint": session_data["created_by_key_hint"],
-            }
+            _atomic_write_json(session_file, session_data)
 
-        self.index["sessions"][session_id]["updated_at"] = session_data["updated_at"]
-        self.index["sessions"][session_id]["total_tests"] = session_data["total_tests"]
-        # Backfill the hint on the index for records that pre-date MED-11.
-        self.index["sessions"][session_id].setdefault(
-            "created_by_key_hint", session_data["created_by_key_hint"]
-        )
-        self._save_index()
+            with _INDEX_GUARD:
+                if session_id not in self.index["sessions"]:
+                    self.index["sessions"][session_id] = {
+                        "file": str(session_file),
+                        "started_at": session_data["started_at"],
+                        "total_tests": 0,
+                        "created_by_key_hint": session_data["created_by_key_hint"],
+                    }
+
+                self.index["sessions"][session_id]["updated_at"] = session_data["updated_at"]
+                self.index["sessions"][session_id]["total_tests"] = session_data["total_tests"]
+                # Backfill the hint on the index for records that pre-date MED-11.
+                self.index["sessions"][session_id].setdefault(
+                    "created_by_key_hint", session_data["created_by_key_hint"]
+                )
+                self._save_index()
 
     # ------------------------------------------------------------------
     # Read helpers -- accept an optional caller_key_hint for scoping.

@@ -209,20 +209,19 @@ class AixAdapter(RedTeamToolAdapter):
         """
         self._check_target(target_url)
 
-        session = requests.Session()
-        if self.api_key:
-            session.headers["X-API-Key"] = self.api_key
-
         start = time.time()
         try:
-            resp = session.post(
-                target_url,
-                json={"message": prompt},
-                timeout=self.timeout,
-                headers={"Content-Type": "application/json"},
-            )
-            resp.raise_for_status()
-            data = resp.json()
+            with requests.Session() as session:
+                if self.api_key:
+                    session.headers["X-API-Key"] = self.api_key
+                resp = session.post(
+                    target_url,
+                    json={"message": prompt},
+                    timeout=self.timeout,
+                    headers={"Content-Type": "application/json"},
+                )
+                resp.raise_for_status()
+                data = resp.json()
             elapsed = (time.time() - start) * 1000
 
             response_text = _sanitize_text(data.get("response", ""))
