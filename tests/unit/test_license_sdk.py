@@ -1,5 +1,8 @@
 """Verify the ported revenue SDK works in Dungeon (issuer -> validator round-trip)."""
 
+import hashlib
+import hmac as _hmac
+
 from oubliette_dungeon.license import PRO_FEATURES, LicenseManager
 from oubliette_dungeon.license_issuer import issue_license
 from oubliette_dungeon.license_webhook import license_for_sale
@@ -27,10 +30,16 @@ def test_wrong_key_falls_back_to_free():
 
 
 def test_webhook_issues_validating_key():
+    body = b"product_permalink=oubliette-dungeon-pro&email=a@b.com&full_name=Acme"
+    secret = "wh-endpoint-secret"
+    signature = _hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
     res = license_for_sale(
         {"product_permalink": "oubliette-dungeon-pro", "email": "a@b.com", "full_name": "Acme"},
         {"oubliette-dungeon-pro": {"tier": "pro"}},
         "dungeon-secret",
+        webhook_secret=secret,
+        raw_body=body,
+        signature=signature,
     )
     assert res is not None and res["tier"] == "pro"
     mgr = LicenseManager(signing_key="dungeon-secret")
