@@ -177,7 +177,19 @@ class UsageTracker:
         return TIER_QUOTAS.get(self.tier, TIER_QUOTAS["free"]).get(quota_type, 0)
 
     def check_quota(self, event_type: str, quantity: int = 1) -> bool:
-        """Check if the event would exceed quota. Optionally raises."""
+        """Check if the event would exceed quota. Optionally raises.
+
+        Raises:
+            ValueError: if ``quantity`` is negative. A negative quantity is
+                invalid input, not a way to "give back" usage — CRIT-1
+                (2026-07-19 scan, mirrored from oubliette-commerce): a
+                negative quantity here could drive usage counters below
+                zero and silently free Pro/Enterprise usage indefinitely
+                without ever tripping the soft-enforce billing flag. Zero
+                is legal (a zero-usage check is fine).
+        """
+        if quantity < 0:
+            raise ValueError(f"quantity must be >= 0, got {quantity!r}")
         month = self._month_key()
         summary = self._get_or_create_summary(month)
 
@@ -227,7 +239,16 @@ class UsageTracker:
         callers could not distinguish an over-quota record from a normal
         one. That made Pro-tier billing unable to separate paid usage
         from overage usage.
+
+        Raises:
+            ValueError: if ``quantity`` is negative (CRIT-1, 2026-07-19 scan
+                — see :meth:`check_quota`). Rejected loudly rather than
+                clamped to 0, so a caller bug (e.g. a negative token count
+                from an upstream miscalculation) surfaces immediately
+                instead of silently crediting usage back.
         """
+        if quantity < 0:
+            raise ValueError(f"quantity must be >= 0, got {quantity!r}")
         within_quota = self.check_quota(event_type, quantity)
 
         event = UsageEvent(
@@ -276,7 +297,18 @@ class UsageTracker:
         output_tokens: int,
         api_key_hash: str = "",
     ) -> None:
-        """Convenience method for recording LLM token usage."""
+        """Convenience method for recording LLM token usage.
+
+        Raises:
+            ValueError: if ``input_tokens`` or ``output_tokens`` is negative
+                (CRIT-1, 2026-07-19 scan). Validated up front, before the
+                ``api_call`` event is recorded, so a bad call never
+                partially commits usage.
+        """
+        if input_tokens < 0:
+            raise ValueError(f"input_tokens must be >= 0, got {input_tokens!r}")
+        if output_tokens < 0:
+            raise ValueError(f"output_tokens must be >= 0, got {output_tokens!r}")
         self.record("api_call", feature, 1, api_key_hash)
         if input_tokens > 0:
             self.record("input_token", feature, input_tokens, api_key_hash)
