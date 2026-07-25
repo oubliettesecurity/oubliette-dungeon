@@ -143,8 +143,7 @@ class OfflineExecutor:
                 ip = ipaddress.ip_address(ip_str)
             except ValueError as e:
                 raise ValueError(
-                    f"ollama_url '{url}' resolved to unparseable address "
-                    f"'{ip_str}': {e}"
+                    f"ollama_url '{url}' resolved to unparseable address '{ip_str}': {e}"
                 ) from e
             if not ip.is_loopback:
                 raise ValueError(
