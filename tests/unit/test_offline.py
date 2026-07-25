@@ -3,6 +3,7 @@ Tests for the offline / air-gap executor.
 """
 
 import json
+import socket
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -89,13 +90,68 @@ class TestOfflineExecutorInit:
     def test_remote_ollama_url_rejected_by_default(self):
         import pytest
 
+        def fake_resolver(host, port):
+            # "custom" resolves to a public IP - not loopback.
+            return [(2, 1, 6, "", ("203.0.113.5", 0))]
+
         with pytest.raises(ValueError, match="not loopback"):
-            OfflineExecutor(ollama_url="http://custom:9999/")
+            OfflineExecutor(ollama_url="http://custom:9999/", resolver=fake_resolver)
 
     def test_remote_ollama_url_allowed_with_opt_in(self, monkeypatch):
         monkeypatch.setenv("DUNGEON_ALLOW_REMOTE_OLLAMA", "true")
         e = OfflineExecutor(ollama_url="http://custom:9999/")
         assert e.ollama_url == "http://custom:9999"
+
+    # -----------------------------------------------------------------
+    # HIGH-1 fix (2026-07-25): resolved-IP validation, not string match.
+    # -----------------------------------------------------------------
+
+    def test_hostname_alias_resolving_to_loopback_is_allowed(self):
+        # A hostname that isn't the literal string "localhost"/"127.0.0.1"
+        # but resolves to loopback must be ALLOWED - the old string-set
+        # check would have rejected this legitimate case.
+        def fake_resolver(host, port):
+            return [(2, 1, 6, "", ("127.0.0.1", 0))]
+
+        e = OfflineExecutor(ollama_url="http://ollama-loopback-alias:11434/", resolver=fake_resolver)
+        assert e.ollama_url == "http://ollama-loopback-alias:11434"
+
+    def test_hostname_resolving_to_public_ip_is_rejected(self):
+        # A hostname that resolves to a non-loopback address must be
+        # REJECTED even though it isn't in the old literal string-set.
+        def fake_resolver(host, port):
+            return [(2, 1, 6, "", ("8.8.8.8", 0))]
+
+        with pytest.raises(ValueError, match="not loopback"):
+            OfflineExecutor(ollama_url="http://sneaky-host:11434/", resolver=fake_resolver)
+
+    def test_literal_loopback_ip_allowed(self):
+        e = OfflineExecutor(ollama_url="http://127.0.0.1:11434/")
+        assert e.ollama_url == "http://127.0.0.1:11434"
+
+    def test_literal_ipv6_loopback_allowed(self):
+        e = OfflineExecutor(ollama_url="http://[::1]:11434/")
+        assert e.ollama_url == "http://[::1]:11434"
+
+    def test_unresolvable_host_rejected_fail_closed(self):
+        def failing_resolver(host, port):
+            raise socket.gaierror("Name or service not known")
+
+        with pytest.raises(ValueError, match="not loopback"):
+            OfflineExecutor(ollama_url="http://does-not-exist.invalid:11434/", resolver=failing_resolver)
+
+    def test_any_non_loopback_resolved_address_rejects_multi_answer_host(self):
+        # If DNS returns multiple addresses and even one is non-loopback,
+        # reject (fail-closed) rather than allow because *some* answer
+        # happened to be loopback.
+        def fake_resolver(host, port):
+            return [
+                (2, 1, 6, "", ("127.0.0.1", 0)),
+                (2, 1, 6, "", ("198.51.100.7", 0)),
+            ]
+
+        with pytest.raises(ValueError, match="not loopback"):
+            OfflineExecutor(ollama_url="http://mixed-answers:11434/", resolver=fake_resolver)
 
 
 # ---------------------------------------------------------------------------
