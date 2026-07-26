@@ -20,8 +20,11 @@ Usage::
     )
 """
 
+import ipaddress
 import random
+import socket
 import time
+from collections.abc import Callable
 from typing import Any
 
 import requests
@@ -54,6 +57,7 @@ class OfflineExecutor:
         ddil_latency_ms: int = 0,
         ddil_drop_rate: float = 0.0,
         ddil_bandwidth_kbps: int = 0,
+        resolver: Callable[..., list] | None = None,
     ):
         self.model = model
         # HIGH fix (2026-04-22 audit): the offline executor previously trusted
@@ -63,7 +67,16 @@ class OfflineExecutor:
         # the URL to loopback/localhost by default; operators who need a
         # remote Ollama (e.g. LAN GPU box) must explicitly opt in via
         # DUNGEON_ALLOW_REMOTE_OLLAMA=true.
-        self.ollama_url = self._validate_ollama_url(ollama_url).rstrip("/")
+        #
+        # HIGH-1 fix (2026-07-25): the original check was string-set
+        # membership on the raw hostname token (`host in {"localhost",
+        # "127.0.0.1"}`), which is trivially wrong in both directions - a
+        # hostname alias that resolves to loopback was rejected, and a
+        # hostname that resolves to a non-loopback address but isn't the
+        # literal string "localhost"/"127.0.0.1" was never checked at all.
+        # Validate by resolving the host and inspecting the actual IP(s).
+        self._resolver = resolver or socket.getaddrinfo
+        self.ollama_url = self._validate_ollama_url(ollama_url, self._resolver).rstrip("/")
         self.system_prompt = system_prompt
         self.timeout = timeout
         self.ddil_latency_ms = ddil_latency_ms
@@ -72,7 +85,23 @@ class OfflineExecutor:
         self._last_meta: dict[str, Any] = {}
 
     @staticmethod
-    def _validate_ollama_url(url: str) -> str:
+    def _resolve_host_ips(host: str, resolver: Callable[..., list]) -> list[str]:
+        """Resolve a hostname (or literal IP) to its IP address strings.
+
+        Fails closed: any resolution error propagates as a ValueError so the
+        caller rejects the target rather than silently allowing it.
+        """
+        try:
+            addrinfo = resolver(host, None)
+        except socket.gaierror as e:
+            raise ValueError(f"cannot resolve host '{host}': {e}") from e
+        ips = [info[4][0] for info in addrinfo]
+        if not ips:
+            raise ValueError(f"host '{host}' resolved to no addresses")
+        return ips
+
+    @staticmethod
+    def _validate_ollama_url(url: str, resolver: Callable[..., list] | None = None) -> str:
         """Reject non-loopback Ollama URLs unless DUNGEON_ALLOW_REMOTE_OLLAMA=true.
 
         The Offline executor is built around the invariant that prompts never
@@ -80,23 +109,50 @@ class OfflineExecutor:
         attack-corpus exfiltration path. Allowing explicit opt-in keeps the
         feature available for legitimate LAN / air-gapped deployments where
         the operator has a separate Ollama host.
+
+        Validation resolves the host to its actual IP address(es) and checks
+        those against the loopback range, rather than string-matching the
+        hostname token. A hostname is rejected unless *every* resolved
+        address is loopback, and unresolvable hosts are rejected (fail
+        closed) rather than allowed through.
         """
         import os
         from urllib.parse import urlparse
 
+        resolver = resolver or socket.getaddrinfo
         parsed = urlparse(url)
         if parsed.scheme not in ("http", "https"):
             raise ValueError(f"Invalid ollama_url scheme: {parsed.scheme}")
-        host = (parsed.hostname or "").lower()
-        loopback = {"localhost", "127.0.0.1", "::1"}
+        host = parsed.hostname or ""
         allow_remote = os.getenv("DUNGEON_ALLOW_REMOTE_OLLAMA", "").lower() == "true"
-        if host in loopback or allow_remote:
+        if allow_remote:
             return url
-        raise ValueError(
-            f"ollama_url '{url}' is not loopback. Offline executor refuses to "
-            f"send prompts off-host by default. Set DUNGEON_ALLOW_REMOTE_OLLAMA=true "
-            f"to opt into remote endpoints explicitly."
-        )
+
+        try:
+            resolved_ips = OfflineExecutor._resolve_host_ips(host, resolver)
+        except ValueError as e:
+            raise ValueError(
+                f"ollama_url '{url}' is not loopback ({e}). Offline executor "
+                f"fails closed on unresolvable hosts. Set "
+                f"DUNGEON_ALLOW_REMOTE_OLLAMA=true to opt into remote "
+                f"endpoints explicitly."
+            ) from e
+
+        for ip_str in resolved_ips:
+            try:
+                ip = ipaddress.ip_address(ip_str)
+            except ValueError as e:
+                raise ValueError(
+                    f"ollama_url '{url}' resolved to unparseable address '{ip_str}': {e}"
+                ) from e
+            if not ip.is_loopback:
+                raise ValueError(
+                    f"ollama_url '{url}' is not loopback (resolves to "
+                    f"{ip_str}). Offline executor refuses to send prompts "
+                    f"off-host by default. Set DUNGEON_ALLOW_REMOTE_OLLAMA=true "
+                    f"to opt into remote endpoints explicitly."
+                )
+        return url
 
     def check_availability(self) -> tuple[bool, str]:
         """Check if the local model is available."""
