@@ -12,11 +12,11 @@ server-side. Deploy ``create_license_webhook_blueprint`` behind the existing
 Flask app or a tiny standalone service.
 """
 
-import hashlib
-import hmac
 import os
 from collections.abc import Mapping
 from typing import Any
+
+from oubliette_sec_utils import verify_webhook_signature
 
 from .license_issuer import issue_license
 
@@ -25,26 +25,6 @@ _TRUTHY = {"true", "1", "yes", True}
 
 def _is_true(v: Any) -> bool:
     return v in _TRUTHY or (isinstance(v, str) and v.strip().lower() == "true")
-
-
-def verify_webhook_signature(raw_body: bytes, signature: str | None, secret: str | None) -> bool:
-    """Constant-time HMAC-SHA256 verification of a webhook body.
-
-    Fail-closed: this endpoint mints signed Pro/Enterprise license keys, so
-    authentication is NOT optional. A missing/unconfigured ``secret``, a
-    missing ``signature``, or a signature that does not match the exact raw
-    request body all return ``False``.
-
-    Accepts an optional ``sha256=`` prefix and is case-insensitive on the hex
-    digest, matching how merchant-of-record providers format signature headers.
-    """
-    if not secret:
-        return False
-    if not signature:
-        return False
-    expected = hmac.new(secret.encode(), raw_body or b"", hashlib.sha256).hexdigest()
-    provided = signature.split("=", 1)[-1].strip().lower()
-    return hmac.compare_digest(expected, provided)
 
 
 def license_for_sale(
