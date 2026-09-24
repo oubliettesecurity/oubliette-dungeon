@@ -4,6 +4,7 @@ import os
 
 from flask import Flask, request, send_from_directory
 
+from oubliette_dungeon._version import __version__
 from oubliette_dungeon.api.middleware import dungeon_bp, set_unified_storage
 
 __all__ = ["create_app", "dungeon_bp", "set_unified_storage"]
@@ -108,7 +109,7 @@ def create_app(config=None):
             # tag refreshes when the operator rotates the key.
             response.headers["Cache-Control"] = "no-store"
             return response
-        return {"message": "Oubliette Dungeon API", "version": "1.0.0"}
+        return {"message": "Oubliette Dungeon API", "version": __version__}
 
     return app
 

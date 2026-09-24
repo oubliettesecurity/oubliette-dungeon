@@ -133,6 +133,15 @@ npm install
 npm run dev  # Vite dev server on :5173, proxies API to :8666
 ```
 
+## Releasing (maintainers)
+
+Releases publish to PyPI from `.github/workflows/publish.yml` via Trusted
+Publishing (OIDC, no API token) when a `vX.Y.Z` tag is pushed; the moving
+`v1` GitHub Action tag does not trigger it. One-time PyPI setup (Owner
+`oubliettesecurity`, Repository `oubliette-dungeon`, Workflow `publish.yml`,
+Environment `pypi`) and the full tag flow are in
+[docs/pypi-trusted-publishing.md](https://github.com/oubliettesecurity/oubliette-dungeon/blob/main/docs/pypi-trusted-publishing.md).
+
 ## License
 
 Apache 2.0 - See [LICENSE](LICENSE) for details.

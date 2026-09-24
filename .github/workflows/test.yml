@@ -13,10 +13,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
+      # setup-uv v8+ publishes no floating major/minor tags (immutable
+      # releases): pin the exact version tag, e.g. @v10.2.0, not @v10.
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          # v9 flipped the default to false; keep pruning pre-built wheels
+          # before the cache is saved (same behavior as setup-uv v5).
+          prune-cache: true
 
       - name: Create env (Python 3.13)
         run: uv venv --python 3.13

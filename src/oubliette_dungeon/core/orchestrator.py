@@ -10,6 +10,7 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Any
 
+from oubliette_dungeon._version import __version__
 from oubliette_dungeon.core.evaluator import ResultEvaluator
 from oubliette_dungeon.core.executor import AttackExecutor
 from oubliette_dungeon.core.loader import ScenarioLoader
@@ -192,7 +193,7 @@ class RedTeamOrchestrator:
         summary: dict[str, Any] = {
             "schema_version": "1.0",
             "tool": "oubliette-dungeon",
-            "tool_version": "1.0.0",
+            "tool_version": __version__,
             "total_tests": len(results),
             "session_id": self.current_session_id,
             "timestamp": datetime.now().isoformat(),
@@ -245,7 +246,7 @@ class RedTeamOrchestrator:
         report = {
             "schema_version": "1.0",
             "tool": "oubliette-dungeon",
-            "tool_version": "1.0.0",
+            "tool_version": __version__,
             "timestamp": datetime.now().isoformat(),
             "session_id": self.current_session_id,
             "aggregate": summary,

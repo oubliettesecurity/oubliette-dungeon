@@ -1,0 +1,129 @@
+# Publish oubliette-dungeon to PyPI on release tags (and optional manual dispatch).
+#
+# Mirrors the oubliette-shield publish workflow (private SoT repo).
+# Uses PyPI Trusted Publishing (OIDC) — no PYPI_API_TOKEN secret.
+# Configure the Trusted Publisher on PyPI before the first real publish:
+#   https://pypi.org/manage/project/oubliette-dungeon/settings/publishing/
+# Exact settings are documented in docs/pypi-trusted-publishing.md
+#
+# Replaces the old release.yml, whose `v*` trigger also fired on the moving
+# `v1` GitHub Action tag and whose Trusted Publishing exchange never succeeded.
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      # Release tags only (vX.Y.Z). GitHub filter globs: `[0-9]` is one digit,
+      # `*` is any run of non-`/` characters. Does NOT match the moving `v1`
+      # action tag (no dots), nor `v1.0`.
+      - "v[0-9]*.[0-9]*.[0-9]*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing git tag to publish (e.g. v1.0.3)"
+        required: true
+        type: string
+      dry_run:
+        description: "Build + packaging boundary gate only; skip PyPI upload and GitHub Release"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write   # OIDC Trusted Publishing + PyPI attestations
+      contents: write   # create/update GitHub Release + attach artifacts
+
+    steps:
+      - name: Resolve ref
+        id: ref
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          GITHUB_REF_VALUE: ${{ github.ref }}
+        run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "ref=refs/tags/$INPUT_TAG" >> "$GITHUB_OUTPUT"
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$GITHUB_REF_VALUE" >> "$GITHUB_OUTPUT"
+            echo "tag=${GITHUB_REF_VALUE#refs/tags/}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+
+      # Match test.yml: uv + Python 3.13
+      # setup-uv v8+ publishes no floating major/minor tags (immutable
+      # releases): pin the exact version tag, e.g. @v10.2.0, not @v10.
+      # Note: since v10, enable-cache "auto" skips the uv cache on tag pushes
+      # (cache-poisoning hardening), so tag publishes build without it.
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          # v9 flipped the default to false; keep pruning pre-built wheels
+          # before saving (only relevant when caching is active, i.e.
+          # workflow_dispatch runs).
+          prune-cache: true
+
+      - name: Create env (Python 3.13)
+        run: uv venv --python 3.13
+
+      - name: Install build/test tools
+        run: |
+          # Minimal publish toolchain. The packaging boundary test needs
+          # pytest + setuptools (uv venvs do not ship setuptools by default).
+          uv pip install twine pytest "setuptools>=68.0"
+
+      - name: Tag matches package version
+        env:
+          TAG: ${{ steps.ref.outputs.tag }}
+        run: |
+          version=$(.venv/bin/python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::tag $TAG does not match pyproject version $version (expected v$version)"
+            exit 1
+          fi
+
+      - name: Clean stale build metadata
+        # setuptools can reuse a stale *.egg-info/SOURCES.txt. Always wipe
+        # before building so the artifact reflects the current config.
+        run: |
+          rm -rf build/ dist/ src/*.egg-info
+
+      - name: Build sdist and wheel
+        run: uv build --sdist --wheel --out-dir dist
+
+      - name: Twine check
+        run: .venv/bin/twine check dist/*
+
+      # Fail closed: the wheel may contain only oubliette_dungeon/ (+ its
+      # dist-info) and the sdist only src/oubliette_dungeon + metadata files.
+      - name: Packaging boundary gate
+        env:
+          DUNGEON_REQUIRE_DIST: "1"
+        run: |
+          .venv/bin/pytest -q --noconftest tests/unit/test_packaging_boundary.py
+
+      - name: Publish to PyPI
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # PEP 740 attestations (default with Trusted Publishing; explicit here).
+          attestations: true
+          # Safe to re-run a tag whose files are already uploaded.
+          skip-existing: true
+
+      - name: Create or update GitHub Release
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.dry_run) }}
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.ref.outputs.tag }}
+          files: dist/*
+          generate_release_notes: true
+          # Idempotent: updates an existing release and attaches assets.
+          fail_on_unmatched_files: true

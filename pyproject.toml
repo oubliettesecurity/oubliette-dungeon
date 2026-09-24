@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oubliette-dungeon"
-version = "1.0.2"
+version = "1.0.3"
 description = "Standalone AI Red Team Engine - automated adversarial testing for LLM applications"
 readme = "README.md"
 license = "Apache-2.0"
@@ -33,7 +33,7 @@ dependencies = [
 [project.optional-dependencies]
 flask = ["flask>=2.3"]
 pdf = ["fpdf2>=2.8.0"]
-pyrit = ["pyrit-core>=0.11"]
+pyrit = ["pyrit>=0.8,<0.10"]
 deepteam = ["deepteam>=1.0"]
 inspect = ["inspect-ai>=0.3"]
 shield = ["oubliette-shield>=1.0"]
@@ -55,6 +55,10 @@ dev = [
 # `uv pip install -e ".[test]"` gives a clean green with no manual --with flags.
 test = [
     "oubliette-dungeon[dev,flask,inspect]",
+    # tests/test_packaging_boundary.py resolves the package list with
+    # setuptools; uv venvs do not ship it, and a silently skipped boundary
+    # guard is exactly the failure mode that test exists to prevent.
+    "setuptools>=68.0",
 ]
 
 [project.scripts]

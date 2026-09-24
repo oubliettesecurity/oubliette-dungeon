@@ -2,7 +2,7 @@
 PyRIT (Microsoft) adapter for Oubliette Red Team Engine.
 
 Bridges the PyRIT orchestrators, targets, and scorers into the platform's
-TestResult / AttackScenario data model.  When ``pyrit-core`` is not
+TestResult / AttackScenario data model.  When ``pyrit`` is not
 installed every public method degrades gracefully (``is_available()``
 returns False; ``run_*`` raise ``RuntimeError``).
 
@@ -22,7 +22,7 @@ from oubliette_dungeon.core.models import AttackResult, AttackScenario, TestResu
 from oubliette_dungeon.tools.base import RedTeamToolAdapter
 
 # ---------------------------------------------------------------------------
-# Lazy imports for pyrit-core (may not be installed)
+# Lazy imports for pyrit (may not be installed)
 # ---------------------------------------------------------------------------
 _pyrit_available: bool | None = None
 
@@ -101,7 +101,7 @@ class OubliettePromptTarget:
         the event loop responsive), then return a ``PromptRequestResponse``.
         """
         if not _check_pyrit():
-            raise RuntimeError("pyrit-core is not installed")
+            raise RuntimeError("pyrit is not installed")
 
         from pyrit.models import PromptRequestPiece, PromptRequestResponse
 
@@ -147,7 +147,7 @@ class PyRITAdapter(RedTeamToolAdapter):
     """Adapter that bridges PyRIT into the Oubliette red team engine."""
 
     name = "pyrit"
-    version = "0.11+"
+    version = ">=0.8,<0.10"
 
     def __init__(self, api_key: str | None = None, timeout: int = 30):
         self.api_key = api_key
@@ -252,7 +252,7 @@ class PyRITAdapter(RedTeamToolAdapter):
     ) -> list[TestResult]:
         """Run a PyRIT CrescendoOrchestrator multi-turn escalation.
 
-        Requires ``pyrit-core`` and an adversarial LLM (e.g. OpenAI).
+        Requires ``pyrit`` and an adversarial LLM (e.g. OpenAI).
 
         Args:
             objective: High-level attack objective.
@@ -264,7 +264,7 @@ class PyRITAdapter(RedTeamToolAdapter):
             List of TestResult (one per turn).
         """
         if not self.is_available():
-            raise RuntimeError("pyrit-core is not installed or Python < 3.10")
+            raise RuntimeError("pyrit is not installed or Python < 3.10")
 
         from pyrit.orchestrator import CrescendoOrchestrator
 
@@ -367,7 +367,7 @@ class PyRITAdapter(RedTeamToolAdapter):
             One TestResult per converter variant.
         """
         if not self.is_available():
-            raise RuntimeError("pyrit-core is not installed or Python < 3.10")
+            raise RuntimeError("pyrit is not installed or Python < 3.10")
 
         converters = converters or ["base64", "rot13", "leetspeak", "unicode_confusable"]
         results: list[TestResult] = []
