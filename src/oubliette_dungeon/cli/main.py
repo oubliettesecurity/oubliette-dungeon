@@ -17,6 +17,7 @@ from typing import Any
 
 import click
 
+from oubliette_dungeon._version import __version__
 from oubliette_dungeon.core import (
     DEFAULT_TARGET_URL,
     RedTeamOrchestrator,
@@ -26,7 +27,7 @@ from oubliette_dungeon.storage import RedTeamResultsDB
 
 
 @click.group()
-@click.version_option(version="1.0.0", prog_name="oubliette-dungeon")
+@click.version_option(version=__version__, prog_name="oubliette-dungeon")
 def cli():
     """Oubliette Dungeon - AI Red Team Engine"""
     pass

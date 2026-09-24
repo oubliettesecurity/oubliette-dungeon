@@ -113,7 +113,7 @@ def pyrit_crescendo():
     if not adapter:
         return jsonify({"error": "PyRIT adapter not found"}), 404
     if not adapter.is_available():
-        return jsonify({"error": "pyrit-core is not installed"}), 503
+        return jsonify({"error": "pyrit is not installed"}), 503
 
     try:
         results = adapter.run_crescendo(

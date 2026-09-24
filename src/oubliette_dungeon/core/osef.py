@@ -20,6 +20,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
+from oubliette_dungeon._version import __version__
 from oubliette_dungeon.core.models import AttackResult, AttackTestResult
 
 # ---------------------------------------------------------------------------
@@ -344,7 +345,7 @@ class OSEFReport:
         return cls(
             osef_version=OSEF_VERSION,
             tool="oubliette-dungeon",
-            tool_version="1.0.1",
+            tool_version=__version__,
             model_id=model_id,
             timestamp=datetime.now(UTC).isoformat(),
             session_id=session_id,
