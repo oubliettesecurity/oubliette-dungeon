@@ -1180,8 +1180,8 @@
 #   - CAT-08 Tool Exploitation: 3
 #   - Compliance Testing: 2
 #
-# OWASP Coverage: All 10 categories (LLM01-LLM10)
-# MITRE Coverage: 16 techniques
+# OWASP Coverage: 8 of 10 categories (LLM01-LLM03, LLM05-LLM08, LLM10)
+# MITRE mapping: 13 distinct mitre_mapping codes
 #
 # High Success Rate Attacks (>70%):
 #   - ATK-006: Roleplay Jailbreak (89.6%)
@@ -2401,8 +2401,11 @@
 #   - ATK-056: RAG Embedding Collision
 #   - ATK-057: RAG Multi-Document Attack
 #
-# OWASP Coverage: All 10 categories (LLM01-LLM10)
-# MITRE Coverage: 22 techniques (expanded from 16)
+# OWASP Coverage: 9 of 10 categories (LLM01-LLM08, LLM10); LLM09 appears only
+#   in crescendo.yaml. ATK-029, ATK-049, ATK-050 have no owasp_mapping.
+# MITRE mapping: 13 distinct mitre_mapping codes (the same 13 as ATK-001 to
+#   ATK-029). ATK-028, ATK-029, ATK-049, ATK-050 have no mitre_mapping.
+#   T0030, T0120 and T0122 are not technique IDs in MITRE ATLAS v2026.06.
 #
 # High Success Rate Attacks (>70%):
 #   - ATK-006: Roleplay Jailbreak (89.6%)
