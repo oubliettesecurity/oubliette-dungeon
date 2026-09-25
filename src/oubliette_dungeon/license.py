@@ -36,7 +36,7 @@ PRO_FEATURES = frozenset(
         "rest_api",  # REST API + dashboard server
         "webhooks",  # run-complete webhook notifications
         "custom_scenarios",  # author/import custom attack scenarios
-        "full_scenario_library",  # the complete 57-scenario library
+        "full_scenario_library",  # full scenario library (default.yaml 57 + crescendo.yaml 15)
         "rbac",  # role-based access control
         "tenant_manager",  # multi-tenant isolation
     }

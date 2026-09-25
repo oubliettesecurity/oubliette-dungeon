@@ -2,9 +2,10 @@
 """
 Benchmark for arXiv paper: Refusal-Aware Evaluation of LLM Adversarial Robustness.
 
-Sends all 57 attack scenarios to each available LLM provider, collects raw
-responses, and evaluates with BOTH naive keyword matching and refusal-aware
-sentence-level filtering.  Outputs comprehensive JSON with all metrics needed
+Sends every executable scenario in default.yaml (57 entries; 3 reference-only
+entries with no prompt are skipped, so 54 are sent) to each available LLM
+provider, collects raw responses, and evaluates with BOTH naive keyword
+matching and refusal-aware sentence-level filtering.  Outputs comprehensive JSON with all metrics needed
 to fill the paper's [TO BE MEASURED] placeholders.
 
 Usage:

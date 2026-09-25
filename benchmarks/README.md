@@ -59,19 +59,26 @@ provider's completion latency, not Shield itself).
 
 ## Category Coverage
 
-The current scenario library exercises 9 attack categories:
+The benchmarked scenario source (`default.yaml`) covers 9 attack categories.
+"In library" counts every entry in `default.yaml` (57). "Executed" counts what the
+2026-03-12 runs actually scored, taken from `by_category_ra` in the JSON files: the
+OpenAI and Ollama runs scored 54 (3 reference-only compliance entries have no
+prompt), while Anthropic and Gemini scored 53, each with one provider-side error.
 
-| Category | Scenarios |
-|----------|-----------|
-| prompt_injection | 9 |
-| jailbreak | 9 |
-| information_extraction | 7 |
-| social_engineering | 6 |
-| context_manipulation | 12 |
-| model_exploitation | 4 |
-| resource_abuse | 2 |
-| tool_exploitation | 3 |
-| compliance_testing | 1 |
+| Category | In library | Executed (OpenAI / Ollama) | Executed (Anthropic) | Executed (Gemini) |
+|----------|-----------:|---------------------------:|---------------------:|------------------:|
+| prompt_injection | 10 | 10 | 9 | 10 |
+| jailbreak | 9 | 9 | 9 | 9 |
+| information_extraction | 7 | 7 | 7 | 7 |
+| social_engineering | 6 | 6 | 6 | 6 |
+| context_manipulation | 12 | 12 | 12 | 11 |
+| model_exploitation | 4 | 4 | 4 | 4 |
+| resource_abuse | 2 | 2 | 2 | 2 |
+| tool_exploitation | 3 | 3 | 3 | 3 |
+| compliance_testing | 4 | 1 | 1 | 1 |
+| **Total** | **57** | **54** | **53** | **53** |
+
+The 15 Crescendo multi-turn scenarios in `crescendo.yaml` were not part of these runs.
 
 The in-flight UK AISI `inspect_evals` submission (PR #1358) adds additional
 scenarios and categories (evasion, RAG exploitation, agent exploitation),
