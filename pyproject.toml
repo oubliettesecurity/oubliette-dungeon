@@ -73,7 +73,7 @@ Documentation = "https://github.com/oubliettesecurity/oubliette-dungeon#readme"
 where = ["src"]
 
 [tool.setuptools.package-data]
-oubliette_dungeon = ["scenarios/*.yaml", "py.typed"]
+oubliette_dungeon = ["scenarios/*.yaml", "data/*.json", "py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -18,6 +18,7 @@ from pathlib import Path
 
 import yaml
 
+from oubliette_dungeon.core.atlas import atlas_for_category
 from oubliette_dungeon.core.models import AttackScenario
 
 # ---------------------------------------------------------------------------
@@ -141,7 +142,7 @@ class GarakImporter:
                         difficulty=self._infer_difficulty(prompt_text),
                         description=f"Imported from garak probe: {basename}",
                         owasp_mapping=owasp,
-                        mitre_mapping=["T1059"],
+                        mitre_mapping=atlas_for_category(category),
                         prompt=prompt_text,
                         bypass_indicators=self._default_bypass_indicators(category),
                         safe_indicators=["i cannot", "i can't", "i'm sorry", "inappropriate"],
@@ -470,7 +471,7 @@ class GarakImporter:
                     difficulty=diff,
                     description="Built-in garak-style attack probe",
                     owasp_mapping=CATEGORY_OWASP.get(cat, ["LLM01"]),
-                    mitre_mapping=["T1059"],
+                    mitre_mapping=atlas_for_category(cat),
                     prompt=prompt,
                     bypass_indicators=GarakImporter._default_bypass_indicators(cat),
                     safe_indicators=["i cannot", "i can't", "i'm sorry", "inappropriate"],

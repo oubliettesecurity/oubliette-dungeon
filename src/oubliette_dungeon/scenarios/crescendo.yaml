@@ -19,8 +19,7 @@
   owasp_mapping:
     - LLM01:2025
   mitre_mapping:
-    - T0030
-    - T0042
+    - AML.T0054
   cwe_mapping:
     - CWE-1427
     - CWE-693
@@ -70,8 +69,7 @@
   owasp_mapping:
     - LLM01:2025
   mitre_mapping:
-    - T0030
-    - T0061
+    - AML.T0054
   cwe_mapping:
     - CWE-1427
     - CWE-693
@@ -125,8 +123,7 @@
     - LLM01:2025
     - LLM06:2025
   mitre_mapping:
-    - T0030
-    - T0071
+    - AML.T0069
   cwe_mapping:
     - CWE-200
     - CWE-693
@@ -177,8 +174,7 @@
     - LLM01:2025
     - LLM09:2025
   mitre_mapping:
-    - T0002
-    - T0030
+    - AML.T0054
   cwe_mapping:
     - CWE-451
     - CWE-693
@@ -225,7 +221,7 @@
   owasp_mapping:
     - LLM01:2025
   mitre_mapping:
-    - T0061
+    - AML.T0054
   cwe_mapping:
     - CWE-707
     - CWE-693
@@ -278,8 +274,8 @@
   owasp_mapping:
     - LLM01:2025
   mitre_mapping:
-    - T0030
-    - T0002
+    - AML.T0051.000
+    - AML.T0069
   cwe_mapping:
     - CWE-269
     - CWE-693
@@ -326,8 +322,7 @@
     - LLM01:2025
     - LLM09:2025
   mitre_mapping:
-    - T0002
-    - T0061
+    - AML.T0054
   cwe_mapping:
     - CWE-451
     - CWE-693
@@ -378,8 +373,7 @@
   owasp_mapping:
     - LLM01:2025
   mitre_mapping:
-    - T0030
-    - T0061
+    - AML.T0054
   cwe_mapping:
     - CWE-1427
     - CWE-693
@@ -426,8 +420,7 @@
   owasp_mapping:
     - LLM01:2025
   mitre_mapping:
-    - T0030
-    - T0060
+    - AML.T0054
   cwe_mapping:
     - CWE-1427
     - CWE-693
@@ -473,7 +466,8 @@
   owasp_mapping:
     - LLM01:2025
   mitre_mapping:
-    - T0030
+    - AML.T0054
+    - AML.T0068
   cwe_mapping:
     - CWE-1427
     - CWE-693
@@ -524,9 +518,8 @@
   owasp_mapping:
     - LLM01:2025
   mitre_mapping:
-    - T0030
-    - T0060
-    - T0061
+    - AML.T0054
+    - AML.T0068
   cwe_mapping:
     - CWE-1427
     - CWE-693
@@ -573,8 +566,8 @@
     - LLM01:2025
     - LLM06:2025
   mitre_mapping:
-    - T0002
-    - T0050
+    - AML.T0051.000
+    - AML.T0053
   cwe_mapping:
     - CWE-269
     - CWE-693
@@ -622,9 +615,8 @@
     - LLM01:2025
     - LLM08:2025
   mitre_mapping:
-    - T0030
-    - T0041
-    - T0071
+    - AML.T0051.000
+    - AML.T0069
   cwe_mapping:
     - CWE-200
     - CWE-693
@@ -676,7 +668,7 @@
     - LLM01:2025
     - LLM08:2025
   mitre_mapping:
-    - T0041
+    - AML.T0080.000
   cwe_mapping:
     - CWE-1427
     - CWE-693
@@ -723,8 +715,8 @@
     - LLM01:2025
     - LLM08:2025
   mitre_mapping:
-    - T0041
-    - T0042
+    - AML.T0051.000
+    - AML.T0080.001
   cwe_mapping:
     - CWE-1427
     - CWE-693

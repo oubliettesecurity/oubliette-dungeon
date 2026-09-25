@@ -55,6 +55,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on `pyrit>=0.8,<0.10`, the range whose API (`pyrit.orchestrator`,
   `pyrit.models.PromptRequestPiece`) the PyRIT adapter uses. Those PyRIT
   releases require Python < 3.14.
+- **MITRE ATLAS mappings use real ATLAS v2026.06 techniques.** Scenario
+  `mitre_mapping` lists, the OSEF category map, and the ATK-049 coverage block
+  used codes that don't exist in ATLAS (`T0030`, `T0120`, `T0122`) or that
+  name unrelated techniques (e.g. `T0061` is *LLM Prompt Self-Replication*, not
+  jailbreak). Each scenario is now mapped by its described behaviour to full
+  ATLAS IDs (`AML.T0051.000`), and compliance-testing scenarios stay unmapped.
+  Imported garak/promptfoo scenarios get their category's ATLAS IDs instead of
+  the ATT&CK ID `T1059`. The contrib garak probe tags and inspect_evals
+  scenarios were corrected the same way. A vendored IDs-and-names list of the
+  ATLAS release (`data/atlas_techniques.json`) and
+  `tests/unit/test_atlas_ids.py` validate every emitted ID.
 
 ### Changed
 - Releases publish to PyPI from `.github/workflows/publish.yml` via Trusted

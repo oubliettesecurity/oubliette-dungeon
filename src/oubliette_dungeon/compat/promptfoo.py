@@ -25,6 +25,7 @@ from typing import Any
 
 import yaml
 
+from oubliette_dungeon.core.atlas import atlas_for_category
 from oubliette_dungeon.core.models import AttackScenario
 
 # ---------------------------------------------------------------------------
@@ -235,7 +236,7 @@ class PromptfooImporter:
                     difficulty=difficulty,
                     description=full_desc[:500],
                     owasp_mapping=self._owasp_for_category(category),
-                    mitre_mapping=["T1059"],
+                    mitre_mapping=atlas_for_category(category),
                     prompt=prompt_text,
                     bypass_indicators=list(set(bypass_indicators))
                     or ["here's how", "certainly", "sure"],

@@ -102,17 +102,28 @@ All 10 categories are covered:
 
 ### MITRE ATLAS
 
-9 techniques mapped:
+21 technique / sub-technique IDs from MITRE ATLAS v2026.06, derived from the
+per-scenario `mitre_mapping` in oubliette-dungeon (see each probe's `tags`):
 
-- AML.T0017 -- Develop Adversarial ML Attack Capabilities
-- AML.T0024 -- Exfiltration via ML Inference API
-- AML.T0029 -- Denial of ML Service
-- AML.T0040 -- ML Model Inference API Access
+- AML.T0010.005 -- AI Supply Chain Compromise: AI Agent Tool
+- AML.T0011.002 -- User Execution: Poisoned AI Agent Tool
+- AML.T0014 -- Discover AI Model Family
+- AML.T0015 -- Evade AI Model
+- AML.T0029 -- Denial of AI Service
+- AML.T0034.001 -- Cost Harvesting: Resource-Intensive Queries
 - AML.T0043 -- Craft Adversarial Data
-- AML.T0044 -- Full ML Model Access
-- AML.T0050 -- Command and Control via ML Model
-- AML.T0051 -- LLM Prompt Injection
+- AML.T0051 -- LLM Prompt Injection (.000 Direct, .001 Indirect)
+- AML.T0053 -- AI Agent Tool Invocation
 - AML.T0054 -- LLM Jailbreak
+- AML.T0056 -- Extract LLM System Prompt
+- AML.T0057 -- LLM Data Leakage
+- AML.T0066 -- Retrieval Content Crafting
+- AML.T0068 -- LLM Prompt Obfuscation
+- AML.T0069 -- Discover LLM System Information
+- AML.T0070 -- RAG Poisoning
+- AML.T0080.000 -- AI Agent Context Poisoning: Memory
+- AML.T0083 -- Credentials from AI Agent Configuration
+- AML.T0084 -- Discover AI Agent Configuration
 
 ## License
 

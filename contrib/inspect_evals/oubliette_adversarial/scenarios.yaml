@@ -103,7 +103,7 @@ scenarios:
   - LLM01:2025
   mitre_mapping:
   - AML.T0051
-  - AML.T0060
+  - AML.T0068
   cwe_mapping:
   - CWE-1427
   - CWE-77
@@ -355,7 +355,8 @@ scenarios:
   owasp_mapping:
   - LLM07:2025
   mitre_mapping:
-  - AML.T0056
+  - AML.T0051.000
+  - AML.T0057
   cwe_mapping:
   - CWE-200
   tags:
@@ -378,7 +379,7 @@ scenarios:
   owasp_mapping:
   - LLM02:2025
   mitre_mapping:
-  - AML.T0056
+  - AML.T0057
   cwe_mapping:
   - CWE-200
   tags:
@@ -411,7 +412,8 @@ scenarios:
   owasp_mapping:
   - LLM01:2025
   mitre_mapping:
-  - AML.T0002
+  - AML.T0051.000
+  - AML.T0057
   cwe_mapping:
   - CWE-451
   tags:
@@ -447,7 +449,8 @@ scenarios:
   owasp_mapping:
   - LLM01:2025
   mitre_mapping:
-  - AML.T0002
+  - AML.T0051.000
+  - AML.T0057
   cwe_mapping:
   - CWE-451
   tags:
@@ -479,7 +482,8 @@ scenarios:
   owasp_mapping:
   - LLM01:2025
   mitre_mapping:
-  - AML.T0002
+  - AML.T0051.000
+  - AML.T0057
   cwe_mapping:
   - CWE-451
   tags:
@@ -542,7 +546,7 @@ scenarios:
   owasp_mapping:
   - LLM08:2025
   mitre_mapping:
-  - AML.T0042
+  - AML.T0068
   cwe_mapping:
   - CWE-74
   tags:
@@ -600,8 +604,8 @@ scenarios:
   - LLM01:2025
   - LLM08:2025
   mitre_mapping:
-  - AML.T0051
-  - AML.T0041
+  - AML.T0051.001
+  - AML.T0070
   cwe_mapping:
   - CWE-74
   - CWE-1427
@@ -637,7 +641,7 @@ scenarios:
   owasp_mapping:
   - LLM08:2025
   mitre_mapping:
-  - AML.T0041
+  - AML.T0080.000
   cwe_mapping:
   - CWE-74
   tags:
@@ -669,7 +673,7 @@ scenarios:
   owasp_mapping:
   - LLM06:2025
   mitre_mapping:
-  - AML.T0050
+  - AML.T0053
   cwe_mapping:
   - CWE-269
   - CWE-284
@@ -701,7 +705,8 @@ scenarios:
   owasp_mapping:
   - LLM06:2025
   mitre_mapping:
-  - AML.T0051
+  - AML.T0051.000
+  - AML.T0053
   cwe_mapping:
   - CWE-269
   - CWE-89
@@ -730,7 +735,7 @@ scenarios:
   owasp_mapping:
   - LLM05:2025
   mitre_mapping:
-  - AML.T0120
+  - AML.T0054
   cwe_mapping:
   - CWE-327
   tags:
@@ -792,7 +797,8 @@ scenarios:
   owasp_mapping:
   - LLM10:2025
   mitre_mapping:
-  - AML.T0122
+  - AML.T0029
+  - AML.T0034.001
   cwe_mapping:
   - CWE-400
   - CWE-770
@@ -826,7 +832,8 @@ scenarios:
   owasp_mapping:
   - LLM10:2025
   mitre_mapping:
-  - AML.T0122
+  - AML.T0029
+  - AML.T0034.001
   cwe_mapping:
   - CWE-400
   tags:
@@ -921,7 +928,7 @@ scenarios:
   - LLM01:2025
   mitre_mapping:
   - AML.T0051
-  - AML.T0050
+  - AML.T0053
   cwe_mapping:
   - CWE-441
   - CWE-269
@@ -960,8 +967,8 @@ scenarios:
   owasp_mapping:
   - LLM06:2025
   mitre_mapping:
-  - AML.T0051
-  - AML.T0050
+  - AML.T0011.002
+  - AML.T0086
   cwe_mapping:
   - CWE-441
   - CWE-829
@@ -1021,8 +1028,7 @@ scenarios:
   owasp_mapping:
   - LLM01:2025
   mitre_mapping:
-  - AML.T0060
-  - AML.T0061
+  - AML.T0068
   cwe_mapping:
   - CWE-176
   - CWE-1427
@@ -1057,7 +1063,7 @@ scenarios:
   owasp_mapping:
   - LLM01:2025
   mitre_mapping:
-  - AML.T0060
+  - AML.T0068
   cwe_mapping:
   - CWE-74
   - CWE-1427
@@ -1093,7 +1099,8 @@ scenarios:
   owasp_mapping:
   - LLM01:2025
   mitre_mapping:
-  - AML.T0060
+  - AML.T0057
+  - AML.T0068
   cwe_mapping:
   - CWE-74
   - CWE-1427
@@ -1147,8 +1154,8 @@ scenarios:
   - LLM01:2025
   - LLM08:2025
   mitre_mapping:
-  - AML.T0051
-  - AML.T0041
+  - AML.T0051.001
+  - AML.T0070
   cwe_mapping:
   - CWE-74
   - CWE-1427
@@ -1199,8 +1206,8 @@ scenarios:
   owasp_mapping:
   - LLM08:2025
   mitre_mapping:
-  - AML.T0042
-  - AML.T0041
+  - AML.T0051.001
+  - AML.T0068
   cwe_mapping:
   - CWE-74
   tags:
