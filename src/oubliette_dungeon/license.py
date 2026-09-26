@@ -177,8 +177,16 @@ class LicenseManager:
                     )
                     self._license = _FREE_LICENSE
                     return
-            except ValueError:
-                pass
+            except (TypeError, ValueError):
+                # FAIL CLOSED: an unparseable expiry must not be read as
+                # "never expires" (previously the error was swallowed and the
+                # license stayed valid forever).
+                log.warning(
+                    "[LICENSE] Unparseable license expiry %r -- falling back to free tier",
+                    expires,
+                )
+                self._license = _FREE_LICENSE
+                return
 
         self._license = LicenseInfo(
             tier=data.get("tier", "free"),
@@ -306,7 +314,7 @@ class FeatureGate:
 
     Usage::
 
-        gate = FeatureGate(license_key="my-key")
+        gate = FeatureGate(license_manager=LicenseManager())
         gate.validate()
         if gate.is_allowed("openc2"):
             # enable OpenC2 adapter
@@ -317,7 +325,13 @@ class FeatureGate:
             ``OUBLIETTE_LICENSE_KEY`` environment variable.
         license_manager: Optional :class:`LicenseManager` to
             delegate validation to.  When provided, the gate uses
-            the manager's tier information after validation.
+            the manager's tier information after validation.  This is
+            the only path that verifies the license signature.
+        insecure_simple_mode: DEV/TEST ONLY.  Without a manager the key
+            cannot be verified, so the gate stays at ``community``.  Set
+            this (or ``OUBLIETTE_INSECURE_DEV_FEATURE_GATE=true``) to
+            restore the old behaviour of treating any non-empty key as
+            Pro.  Default off.
     """
 
     COMMUNITY_FEATURES: frozenset[str] = frozenset(
@@ -346,9 +360,16 @@ class FeatureGate:
         self,
         license_key: str | None = None,
         license_manager: LicenseManager | None = None,
+        *,
+        insecure_simple_mode: bool | None = None,
     ):
         self.license_key = license_key or os.getenv("OUBLIETTE_LICENSE_KEY", "")
         self._license_manager = license_manager
+        if insecure_simple_mode is None:
+            insecure_simple_mode = os.getenv(
+                "OUBLIETTE_INSECURE_DEV_FEATURE_GATE", ""
+            ).strip().lower() in ("1", "true", "yes")
+        self._insecure_simple_mode = insecure_simple_mode
         self._validated = False
         self._tier = "community"
 
@@ -356,8 +377,9 @@ class FeatureGate:
         """Validate the license key and determine the tier.
 
         If a ``LicenseManager`` was provided, delegates to its
-        validation logic and reads the resulting tier.  Otherwise
-        any non-empty key is treated as a Pro license (simple mode).
+        validation logic and reads the resulting tier.  Without a
+        manager the key cannot be verified, so the gate fails closed to
+        ``community`` unless ``insecure_simple_mode`` is enabled.
 
         Returns:
             ``True`` if a Pro or Enterprise key was validated.
@@ -372,8 +394,14 @@ class FeatureGate:
                 self._validated = False
             return self._validated
 
-        # Simple mode: any non-empty key = pro
-        if self.license_key:
+        # FAIL CLOSED: no manager means no signature verification, so an
+        # unverified key must not grant Pro. The old "any non-empty key =
+        # pro" behaviour survives only behind an explicit dev/test opt-in.
+        if self._insecure_simple_mode and self.license_key:
+            log.warning(
+                "[LICENSE] FeatureGate insecure simple mode is enabled -- any "
+                "non-empty key grants Pro. Do NOT use in production."
+            )
             self._tier = "pro"
             self._validated = True
         else:

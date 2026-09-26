@@ -27,6 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **OSEF and PDF report reads honor per-API-key session scoping** (#1).
 - **Usage metering rejects negative quantities** (including negative token
   counts) with `ValueError` before any counter is updated (#3).
+- **License expiry fails closed.** A correctly signed license whose `expires`
+  cannot be parsed as an ISO date (or is not a string) now falls back to the
+  free tier instead of being treated as never expiring.
+- **`FeatureGate` without a `LicenseManager` fails closed.** An unverified
+  non-empty key no longer grants Pro; the gate stays at `community`. The old
+  behaviour is available for development and tests only via
+  `insecure_simple_mode=True` or `OUBLIETTE_INSECURE_DEV_FEATURE_GATE=true`
+  (default off).
 
 ### Fixed
 - Concurrent `save_result` calls for the same session no longer drop
