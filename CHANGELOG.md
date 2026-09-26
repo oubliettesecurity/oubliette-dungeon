@@ -65,6 +65,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `release.yml`.
 - GitHub Actions in the workflows and the composite `action.yml` moved to
   Node 24 majors.
+- CI builds the dashboard on Node.js 24 (was 20, which reached end of life on
+  2026-04-30).
+
+### Documentation
+- Scenario counts now describe the two bundled sets accurately: the default
+  library (`default.yaml`, 57 scenarios, 9 categories) that `run`, `stats`,
+  and the APIs load, and the Crescendo multi-turn set (`crescendo.yaml`, 15
+  scenarios), which is only loaded when passed with `--scenarios`. Together
+  that is 72 scenarios in 10 categories. The README now documents the
+  `DUNGEON_ALLOW_CUSTOM_SCENARIOS=true` opt-in that any non-default scenario
+  file needs, and the per-difficulty and severity tallies in the YAML summary
+  comments and the benchmark category table were corrected against the data.
 
 ## [1.0.2] - 2026-06-16
 

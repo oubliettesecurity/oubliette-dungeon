@@ -1,8 +1,8 @@
 """
 Inspect AI integration adapter for Oubliette Dungeon.
 
-Wraps oubliette-dungeon's 57 attack scenarios as Inspect AI evaluations,
-enabling execution via `inspect eval` and submission to UK AISI's inspect_evals.
+Wraps oubliette-dungeon's default scenario library (57 scenarios in
+default.yaml) as Inspect AI evaluations, enabling execution via `inspect eval` and submission to UK AISI's inspect_evals.
 
 Usage::
 
@@ -312,7 +312,7 @@ def oubliette_compliance(
 
 @task
 def oubliette_full_suite(scenario_file: str | None = None):
-    """Complete 57-scenario adversarial robustness evaluation.
+    """Full default-library (57-scenario) adversarial robustness evaluation.
 
     Runs all attack categories against the target model and scores
     using the refusal-aware evaluator. Results include OWASP LLM Top 10

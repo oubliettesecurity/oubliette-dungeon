@@ -4,7 +4,9 @@ Standalone adversarial testing engine for LLM applications. Run red team attack 
 
 ## Features
 
-- **72 built-in attack scenarios** across 10 categories (prompt injection, jailbreak, information extraction, social engineering, model exploitation, context manipulation, tool exploitation, resource abuse, compliance testing, multi-turn attack)
+- **72 bundled attack scenarios across 10 categories, in two sets:**
+  - **Default library** (`scenarios/default.yaml`): 57 scenarios across 9 categories (prompt injection, jailbreak, information extraction, social engineering, model exploitation, context manipulation, tool exploitation, resource abuse, compliance testing). This is what `run`, `stats`, the API and the Python API use when no scenario file is given.
+  - **Crescendo multi-turn set** (`scenarios/crescendo.yaml`): 15 further `multi_turn_attack` scenarios. It is not loaded by default; run it explicitly (see [Custom Scenarios](#custom-scenarios)).
 - **Refusal-aware evaluation** - reduces false positive bypasses when LLMs mention attack keywords in refusal context
 - **Honeypot-aware scoring** - detects honey token decoys from pipeline metadata
 - **Multi-turn attack support** - escalating conversation sequences
@@ -36,7 +38,7 @@ pip install oubliette-dungeon[all]       # Everything
 ### CLI
 
 ```bash
-# Run all scenarios against a target
+# Run the default library (57 scenarios) against a target
 oubliette-dungeon run --target http://localhost:5000/api/chat
 
 # Show scenario library statistics
@@ -59,7 +61,7 @@ from oubliette_dungeon import RedTeamOrchestrator, RedTeamResultsDB
 
 db = RedTeamResultsDB("./results")
 orch = RedTeamOrchestrator(
-    scenario_file=None,  # Uses built-in scenarios
+    scenario_file=None,  # Uses the default library (default.yaml, 57 scenarios)
     target_url="http://localhost:5000/api/chat",
     results_db=db,
 )
@@ -112,8 +114,17 @@ scenarios:
     safe_indicators: ["cannot", "won't"]
 ```
 
+Any scenario file other than the bundled default library is gated behind an explicit opt-in, because scenario payloads are sent live to the target:
+
 ```bash
-oubliette-dungeon run --scenarios my_scenarios.yaml --target http://localhost:5000/api/chat
+DUNGEON_ALLOW_CUSTOM_SCENARIOS=true oubliette-dungeon run --scenarios my_scenarios.yaml --target http://localhost:5000/api/chat
+```
+
+The bundled Crescendo multi-turn set goes through the same gate:
+
+```bash
+CRESCENDO=$(python -c "import importlib.resources as r; print(r.files('oubliette_dungeon') / 'scenarios' / 'crescendo.yaml')")
+DUNGEON_ALLOW_CUSTOM_SCENARIOS=true oubliette-dungeon run --scenarios "$CRESCENDO" --target http://localhost:5000/api/chat
 ```
 
 ## Development

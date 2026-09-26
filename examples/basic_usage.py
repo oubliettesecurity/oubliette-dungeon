@@ -22,7 +22,7 @@ def main():
         timeout=30,
     )
 
-    # Run all 57 built-in scenarios
+    # Run all 57 scenarios in the default library (default.yaml)
     print("Running all scenarios...")
     results = orch.run_all_scenarios()
 
