@@ -21,6 +21,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from oubliette_dungeon._version import __version__
+from oubliette_dungeon.core.atlas import ATLAS_VERSION, CATEGORY_TO_ATLAS, atlas_technique_name
 from oubliette_dungeon.core.models import AttackResult, AttackTestResult
 
 # ---------------------------------------------------------------------------
@@ -46,14 +47,12 @@ OWASP_LLM_TOP_10 = {
     "LLM10:2025": "Unbounded Consumption",
 }
 
+# ATLAS techniques Dungeon's category mapping can emit, with their MITRE ATLAS
+# names (release ``ATLAS_VERSION``). ``total`` in the framework-coverage block
+# is relative to this set, not to the whole ATLAS matrix.
 MITRE_ATLAS_TECHNIQUES = {
-    "T0030": "Prompt Injection (Direct)",
-    "T0031": "Prompt Injection (Indirect)",
-    "T0043": "LLM Jailbreak",
-    "T0049": "System Prompt Theft",
-    "T0051": "LLM Output Manipulation",
-    "T0059": "Resource Abuse via AI",
-    "T0054": "Data Extraction",
+    tid: atlas_technique_name(tid)
+    for tid in sorted({t for ids in CATEGORY_TO_ATLAS.values() for t in ids})
 }
 
 NIST_AI_RMF_CATEGORIES = {
@@ -74,19 +73,6 @@ CATEGORY_TO_OWASP = {
     "tool_exploitation": ["LLM06:2025"],
     "compliance_testing": ["LLM01:2025"],
     "multi_turn_attack": ["LLM01:2025"],
-}
-
-CATEGORY_TO_ATLAS = {
-    "prompt_injection": ["T0030", "T0031"],
-    "jailbreak": ["T0043"],
-    "information_extraction": ["T0049", "T0054"],
-    "social_engineering": ["T0030"],
-    "context_manipulation": ["T0030", "T0051"],
-    "model_exploitation": ["T0059"],
-    "resource_abuse": ["T0059"],
-    "tool_exploitation": ["T0059"],
-    "compliance_testing": ["T0043"],
-    "multi_turn_attack": ["T0030", "T0043"],
 }
 
 SEVERITY_MAP = {
@@ -327,6 +313,7 @@ class OSEFReport:
                 "descriptions": {k: OWASP_LLM_TOP_10[k] for k in sorted(all_owasp)},
             },
             "mitre_atlas": {
+                "atlas_version": ATLAS_VERSION,
                 "covered": sorted(all_atlas),
                 "total": len(MITRE_ATLAS_TECHNIQUES),
                 "coverage_pct": len(all_atlas) / len(MITRE_ATLAS_TECHNIQUES) * 100,

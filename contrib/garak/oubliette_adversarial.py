@@ -16,24 +16,27 @@ Scenario coverage:
 =================================  ============  =============================
 Category                           Scenario IDs  OWASP / ATLAS
 =================================  ============  =============================
-Prompt Injection (CAT-01)          ATK-001--005  LLM01 / AML.T0051
+Prompt Injection (CAT-01)          ATK-001--005  LLM01 / AML.T0051, AML.T0068
                                    ATK-030--034
 Jailbreaking (CAT-02)              ATK-006--011  LLM01 / AML.T0054
                                    ATK-035--037
-Information Extraction (CAT-03)    ATK-012--015  LLM02, LLM07 / AML.T0024
+Information Extraction (CAT-03)    ATK-012--015  LLM02, LLM07 / AML.T0056, AML.T0057, ...
                                    ATK-038--040
-Social Engineering (CAT-04)        ATK-016--018  LLM01 / AML.T0017
+Social Engineering (CAT-04)        ATK-016--018  LLM01 / AML.T0051.000, AML.T0057
                                    ATK-041--043
-Context Manipulation (CAT-05)      ATK-019--020  LLM08 / AML.T0043
+Context Manipulation (CAT-05)      ATK-019--020  LLM08 / AML.T0070, AML.T0051.001, ...
                                    ATK-044--046
                                    ATK-051--057
-Model Exploitation (CAT-06)        ATK-021--022  LLM05 / AML.T0040
+Model Exploitation (CAT-06)        ATK-021--022  LLM05 / AML.T0054, AML.T0043, AML.T0015
                                    ATK-047--048
-Resource Abuse (CAT-07)            ATK-023--024  LLM10 / AML.T0029
-Tool / Plugin Exploitation         ATK-025--027  LLM06 / AML.T0050
+Resource Abuse (CAT-07)            ATK-023--024  LLM10 / AML.T0029, AML.T0034.001
+Tool / Plugin Exploitation         ATK-025--027  LLM06 / AML.T0053, ...
 Compliance Testing                 ATK-028--029  LLM01 / NIST AI RMF
                                    ATK-049--050
 =================================  ============  =============================
+
+ATLAS IDs are from MITRE ATLAS v2026.06; each probe's ``tags`` list the full
+set ("..." above).
 
 References:
 
@@ -53,6 +56,8 @@ import garak.probes
 # ATK-030 through ATK-034
 # OWASP LLM01:2025 -- Prompt Injection
 # MITRE ATLAS AML.T0051 -- LLM Prompt Injection
+# MITRE ATLAS AML.T0051.000 -- LLM Prompt Injection: Direct
+# MITRE ATLAS AML.T0068 -- LLM Prompt Obfuscation
 # ============================================================================
 
 
@@ -85,6 +90,7 @@ class OubliettePromptInjection(garak.probes.Probe):
         # MITRE ATLAS
         "atlas:AML.T0051",
         "atlas:AML.T0051.000",
+        "atlas:AML.T0068",
         # CWE
         "cwe:CWE-1427",
         "cwe:CWE-77",
@@ -194,7 +200,6 @@ class OublietteJailbreak(garak.probes.Probe):
         "owasp:llm01",
         # MITRE ATLAS
         "atlas:AML.T0054",
-        "atlas:AML.T0054.000",
         # CWE
         "cwe:CWE-707",
         "cwe:CWE-693",
@@ -273,8 +278,12 @@ class OublietteJailbreak(garak.probes.Probe):
 # ATK-012 through ATK-015, ATK-038 through ATK-040
 # OWASP LLM02:2025 -- Sensitive Information Disclosure
 # OWASP LLM07:2025 -- System Prompt Leakage
-# MITRE ATLAS AML.T0024 -- Exfiltration via ML Inference API
-# MITRE ATLAS AML.T0044 -- Full ML Model Access
+# MITRE ATLAS AML.T0014 -- Discover AI Model Family
+# MITRE ATLAS AML.T0056 -- Extract LLM System Prompt
+# MITRE ATLAS AML.T0057 -- LLM Data Leakage
+# MITRE ATLAS AML.T0069 -- Discover LLM System Information
+# MITRE ATLAS AML.T0083 -- Credentials from AI Agent Configuration
+# MITRE ATLAS AML.T0084 -- Discover AI Agent Configuration
 # ============================================================================
 
 
@@ -305,8 +314,12 @@ class OublietteInformationExtraction(garak.probes.Probe):
         "owasp:llm02",
         "owasp:llm07",
         # MITRE ATLAS
-        "atlas:AML.T0024",
-        "atlas:AML.T0044",
+        "atlas:AML.T0014",
+        "atlas:AML.T0056",
+        "atlas:AML.T0057",
+        "atlas:AML.T0069",
+        "atlas:AML.T0083",
+        "atlas:AML.T0084",
         # CWE
         "cwe:CWE-200",
         "cwe:CWE-209",
@@ -380,7 +393,8 @@ class OublietteInformationExtraction(garak.probes.Probe):
 # ATK-016 through ATK-018, ATK-041 through ATK-043
 # OWASP LLM01:2025 -- Prompt Injection
 # OWASP LLM09:2025 -- Misinformation
-# MITRE ATLAS AML.T0017 -- Develop Adversarial ML Attack Capabilities
+# MITRE ATLAS AML.T0051.000 -- LLM Prompt Injection: Direct
+# MITRE ATLAS AML.T0057 -- LLM Data Leakage
 # ============================================================================
 
 
@@ -411,7 +425,8 @@ class OublietteSocialEngineering(garak.probes.Probe):
         "owasp:llm01",
         "owasp:llm09",
         # MITRE ATLAS
-        "atlas:AML.T0017",
+        "atlas:AML.T0051.000",
+        "atlas:AML.T0057",
         # CWE
         "cwe:CWE-451",
         # Quality / payload
@@ -463,7 +478,12 @@ class OublietteSocialEngineering(garak.probes.Probe):
 # ATK-019 through ATK-020, ATK-044 through ATK-046, ATK-051 through ATK-057
 # OWASP LLM08:2025 -- Vector and Embedding Weaknesses
 # OWASP LLM01:2025 -- Prompt Injection (RAG-specific)
-# MITRE ATLAS AML.T0043 -- Craft Adversarial Data
+# MITRE ATLAS AML.T0051.001 -- LLM Prompt Injection: Indirect
+# MITRE ATLAS AML.T0054 -- LLM Jailbreak
+# MITRE ATLAS AML.T0066 -- Retrieval Content Crafting
+# MITRE ATLAS AML.T0068 -- LLM Prompt Obfuscation
+# MITRE ATLAS AML.T0070 -- RAG Poisoning
+# MITRE ATLAS AML.T0080.000 -- AI Agent Context Poisoning: Memory
 # ============================================================================
 
 
@@ -497,8 +517,12 @@ class OublietteContextManipulation(garak.probes.Probe):
         "owasp:llm04",
         "owasp:llm08",
         # MITRE ATLAS
-        "atlas:AML.T0043",
-        "atlas:AML.T0043.001",
+        "atlas:AML.T0051.001",
+        "atlas:AML.T0054",
+        "atlas:AML.T0066",
+        "atlas:AML.T0068",
+        "atlas:AML.T0070",
+        "atlas:AML.T0080.000",
         # CWE
         "cwe:CWE-74",
         "cwe:CWE-1427",
@@ -640,7 +664,9 @@ class OublietteContextManipulation(garak.probes.Probe):
 # Model Exploitation  (CAT-06)
 # ATK-021 through ATK-022, ATK-047 through ATK-048
 # OWASP LLM05:2025 -- Improper Output Handling
-# MITRE ATLAS AML.T0040 -- ML Model Inference API Access
+# MITRE ATLAS AML.T0015 -- Evade AI Model
+# MITRE ATLAS AML.T0043 -- Craft Adversarial Data
+# MITRE ATLAS AML.T0054 -- LLM Jailbreak
 # ============================================================================
 
 
@@ -671,8 +697,9 @@ class OublietteModelExploitation(garak.probes.Probe):
         "owasp:llm01",
         "owasp:llm05",
         # MITRE ATLAS
-        "atlas:AML.T0040",
+        "atlas:AML.T0015",
         "atlas:AML.T0043",
+        "atlas:AML.T0054",
         # CWE
         "cwe:CWE-327",
         # Quality / payload
@@ -709,7 +736,8 @@ class OublietteModelExploitation(garak.probes.Probe):
 # Resource Abuse  (CAT-07)
 # ATK-023 through ATK-024
 # OWASP LLM10:2025 -- Unbounded Consumption
-# MITRE ATLAS AML.T0029 -- Denial of ML Service
+# MITRE ATLAS AML.T0029 -- Denial of AI Service
+# MITRE ATLAS AML.T0034.001 -- Cost Harvesting: Resource-Intensive Queries
 # ============================================================================
 
 
@@ -738,6 +766,7 @@ class OublietteResourceAbuse(garak.probes.Probe):
         "owasp:llm10",
         # MITRE ATLAS
         "atlas:AML.T0029",
+        "atlas:AML.T0034.001",
         # CWE
         "cwe:CWE-400",
         "cwe:CWE-770",
@@ -763,7 +792,10 @@ class OublietteResourceAbuse(garak.probes.Probe):
 # ATK-025 through ATK-027
 # OWASP LLM06:2025 -- Excessive Agency
 # OWASP LLM03:2025 -- Supply Chain Vulnerabilities
-# MITRE ATLAS AML.T0050 -- Command and Control via ML Model
+# MITRE ATLAS AML.T0010.005 -- AI Supply Chain Compromise: AI Agent Tool
+# MITRE ATLAS AML.T0011.002 -- User Execution: Poisoned AI Agent Tool
+# MITRE ATLAS AML.T0051.000 -- LLM Prompt Injection: Direct
+# MITRE ATLAS AML.T0053 -- AI Agent Tool Invocation
 # ============================================================================
 
 
@@ -794,7 +826,10 @@ class OublietteToolExploitation(garak.probes.Probe):
         "owasp:llm03",
         "owasp:llm06",
         # MITRE ATLAS
-        "atlas:AML.T0050",
+        "atlas:AML.T0010.005",
+        "atlas:AML.T0011.002",
+        "atlas:AML.T0051.000",
+        "atlas:AML.T0053",
         # CWE
         "cwe:CWE-269",
         "cwe:CWE-284",
@@ -948,15 +983,27 @@ class OublietteAllAttacks(garak.probes.Probe):
         "owasp:llm09",
         "owasp:llm10",
         # MITRE ATLAS techniques
-        "atlas:AML.T0017",
-        "atlas:AML.T0024",
+        "atlas:AML.T0010.005",
+        "atlas:AML.T0011.002",
+        "atlas:AML.T0014",
+        "atlas:AML.T0015",
         "atlas:AML.T0029",
-        "atlas:AML.T0040",
+        "atlas:AML.T0034.001",
         "atlas:AML.T0043",
-        "atlas:AML.T0044",
-        "atlas:AML.T0050",
         "atlas:AML.T0051",
+        "atlas:AML.T0051.000",
+        "atlas:AML.T0051.001",
+        "atlas:AML.T0053",
         "atlas:AML.T0054",
+        "atlas:AML.T0056",
+        "atlas:AML.T0057",
+        "atlas:AML.T0066",
+        "atlas:AML.T0068",
+        "atlas:AML.T0069",
+        "atlas:AML.T0070",
+        "atlas:AML.T0080.000",
+        "atlas:AML.T0083",
+        "atlas:AML.T0084",
         # CWE mappings
         "cwe:CWE-74",
         "cwe:CWE-77",

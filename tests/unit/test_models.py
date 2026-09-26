@@ -26,7 +26,7 @@ class TestDataClasses:
             difficulty="medium",
             description="Test scenario",
             owasp_mapping=["LLM01"],
-            mitre_mapping=["T0030"],
+            mitre_mapping=["AML.T0051.000"],
             prompt="test prompt",
         )
 
@@ -43,7 +43,7 @@ class TestDataClasses:
             difficulty="medium",
             description="Test scenario",
             owasp_mapping=["LLM01"],
-            mitre_mapping=["T0030"],
+            mitre_mapping=["AML.T0051.000"],
             prompt="test prompt",
             multi_turn_prompts=["Turn 1", "Turn 2"],
             bypass_indicators=["bad"],

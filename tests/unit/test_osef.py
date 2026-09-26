@@ -113,7 +113,11 @@ class TestFrameworkMappings:
             assert len(CATEGORY_TO_OWASP[cat]) > 0
 
     def test_all_categories_have_atlas_mapping(self):
+        # compliance_testing is a meta category and deliberately unmapped.
         for cat in CATEGORY_TO_ATLAS:
+            if cat == "compliance_testing":
+                assert CATEGORY_TO_ATLAS[cat] == []
+                continue
             assert len(CATEGORY_TO_ATLAS[cat]) > 0
 
     def test_severity_map_covers_all_results(self):
