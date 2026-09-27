@@ -4,7 +4,7 @@ oubliette_dungeon.core - Core red team engine components.
 
 from oubliette_dungeon.core.evaluator import ResultEvaluator
 from oubliette_dungeon.core.executor import AttackExecutor
-from oubliette_dungeon.core.loader import ScenarioLoader
+from oubliette_dungeon.core.loader import DEFAULT_SUITE, SCENARIO_SUITES, ScenarioLoader
 from oubliette_dungeon.core.metrics import avg_risk_density, avg_turns_to_jailbreak, pass_at_k
 from oubliette_dungeon.core.models import (
     DEFAULT_TARGET_URL,
@@ -36,6 +36,8 @@ __all__ = [
     "DifficultyLevel",
     "TestResult",
     "ScenarioLoader",
+    "SCENARIO_SUITES",
+    "DEFAULT_SUITE",
     "AttackExecutor",
     "ResultEvaluator",
     "RedTeamOrchestrator",

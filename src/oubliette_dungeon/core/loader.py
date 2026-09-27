@@ -16,19 +16,60 @@ from oubliette_dungeon.core.models import AttackScenario
 
 log = logging.getLogger(__name__)
 
+# Named suites of scenario files that ship inside the package. A suite only
+# ever names bundled files, so selecting one never loads anything from outside
+# the package and does not touch the DUNGEON_ALLOW_CUSTOM_SCENARIOS gate.
+SCENARIO_SUITES: dict[str, tuple[str, ...]] = {
+    "default": ("default.yaml",),  # 57 scenarios
+    "full": ("default.yaml", "crescendo.yaml"),  # 57 + 15 Crescendo multi-turn = 72
+}
+DEFAULT_SUITE = "default"
+
+
+def bundled_suite_paths(suite: str) -> list[str]:
+    """Return the bundled scenario file paths for a named suite.
+
+    Fails closed: any name other than a key of ``SCENARIO_SUITES`` raises
+    ``ValueError`` rather than falling back to a default.
+    """
+    if not isinstance(suite, str) or suite not in SCENARIO_SUITES:
+        valid = ", ".join(sorted(SCENARIO_SUITES))
+        raise ValueError(f"Unknown scenario suite {suite!r}. Valid suites: {valid}.")
+
+    from importlib.resources import files
+
+    root = files("oubliette_dungeon") / "scenarios"
+    return [str(root / name) for name in SCENARIO_SUITES[suite]]
+
 
 class ScenarioLoader:
     """
     Loads attack scenarios from YAML files.
     Supports filtering by category, difficulty, and compliance requirements.
+
+    Pass either ``scenario_file`` (a single YAML file; anything other than the
+    bundled default library requires ``DUNGEON_ALLOW_CUSTOM_SCENARIOS=true``)
+    or ``suite`` (a named set of bundled files, see ``SCENARIO_SUITES``), not
+    both. With neither, the ``default`` suite (57 scenarios) is loaded;
+    ``suite="full"`` adds the 15 bundled Crescendo scenarios (72 total).
     """
 
-    def __init__(self, scenario_file: str | None = None):
+    def __init__(self, scenario_file: str | None = None, suite: str | None = None):
+        if scenario_file is not None and suite is not None:
+            raise ValueError(
+                "Pass either scenario_file or suite, not both: a suite selects "
+                "bundled scenario files only."
+            )
+        self.suite: str | None
         if scenario_file is None:
-            from oubliette_dungeon.core import _default_scenarios_path
-
-            scenario_file = _default_scenarios_path()
-        self.scenario_file = scenario_file
+            self.suite = DEFAULT_SUITE if suite is None else suite
+            # Validates the name (fail closed) before anything is loaded.
+            self.scenario_files = bundled_suite_paths(self.suite)
+        else:
+            self.suite = None
+            self.scenario_files = [scenario_file]
+        # First file of the selection; kept for callers that read it.
+        self.scenario_file = self.scenario_files[0]
         self.scenarios: list[AttackScenario] = []
         # MED-7 fix (2026-04-22 audit): scenario YAML is trusted input but
         # was previously loaded from any path via --scenarios / the
@@ -38,7 +79,9 @@ class ScenarioLoader:
         # stuffing, prompt-injection exfil). Gate non-bundled YAML behind an
         # explicit opt-in env var and log the SHA-256 hash on load so an
         # operator post-incident can tell which scenario file was used.
-        self._enforce_custom_scenario_gate(scenario_file)
+        # A suite resolves to bundled files only, so it never reaches the gate.
+        if scenario_file is not None:
+            self._enforce_custom_scenario_gate(scenario_file)
         self.load_scenarios()
 
     @staticmethod
@@ -85,22 +128,31 @@ class ScenarioLoader:
             pass
 
     def load_scenarios(self) -> None:
-        """Load scenarios from YAML file"""
+        """Load scenarios from the selected YAML file(s), in order."""
         self.scenarios = []
+        for path in self.scenario_files:
+            self.scenarios.extend(self._load_file(path))
+        sources = ", ".join(self.scenario_files)
+        print(f"Loaded {len(self.scenarios)} attack scenarios from {sources}")
+
+    @staticmethod
+    def _load_file(scenario_file: str) -> list[AttackScenario]:
+        """Parse one scenario YAML file."""
+        scenarios: list[AttackScenario] = []
 
         try:
-            with open(self.scenario_file, encoding="utf-8") as f:
+            with open(scenario_file, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
 
             if not data:
-                return
+                return scenarios
 
             if isinstance(data, list):
                 scenarios_list = data
             elif isinstance(data, dict) and "scenarios" in data:
                 scenarios_list = data["scenarios"]
             else:
-                raise ValueError(f"Invalid scenario file format: {self.scenario_file}")
+                raise ValueError(f"Invalid scenario file format: {scenario_file}")
 
             for scenario_dict in scenarios_list:
                 multi_turn_prompts = scenario_dict.get("multi_turn_prompts")
@@ -125,13 +177,13 @@ class ScenarioLoader:
                     safe_indicators=scenario_dict.get("safe_indicators", []),
                     metadata=scenario_dict.get("metadata", {}),
                 )
-                self.scenarios.append(scenario)
-
-            print(f"Loaded {len(self.scenarios)} attack scenarios from {self.scenario_file}")
+                scenarios.append(scenario)
 
         except Exception as e:
             print(f"Error loading scenarios: {e}")
             raise
+
+        return scenarios
 
     def get_all_scenarios(self) -> list[AttackScenario]:
         return self.scenarios
