@@ -4,9 +4,9 @@ Standalone adversarial testing engine for LLM applications. Run red team attack 
 
 ## Features
 
-- **72 bundled attack scenarios across 10 categories, in two sets:**
-  - **Default library** (`scenarios/default.yaml`): 57 scenarios across 9 categories (prompt injection, jailbreak, information extraction, social engineering, model exploitation, context manipulation, tool exploitation, resource abuse, compliance testing). This is what `run`, `stats`, the API and the Python API use when no scenario file is given.
-  - **Crescendo multi-turn set** (`scenarios/crescendo.yaml`): 15 further `multi_turn_attack` scenarios. It is not loaded by default; run it explicitly (see [Custom Scenarios](#custom-scenarios)).
+- **57 scenarios by default, 72 with `--suite full`.** Two bundled sets, 10 categories in total:
+  - **Default library** (`scenarios/default.yaml`): 57 scenarios across 9 categories (prompt injection, jailbreak, information extraction, social engineering, model exploitation, context manipulation, tool exploitation, resource abuse, compliance testing). This is what `run`, `stats`, the API and the Python API use when no scenario file or suite is given.
+  - **Crescendo multi-turn set** (`scenarios/crescendo.yaml`): 15 further `multi_turn_attack` scenarios. It is not loaded by default; `--suite full` (Python: `suite="full"`) loads it together with the default library, 72 scenarios in all (see [Scenario suites](#scenario-suites)).
 - **Refusal-aware evaluation** - reduces false positive bypasses when LLMs mention attack keywords in refusal context
 - **Honeypot-aware scoring** - detects honey token decoys from pipeline metadata
 - **Multi-turn attack support** - escalating conversation sequences
@@ -41,6 +41,9 @@ pip install oubliette-dungeon[all]       # Everything
 # Run the default library (57 scenarios) against a target
 oubliette-dungeon run --target http://localhost:5000/api/chat
 
+# Run the full bundled suite (72 scenarios: default 57 + 15 Crescendo multi-turn)
+oubliette-dungeon run --suite full --target http://localhost:5000/api/chat
+
 # Show scenario library statistics
 oubliette-dungeon stats
 
@@ -64,6 +67,7 @@ orch = RedTeamOrchestrator(
     scenario_file=None,  # Uses the default library (default.yaml, 57 scenarios)
     target_url="http://localhost:5000/api/chat",
     results_db=db,
+    # suite="full",  # Or: the full bundled suite, 72 scenarios
 )
 results = orch.run_all_scenarios()
 orch.print_summary(results)
@@ -99,6 +103,32 @@ And return:
 
 Only `response` is required. The additional fields (`blocked`, `ml_score`, `llm_verdict`) enable richer evaluation when available.
 
+## Scenario suites
+
+Only run Dungeon against targets you own or are authorized to test: every
+scenario payload is sent live to `--target`.
+
+| Suite | Scenarios | Files |
+|---|---|---|
+| `default` (used when neither `--suite` nor `--scenarios` is given) | 57 | `default.yaml` |
+| `full` | 72 | `default.yaml` + `crescendo.yaml` (15 Crescendo multi-turn) |
+
+```bash
+oubliette-dungeon stats --suite full   # Total Scenarios: 72
+oubliette-dungeon run --suite full --target http://localhost:5000/api/chat
+```
+
+`--suite` is available on `run`, `stats`, `replay`, `compare` and `nist-rmf`.
+The Python API takes the same names: `RedTeamOrchestrator(..., suite="full")` or
+`ScenarioLoader(suite="full")`.
+
+A suite only loads scenario files that ship inside the package, so it does not
+need, set, or imply `DUNGEON_ALLOW_CUSTOM_SCENARIOS`. It fails closed: an
+unknown suite name is an error (the CLI exits with status 2, and the Python API
+raises `ValueError`), and `--suite` together with `--scenarios` (or
+`suite=` together with `scenario_file=`) is rejected instead of guessing which
+one you meant.
+
 ## Custom Scenarios
 
 ```yaml
@@ -114,18 +144,13 @@ scenarios:
     safe_indicators: ["cannot", "won't"]
 ```
 
-Any scenario file other than the bundled default library is gated behind an explicit opt-in, because scenario payloads are sent live to the target:
+Any file passed with `--scenarios` other than the bundled default library is gated behind an explicit opt-in, because scenario payloads are sent live to the target. The gate is fail-closed: without the opt-in the file is refused.
 
 ```bash
 DUNGEON_ALLOW_CUSTOM_SCENARIOS=true oubliette-dungeon run --scenarios my_scenarios.yaml --target http://localhost:5000/api/chat
 ```
 
-The bundled Crescendo multi-turn set goes through the same gate:
-
-```bash
-CRESCENDO=$(python -c "import importlib.resources as r; print(r.files('oubliette_dungeon') / 'scenarios' / 'crescendo.yaml')")
-DUNGEON_ALLOW_CUSTOM_SCENARIOS=true oubliette-dungeon run --scenarios "$CRESCENDO" --target http://localhost:5000/api/chat
-```
+To run the bundled Crescendo set, use `--suite full` (see [Scenario suites](#scenario-suites)), which needs no opt-in. Passing `crescendo.yaml` by path with `--scenarios` still goes through the gate and loads only its 15 scenarios.
 
 ## Development
 

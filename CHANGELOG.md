@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.3] - Unreleased
 
+### Added
+- **Named scenario suites: 57 scenarios by default, 72 with `--suite full`.**
+  `--suite full` on `run`, `stats`, `replay`, `compare` and `nist-rmf`
+  (Python: `RedTeamOrchestrator(..., suite="full")` /
+  `ScenarioLoader(suite="full")`) loads the default library plus the 15
+  bundled Crescendo multi-turn scenarios. A suite only loads files that ship
+  in the package, so it does not need or enable
+  `DUNGEON_ALLOW_CUSTOM_SCENARIOS`, which keeps gating custom scenario files
+  exactly as before. `--suite default` (57) is the default. Unknown suite
+  names fail closed (CLI usage error, exit 2; `ValueError` from the Python
+  API), and `--suite` with `--scenarios` (or `suite=` with `scenario_file=`)
+  is rejected.
+
 ### Security
 - **License verification fails closed.** `LicenseManager` previously skipped
   HMAC verification entirely when no signing key was configured, so any

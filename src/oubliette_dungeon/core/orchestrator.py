@@ -34,8 +34,11 @@ class RedTeamOrchestrator:
         results_db=None,
         timeout: int = 30,
         caller_key_hint: str | None = None,
+        suite: str | None = None,
     ):
-        self.loader = ScenarioLoader(scenario_file)
+        # ``suite`` selects bundled scenarios ("default" = 57, "full" = 72);
+        # ScenarioLoader rejects unknown names and scenario_file + suite.
+        self.loader = ScenarioLoader(scenario_file, suite=suite)
         self.executor = AttackExecutor(target_url, timeout)
         self.evaluator = ResultEvaluator()
         self.results_db = results_db

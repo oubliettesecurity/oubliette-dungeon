@@ -5,6 +5,7 @@ Click-based command-line interface for the red team engine.
 
 Usage:
     oubliette-dungeon run --target http://localhost:5000/api/chat
+    oubliette-dungeon run --suite full --target http://localhost:5000/api/chat
     oubliette-dungeon stats
     oubliette-dungeon serve --port 8666
     oubliette-dungeon demo
@@ -20,10 +21,36 @@ import click
 from oubliette_dungeon._version import __version__
 from oubliette_dungeon.core import (
     DEFAULT_TARGET_URL,
+    SCENARIO_SUITES,
     RedTeamOrchestrator,
     _default_scenarios_path,
 )
 from oubliette_dungeon.storage import RedTeamResultsDB
+
+# --suite selects a named set of bundled scenario files. click.Choice rejects
+# any other name before a command runs (fail closed); ScenarioLoader validates
+# the name again for Python API callers.
+suite_option = click.option(
+    "--suite",
+    type=click.Choice(sorted(SCENARIO_SUITES)),
+    default=None,
+    help="Bundled scenario suite: 'default' (57 scenarios, used when neither "
+    "--suite nor --scenarios is given) or 'full' (72: the default 57 plus the "
+    "15 bundled Crescendo multi-turn scenarios). Loads bundled files only; "
+    "does not enable custom scenario files. Mutually exclusive with --scenarios.",
+)
+
+
+def _scenario_source(scenarios: str | None, suite: str | None) -> dict[str, Any]:
+    """Keyword arguments selecting scenarios for ScenarioLoader / the orchestrator."""
+    if scenarios and suite:
+        raise click.UsageError(
+            "--scenarios and --suite are mutually exclusive: --suite selects "
+            "bundled scenario files only."
+        )
+    if suite:
+        return {"scenario_file": None, "suite": suite}
+    return {"scenario_file": scenarios or _default_scenarios_path(), "suite": None}
 
 
 @click.group()
@@ -36,6 +63,7 @@ def cli():
 @cli.command()
 @click.option("--target", default=DEFAULT_TARGET_URL, help="Target API endpoint URL")
 @click.option("--scenarios", default=None, help="Path to scenarios YAML file")
+@suite_option
 @click.option("--timeout", default=30, type=int, help="Request timeout in seconds")
 @click.option("--category", default=None, help="Only run scenarios in this category")
 @click.option("--difficulty", default=None, help="Only run scenarios at this difficulty")
@@ -53,6 +81,7 @@ def cli():
 def run(
     target,
     scenarios,
+    suite,
     timeout,
     category,
     difficulty,
@@ -69,7 +98,7 @@ def run(
     osef_model_id,
 ):
     """Run red team attack scenarios against a target."""
-    scenarios_file = scenarios or _default_scenarios_path()
+    scenario_source = _scenario_source(scenarios, suite)
     results_db = RedTeamResultsDB(db_dir)
 
     is_ddil = ddil_latency > 0 or ddil_drop_rate > 0 or ddil_bandwidth > 0
@@ -103,7 +132,7 @@ def run(
 
         # Run using offline executor with orchestrator
         orchestrator = RedTeamOrchestrator(
-            scenario_file=scenarios_file,
+            **scenario_source,
             target_url=target,
             results_db=results_db,
             timeout=timeout,
@@ -117,7 +146,7 @@ def run(
         effective_model_id = osef_model_id or f"ollama/{model}"
     else:
         orchestrator = RedTeamOrchestrator(
-            scenario_file=scenarios_file,
+            **scenario_source,
             target_url=target,
             results_db=results_db,
             timeout=timeout,
@@ -166,12 +195,12 @@ def run(
 
 @cli.command()
 @click.option("--scenarios", default=None, help="Path to scenarios YAML file")
-def stats(scenarios):
+@suite_option
+def stats(scenarios, suite):
     """Show scenario library statistics."""
     from oubliette_dungeon.core import ScenarioLoader
 
-    scenarios_file = scenarios or _default_scenarios_path()
-    loader = ScenarioLoader(scenarios_file)
+    loader = ScenarioLoader(**_scenario_source(scenarios, suite))
     s = loader.get_statistics()
 
     click.echo("\nScenario Library Statistics")
@@ -245,14 +274,15 @@ def demo(port):
 @click.argument("results_file", type=click.Path(exists=True))
 @click.option("--target", default=DEFAULT_TARGET_URL, help="Target API endpoint URL")
 @click.option("--scenarios", default=None, help="Path to scenarios YAML file")
+@suite_option
 @click.option("--timeout", default=30, type=int, help="Request timeout")
 @click.option("--scenario-ids", default=None, help="Comma-separated scenario IDs to replay")
-def replay(results_file, target, scenarios, timeout, scenario_ids):
+def replay(results_file, target, scenarios, suite, timeout, scenario_ids):
     """Replay scenarios from a previous results file."""
-    scenarios_file = scenarios or _default_scenarios_path()
+    scenario_source = _scenario_source(scenarios, suite)
 
     orchestrator = RedTeamOrchestrator(
-        scenario_file=scenarios_file,
+        **scenario_source,
         target_url=target,
         timeout=timeout,
     )
@@ -284,6 +314,7 @@ def export(fmt, session, output, db_dir):
 @cli.command()
 @click.option("--models", required=True, help="Comma-separated Ollama model names")
 @click.option("--scenarios", default=None, help="Path to scenarios YAML file")
+@suite_option
 @click.option("--timeout", default=120, type=int, help="Request timeout per model")
 @click.option("--category", default=None, help="Only run scenarios in this category")
 @click.option("--difficulty", default=None, help="Only run scenarios at this difficulty")
@@ -292,7 +323,16 @@ def export(fmt, session, output, db_dir):
 @click.option("--output-html", default=None, help="Save comparison as HTML")
 @click.option("--db-dir", default="redteam_results", help="Results database directory")
 def compare(
-    models, scenarios, timeout, category, difficulty, ollama_url, output_json, output_html, db_dir
+    models,
+    scenarios,
+    suite,
+    timeout,
+    category,
+    difficulty,
+    ollama_url,
+    output_json,
+    output_html,
+    db_dir,
 ):
     """Compare adversarial resilience across multiple local models."""
     from oubliette_dungeon.core.comparison import ModelComparison
@@ -303,7 +343,7 @@ def compare(
         click.echo("ERROR: Provide at least 2 models to compare (comma-separated).")
         sys.exit(1)
 
-    scenarios_file = scenarios or _default_scenarios_path()
+    scenario_source = _scenario_source(scenarios, suite)
     results_db = RedTeamResultsDB(db_dir)
     comparison = ModelComparison()
 
@@ -322,7 +362,7 @@ def compare(
             continue
 
         orchestrator = RedTeamOrchestrator(
-            scenario_file=scenarios_file,
+            **scenario_source,
             target_url="offline",
             results_db=results_db,
             timeout=timeout,
@@ -361,11 +401,12 @@ def compare(
 
 @cli.command("nist-rmf")
 @click.option("--scenarios", default=None, help="Path to scenarios YAML file")
+@suite_option
 @click.option("--session", default=None, help="Session ID for test results")
 @click.option("--db-dir", default="redteam_results", help="Results database directory")
 @click.option("--output", default=None, help="Output file path (default: stdout)")
 @click.option("--organization", default="Oubliette Security", help="Organization name")
-def nist_rmf(scenarios, session, db_dir, output, organization):
+def nist_rmf(scenarios, suite, session, db_dir, output, organization):
     """Generate a NIST AI RMF compliance report.
 
     Maps attack scenarios and test results to NIST AI Risk Management
@@ -375,8 +416,7 @@ def nist_rmf(scenarios, session, db_dir, output, organization):
     from oubliette_dungeon.core import ScenarioLoader
     from oubliette_dungeon.report.nist_rmf import NISTRMFReport
 
-    scenarios_file = scenarios or _default_scenarios_path()
-    loader = ScenarioLoader(scenarios_file)
+    loader = ScenarioLoader(**_scenario_source(scenarios, suite))
     all_scenarios = loader.get_all_scenarios()
 
     results = None
