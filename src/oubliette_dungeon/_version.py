@@ -6,4 +6,4 @@ Must equal ``[project].version`` in pyproject.toml; enforced by
 through ``oubliette_dungeon/__init__.py``.
 """
 
-__version__ = "1.0.3"
+__version__ = "1.1.0"

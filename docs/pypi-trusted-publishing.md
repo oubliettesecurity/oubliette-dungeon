@@ -54,7 +54,7 @@ add required reviewers or a wait timer for production publishes.
    creates/updates the GitHub Release with the dist files attached.
 
 Manual re-run: **Actions → Publish to PyPI → Run workflow**, enter an existing
-tag (e.g. `v1.0.3`). Set **dry_run** to build + gate only (no upload, no
+tag (e.g. `v1.1.0`). Set **dry_run** to build + gate only (no upload, no
 GitHub Release).
 
 ## Packaging boundary

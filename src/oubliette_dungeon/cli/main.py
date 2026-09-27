@@ -25,6 +25,8 @@ from oubliette_dungeon.core import (
     RedTeamOrchestrator,
     _default_scenarios_path,
 )
+from oubliette_dungeon.core.loader import check_scenario_access
+from oubliette_dungeon.license import LicenseRequiredError
 from oubliette_dungeon.storage import RedTeamResultsDB
 
 # --suite selects a named set of bundled scenario files. click.Choice rejects
@@ -36,8 +38,9 @@ suite_option = click.option(
     default=None,
     help="Bundled scenario suite: 'default' (57 scenarios, used when neither "
     "--suite nor --scenarios is given) or 'full' (72: the default 57 plus the "
-    "15 bundled Crescendo multi-turn scenarios). Loads bundled files only; "
-    "does not enable custom scenario files. Mutually exclusive with --scenarios.",
+    "15 bundled Crescendo multi-turn scenarios; requires Dungeon Pro, i.e. a "
+    "Dungeon license key granting full_scenario_library). Loads bundled files "
+    "only; does not enable custom scenario files. Mutually exclusive with --scenarios.",
 )
 
 
@@ -48,12 +51,29 @@ def _scenario_source(scenarios: str | None, suite: str | None) -> dict[str, Any]
             "--scenarios and --suite are mutually exclusive: --suite selects "
             "bundled scenario files only."
         )
+    source: dict[str, Any]
     if suite:
-        return {"scenario_file": None, "suite": suite}
-    return {"scenario_file": scenarios or _default_scenarios_path(), "suite": None}
+        source = {"scenario_file": None, "suite": suite}
+    else:
+        source = {"scenario_file": scenarios or _default_scenarios_path(), "suite": None}
+    # Fail closed before any work (results DB, Ollama checks, requests): a Pro
+    # selection without the entitlement raises LicenseRequiredError, which the
+    # group turns into an error message and a non-zero exit. Never downgrade.
+    check_scenario_access(**source)
+    return source
 
 
-@click.group()
+class _DungeonGroup(click.Group):
+    """Report a missing Dungeon Pro entitlement as a CLI error (exit 1)."""
+
+    def invoke(self, ctx: click.Context) -> Any:
+        try:
+            return super().invoke(ctx)
+        except LicenseRequiredError as exc:
+            raise click.ClickException(str(exc)) from exc
+
+
+@click.group(cls=_DungeonGroup)
 @click.version_option(version=__version__, prog_name="oubliette-dungeon")
 def cli():
     """Oubliette Dungeon - AI Red Team Engine"""

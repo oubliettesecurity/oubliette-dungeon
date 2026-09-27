@@ -19,6 +19,7 @@ from oubliette_dungeon.core.models import (
     AttackResult,
     AttackTestResult,
 )
+from oubliette_dungeon.license import LicenseManager
 
 
 class RedTeamOrchestrator:
@@ -35,10 +36,13 @@ class RedTeamOrchestrator:
         timeout: int = 30,
         caller_key_hint: str | None = None,
         suite: str | None = None,
+        *,
+        license_manager: LicenseManager | None = None,
     ):
         # ``suite`` selects bundled scenarios ("default" = 57, "full" = 72);
-        # ScenarioLoader rejects unknown names and scenario_file + suite.
-        self.loader = ScenarioLoader(scenario_file, suite=suite)
+        # ScenarioLoader rejects unknown names and scenario_file + suite, and
+        # raises LicenseRequiredError for "full" without Dungeon Pro.
+        self.loader = ScenarioLoader(scenario_file, suite=suite, license_manager=license_manager)
         self.executor = AttackExecutor(target_url, timeout)
         self.evaluator = ResultEvaluator()
         self.results_db = results_db

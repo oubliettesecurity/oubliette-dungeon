@@ -7,6 +7,10 @@ suite names fail closed.
 
 tests/conftest.py sets DUNGEON_ALLOW_CUSTOM_SCENARIOS=true for the whole
 suite, so every test here that asserts on the gate deletes it first.
+
+``full`` is Dungeon Pro; tests that load it use the ``dungeon_pro`` fixture
+(tests/conftest.py). The licensing behaviour itself is covered in
+test_full_suite_license.py.
 """
 
 import os
@@ -86,28 +90,28 @@ class TestDefaultStays57:
 
 
 class TestFullSuite72:
-    def test_loader_full(self, gate_closed):
+    def test_loader_full(self, gate_closed, dungeon_pro):
         loader = ScenarioLoader(suite="full")
         scenarios = loader.get_all_scenarios()
         assert len(scenarios) == 72
         assert loader.suite == "full"
         assert loader.get_statistics()["by_category"]["multi_turn_attack"] == 15
 
-    def test_full_is_default_plus_crescendo_with_unique_ids(self, gate_closed):
+    def test_full_is_default_plus_crescendo_with_unique_ids(self, gate_closed, dungeon_pro):
         ids = [s.id for s in ScenarioLoader(suite="full").get_all_scenarios()]
         assert ids == [f"ATK-{n:03d}" for n in range(1, 73)]
         assert len(set(ids)) == 72
 
-    def test_orchestrator_full(self, gate_closed):
+    def test_orchestrator_full(self, gate_closed, dungeon_pro):
         orch = RedTeamOrchestrator(target_url="http://localhost:9/none", suite="full")
         assert len(orch.loader.get_all_scenarios()) == 72
 
-    def test_cli_stats_full(self, gate_closed):
+    def test_cli_stats_full(self, gate_closed, dungeon_pro):
         result = CliRunner().invoke(cli, ["stats", "--suite", "full"])
         assert result.exit_code == 0, result.output
         assert "Total Scenarios: 72" in result.output
 
-    def test_cli_run_full(self, gate_closed, no_network_run, tmp_path):
+    def test_cli_run_full(self, gate_closed, dungeon_pro, no_network_run, tmp_path):
         result = CliRunner().invoke(cli, ["run", "--suite", "full", "--db-dir", str(tmp_path)])
         assert result.exit_code == 0, result.output
         assert no_network_run["count"] == 72
@@ -122,11 +126,11 @@ class TestFullDoesNotAllowCustomFiles:
             for path in bundled_suite_paths(name):
                 assert Path(path).resolve().parent == SCENARIOS_DIR.resolve()
 
-    def test_full_loads_with_gate_closed_and_leaves_it_closed(self, gate_closed):
+    def test_full_loads_with_gate_closed_and_leaves_it_closed(self, gate_closed, dungeon_pro):
         ScenarioLoader(suite="full")
         assert GATE not in os.environ
 
-    def test_custom_file_still_refused_after_full(self, gate_closed, mock_yaml_file):
+    def test_custom_file_still_refused_after_full(self, gate_closed, dungeon_pro, mock_yaml_file):
         ScenarioLoader(suite="full")
         with pytest.raises(PermissionError, match=GATE):
             ScenarioLoader(mock_yaml_file)

@@ -13,6 +13,7 @@ from typing import Any
 import yaml
 
 from oubliette_dungeon.core.models import AttackScenario
+from oubliette_dungeon.license import LicenseManager, require_feature
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +25,15 @@ SCENARIO_SUITES: dict[str, tuple[str, ...]] = {
     "full": ("default.yaml", "crescendo.yaml"),  # 57 + 15 Crescendo multi-turn = 72
 }
 DEFAULT_SUITE = "default"
+
+# Dungeon Pro content. The full suite, and the bundled Crescendo file however it
+# is reached, need the ``full_scenario_library`` entitlement from a verified,
+# Dungeon-scoped license. Without it the request is refused (never downgraded
+# to the 57-scenario default).
+FULL_SCENARIO_LIBRARY = "full_scenario_library"
+SUITE_ENTITLEMENTS: dict[str, str] = {"full": FULL_SCENARIO_LIBRARY}
+SUITE_LABELS: dict[str, str] = {"full": "72 scenarios: the default 57 plus 15 Crescendo"}
+BUNDLED_FILE_ENTITLEMENTS: dict[str, str] = {"crescendo.yaml": FULL_SCENARIO_LIBRARY}
 
 
 def bundled_suite_paths(suite: str) -> list[str]:
@@ -42,6 +52,80 @@ def bundled_suite_paths(suite: str) -> list[str]:
     return [str(root / name) for name in SCENARIO_SUITES[suite]]
 
 
+def _bundled_scenario_path(name: str) -> Path:
+    from importlib.resources import files
+
+    return Path(str(files("oubliette_dungeon") / "scenarios" / name))
+
+
+def file_entitlement(scenario_file: str) -> str | None:
+    """Return the entitlement needed to load ``scenario_file`` by path, if any.
+
+    Matches a bundled Pro file (``crescendo.yaml``) by resolved path, and by
+    identical content so a byte-for-byte copy elsewhere is gated too. Files
+    that cannot be read are left to the loader to report.
+    """
+    try:
+        resolved = Path(scenario_file).resolve()
+    except (OSError, ValueError):
+        resolved = Path(scenario_file)
+    try:
+        digest: str | None = hashlib.sha256(resolved.read_bytes()).hexdigest()
+    except OSError:
+        digest = None
+    for name, feature in BUNDLED_FILE_ENTITLEMENTS.items():
+        bundled = _bundled_scenario_path(name)
+        try:
+            if resolved == bundled.resolve():
+                return feature
+            if digest is not None and digest == hashlib.sha256(bundled.read_bytes()).hexdigest():
+                return feature
+        except OSError:
+            continue
+    return None
+
+
+def check_scenario_access(
+    scenario_file: str | None = None,
+    suite: str | None = None,
+    *,
+    license_manager: LicenseManager | None = None,
+) -> None:
+    """Run every access check for a scenario selection without loading it.
+
+    In order: suite name validation (``ValueError``), the
+    ``DUNGEON_ALLOW_CUSTOM_SCENARIOS`` gate for non-bundled files
+    (``PermissionError``), then the Dungeon Pro entitlement for Pro content
+    (:class:`~oubliette_dungeon.license.LicenseRequiredError`, a
+    ``PermissionError``). The CLI calls this before doing any work;
+    :class:`ScenarioLoader` calls it before loading.
+    """
+    if scenario_file is not None and suite is not None:
+        raise ValueError(
+            "Pass either scenario_file or suite, not both: a suite selects "
+            "bundled scenario files only."
+        )
+    if scenario_file is None:
+        name = DEFAULT_SUITE if suite is None else suite
+        bundled_suite_paths(name)  # validates the name (fail closed)
+        feature = SUITE_ENTITLEMENTS.get(name)
+        if feature is not None:
+            require_feature(
+                feature,
+                action=f"The '{name}' scenario suite ({SUITE_LABELS.get(name, name)})",
+                license_manager=license_manager,
+            )
+        return
+    ScenarioLoader._enforce_custom_scenario_gate(scenario_file)
+    feature = file_entitlement(scenario_file)
+    if feature is not None:
+        require_feature(
+            feature,
+            action=f"Loading the bundled Crescendo scenarios from {scenario_file!r}",
+            license_manager=license_manager,
+        )
+
+
 class ScenarioLoader:
     """
     Loads attack scenarios from YAML files.
@@ -52,14 +136,25 @@ class ScenarioLoader:
     or ``suite`` (a named set of bundled files, see ``SCENARIO_SUITES``), not
     both. With neither, the ``default`` suite (57 scenarios) is loaded;
     ``suite="full"`` adds the 15 bundled Crescendo scenarios (72 total).
+
+    ``suite="full"``, and ``crescendo.yaml`` loaded by path, are Dungeon Pro:
+    they need the ``full_scenario_library`` entitlement from a verified,
+    Dungeon-scoped license (``OUBLIETTE_LICENSE_KEY``, or ``license_manager``).
+    Without it the constructor raises
+    :class:`~oubliette_dungeon.license.LicenseRequiredError` (a
+    ``PermissionError``); it never falls back to the 57-scenario default.
     """
 
-    def __init__(self, scenario_file: str | None = None, suite: str | None = None):
-        if scenario_file is not None and suite is not None:
-            raise ValueError(
-                "Pass either scenario_file or suite, not both: a suite selects "
-                "bundled scenario files only."
-            )
+    def __init__(
+        self,
+        scenario_file: str | None = None,
+        suite: str | None = None,
+        *,
+        license_manager: LicenseManager | None = None,
+    ):
+        # Fail closed before anything is loaded: suite name, custom-file gate,
+        # Pro entitlement (see check_scenario_access).
+        check_scenario_access(scenario_file, suite, license_manager=license_manager)
         self.suite: str | None
         if scenario_file is None:
             self.suite = DEFAULT_SUITE if suite is None else suite
@@ -80,8 +175,7 @@ class ScenarioLoader:
         # explicit opt-in env var and log the SHA-256 hash on load so an
         # operator post-incident can tell which scenario file was used.
         # A suite resolves to bundled files only, so it never reaches the gate.
-        if scenario_file is not None:
-            self._enforce_custom_scenario_gate(scenario_file)
+        # (check_scenario_access above has already enforced the gate.)
         self.load_scenarios()
 
     @staticmethod
