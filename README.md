@@ -4,9 +4,9 @@ Standalone adversarial testing engine for LLM applications. Run red team attack 
 
 ## Features
 
-- **57 scenarios by default, 72 with `--suite full`.** Two bundled sets, 10 categories in total:
+- **57 scenarios by default, 72 with `--suite full` (Dungeon Pro).** Two bundled sets, 10 categories in total:
   - **Default library** (`scenarios/default.yaml`): 57 scenarios across 9 categories (prompt injection, jailbreak, information extraction, social engineering, model exploitation, context manipulation, tool exploitation, resource abuse, compliance testing). This is what `run`, `stats`, the API and the Python API use when no scenario file or suite is given.
-  - **Crescendo multi-turn set** (`scenarios/crescendo.yaml`): 15 further `multi_turn_attack` scenarios. It is not loaded by default; `--suite full` (Python: `suite="full"`) loads it together with the default library, 72 scenarios in all (see [Scenario suites](#scenario-suites)).
+  - **Crescendo multi-turn set** (`scenarios/crescendo.yaml`): 15 further `multi_turn_attack` scenarios. It is not loaded by default; `--suite full` (Python: `suite="full"`) loads it together with the default library, 72 scenarios in all. **The full suite requires Dungeon Pro** (see [Scenario suites](#scenario-suites)).
 - **Refusal-aware evaluation** - reduces false positive bypasses when LLMs mention attack keywords in refusal context
 - **Honeypot-aware scoring** - detects honey token decoys from pipeline metadata
 - **Multi-turn attack support** - escalating conversation sequences
@@ -41,7 +41,8 @@ pip install oubliette-dungeon[all]       # Everything
 # Run the default library (57 scenarios) against a target
 oubliette-dungeon run --target http://localhost:5000/api/chat
 
-# Run the full bundled suite (72 scenarios: default 57 + 15 Crescendo multi-turn)
+# Run the full bundled suite (72 scenarios: default 57 + 15 Crescendo multi-turn).
+# Requires Dungeon Pro: OUBLIETTE_LICENSE_KEY set to a Dungeon Pro license key.
 oubliette-dungeon run --suite full --target http://localhost:5000/api/chat
 
 # Show scenario library statistics
@@ -67,7 +68,7 @@ orch = RedTeamOrchestrator(
     scenario_file=None,  # Uses the default library (default.yaml, 57 scenarios)
     target_url="http://localhost:5000/api/chat",
     results_db=db,
-    # suite="full",  # Or: the full bundled suite, 72 scenarios
+    # suite="full",  # Or: the full bundled suite, 72 scenarios (Dungeon Pro)
 )
 results = orch.run_all_scenarios()
 orch.print_summary(results)
@@ -111,7 +112,7 @@ scenario payload is sent live to `--target`.
 | Suite | Scenarios | Files |
 |---|---|---|
 | `default` (used when neither `--suite` nor `--scenarios` is given) | 57 | `default.yaml` |
-| `full` | 72 | `default.yaml` + `crescendo.yaml` (15 Crescendo multi-turn) |
+| `full` (**Dungeon Pro**) | 72 | `default.yaml` + `crescendo.yaml` (15 Crescendo multi-turn) |
 
 ```bash
 oubliette-dungeon stats --suite full   # Total Scenarios: 72
@@ -121,6 +122,31 @@ oubliette-dungeon run --suite full --target http://localhost:5000/api/chat
 `--suite` is available on `run`, `stats`, `replay`, `compare` and `nist-rmf`.
 The Python API takes the same names: `RedTeamOrchestrator(..., suite="full")` or
 `ScenarioLoader(suite="full")`.
+
+### The full suite requires Dungeon Pro
+
+`--suite full` / `suite="full"` needs the `full_scenario_library` entitlement
+from a valid Dungeon Pro license key in `OUBLIETTE_LICENSE_KEY`: an Ed25519
+signed key whose `products` include `dungeon` and which is `enterprise` or grants
+`full_scenario_library`. Verification needs the `licensing` extra
+(`pip install "oubliette-dungeon[licensing]"`). A key for another Oubliette
+product (for example a Shield key) does not unlock it.
+
+Without that entitlement the full suite is refused, never downgraded: the CLI
+prints an error naming the missing `full_scenario_library` entitlement and exits
+with status 1 before doing any work, and the Python API raises
+`oubliette_dungeon.license.LicenseRequiredError` (a `PermissionError`). It never
+runs the 57-scenario default in its place. The default suite needs no license.
+
+For local development and tests only, the existing dev opt-in also unlocks it:
+`OUBLIETTE_INSECURE_DEV_FEATURE_GATE=true` plus any non-empty
+`OUBLIETTE_LICENSE_KEY` (a warning is logged). Do not use this in production.
+
+Embedding applications can pass their own manager:
+`ScenarioLoader(suite="full", license_manager=...)` or
+`RedTeamOrchestrator(..., license_manager=...)`.
+
+### Suites and custom files
 
 A suite only loads scenario files that ship inside the package, so it does not
 need, set, or imply `DUNGEON_ALLOW_CUSTOM_SCENARIOS`. It fails closed: an
@@ -150,7 +176,7 @@ Any file passed with `--scenarios` other than the bundled default library is gat
 DUNGEON_ALLOW_CUSTOM_SCENARIOS=true oubliette-dungeon run --scenarios my_scenarios.yaml --target http://localhost:5000/api/chat
 ```
 
-To run the bundled Crescendo set, use `--suite full` (see [Scenario suites](#scenario-suites)), which needs no opt-in. Passing `crescendo.yaml` by path with `--scenarios` still goes through the gate and loads only its 15 scenarios.
+To run the bundled Crescendo set, use `--suite full` (see [Scenario suites](#scenario-suites)), which needs no custom-file opt-in but does need Dungeon Pro. Passing `crescendo.yaml` by path with `--scenarios` goes through the custom-file gate **and** needs the same Dungeon Pro entitlement (`full_scenario_library`), including for a byte-for-byte copy of it at another path; it then loads only its 15 scenarios. Other custom files need only the opt-in.
 
 ## Development
 

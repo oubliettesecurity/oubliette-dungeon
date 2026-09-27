@@ -9,23 +9,39 @@ Tiers:
   agent_policy, mcp_guard, tenant_manager, rbac.
 - **enterprise**: Everything, no warnings.
 
-License key is a base64-encoded JSON blob with HMAC-SHA256 signature.
+Licenses are product-scoped schema v2 tokens signed with Ed25519 (see
+:mod:`oubliette_dungeon._license_core`, vendored byte-identical from
+``oubliette-commerce``, which is the only issuer). Dungeon accepts a key only
+if its signed ``products`` list contains ``"dungeon"``; a Shield- or
+Trap-only key gives the free tier here. Every validation failure gives the
+free tier. Client-side HMAC verification has been removed.
 """
 
 from __future__ import annotations
 
-import base64
-import datetime
-import hashlib
-import hmac
-import json
+import importlib.util
 import logging
 import os
-import threading
-import time
+from collections.abc import Iterable, Mapping
 from typing import Any
 
+from . import _license_core
+from ._license_core import (
+    DEFAULT_MONTHLY_QUOTA,
+    FREE_LICENSE,
+    KNOWN_PRODUCTS,
+    PRODUCTION_KEYRING,
+    SCHEMA_VERSION,
+    LicenseError,
+    LicenseInfo,
+    canonical_payload,
+    verify_license_token,
+)
+
 log = logging.getLogger(__name__)
+
+#: This product's registry name in the signed ``products`` claim.
+PRODUCT = "dungeon"
 
 # Features that require Pro tier (Dungeon red-team engine)
 PRO_FEATURES = frozenset(
@@ -42,269 +58,57 @@ PRO_FEATURES = frozenset(
     }
 )
 
-# Default soft quota for free tier (monthly analyze() calls)
-_DEFAULT_MONTHLY_QUOTA = 10_000
+__all__ = [
+    "DEFAULT_MONTHLY_QUOTA",
+    "FREE_LICENSE",
+    "KNOWN_PRODUCTS",
+    "PRODUCT",
+    "PRODUCTION_KEYRING",
+    "PRO_FEATURES",
+    "SCHEMA_VERSION",
+    "FeatureGate",
+    "LicenseError",
+    "LicenseInfo",
+    "LicenseManager",
+    "LicenseRequiredError",
+    "canonical_payload",
+    "require_feature",
+    "verify_license_token",
+]
 
-# How long to cache a validated license (seconds)
-_VALIDATION_CACHE_TTL = 3600  # 1 hour
 
+class LicenseManager(_license_core.LicenseManager):
+    """Dungeon's license manager: validation, feature gating, usage metering.
 
-class LicenseInfo:
-    """Parsed and validated license data."""
+    Verifies ``OUBLIETTE_LICENSE_KEY`` for product ``"dungeon"`` against the
+    embedded public keyring. Thread-safe.
 
-    __slots__ = ("expires", "features", "issued", "org", "quota", "tier", "valid")
+    Args:
+        storage_backend: Optional storage backend for persisting usage data.
+        keyring: ``kid -> public key`` override for tests and rotation drills.
+            Defaults to the embedded production keyring. There is no
+            environment-variable override.
+    """
 
     def __init__(
         self,
-        tier: str = "free",
-        org: str = "",
-        issued: str = "",
-        expires: str = "",
-        quota: int = 0,
-        features: list[str] | None = None,
-        valid: bool = True,
-    ):
-        self.tier = tier
-        self.org = org
-        self.issued = issued
-        self.expires = expires
-        self.quota = quota
-        self.features = set(features or [])
-        self.valid = valid
-
-    def has_feature(self, feature: str) -> bool:
-        if self.tier == "enterprise":
-            return True
-        return feature in self.features
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "tier": self.tier,
-            "org": self.org,
-            "issued": self.issued,
-            "expires": self.expires,
-            "quota": self.quota,
-            "features": sorted(self.features),
-            "valid": self.valid,
-        }
-
-
-_FREE_LICENSE = LicenseInfo(tier="free", quota=_DEFAULT_MONTHLY_QUOTA)
-
-
-class LicenseManager:
-    """Manages license validation, feature gating, and usage metering.
-
-    Thread-safe with RLock on all shared state.
-
-    Args:
-        signing_key: HMAC signing key for license validation. Defaults to
-            ``OUBLIETTE_LICENSE_SIGNING_KEY`` env var.
-        storage_backend: Optional storage backend for persisting usage data.
-    """
-
-    def __init__(self, signing_key: str | None = None, storage_backend: Any = None) -> None:
-        self._lock = threading.RLock()
-        self._signing_key = signing_key or os.getenv("OUBLIETTE_LICENSE_SIGNING_KEY", "")
-        self._storage = storage_backend
-        self._license: LicenseInfo | None = None
-        self._validated_at: float = 0.0
-        self._usage: dict[str, dict[str, Any]] = {}  # {month: {total, by_feature}}
-        self._quota = int(os.getenv("OUBLIETTE_MONTHLY_QUOTA", str(_DEFAULT_MONTHLY_QUOTA)))
-        self._warned_80 = False
-        self._warned_100 = False
-
-        # Auto-load license from env
-        raw = os.getenv("OUBLIETTE_LICENSE_KEY", "")
-        if raw:
-            self._load_license(raw)
-        else:
-            self._license = _FREE_LICENSE
-            log.info("[LICENSE] No license key set -- running in free tier")
-
-    # ------------------------------------------------------------------
-    # License validation
-    # ------------------------------------------------------------------
-
-    def _load_license(self, raw_key: str) -> None:
-        """Parse and validate a base64-encoded license key."""
-        try:
-            decoded = base64.b64decode(raw_key)
-            data = json.loads(decoded)
-        except Exception:
-            log.warning("[LICENSE] Invalid license key format -- falling back to free tier")
-            self._license = _FREE_LICENSE
-            return
-
-        sig = data.pop("sig", "")
-        # FAIL CLOSED: without a signing key we cannot verify the HMAC, so we
-        # MUST NOT trust the payload's tier/features. Previously the whole
-        # verification block was skipped when no key was configured, letting
-        # anyone forge a Pro/Enterprise license. Force free tier instead.
-        if not self._signing_key:
-            log.warning(
-                "[LICENSE] No signing key configured -- cannot verify license "
-                "signature; falling back to free tier (set "
-                "OUBLIETTE_LICENSE_SIGNING_KEY to enable paid tiers)"
-            )
-            self._license = _FREE_LICENSE
-            return
-
-        if not isinstance(sig, str):
-            log.warning("[LICENSE] Invalid license signature -- falling back to free tier")
-            self._license = _FREE_LICENSE
-            return
-
-        payload = json.dumps(data, sort_keys=True, separators=(",", ":"))
-        expected_sig = hmac.new(
-            self._signing_key.encode("utf-8"),
-            payload.encode("utf-8"),
-            hashlib.sha256,
-        ).hexdigest()
-        if not hmac.compare_digest(sig, expected_sig):
-            log.warning("[LICENSE] Invalid license signature -- falling back to free tier")
-            self._license = _FREE_LICENSE
-            return
-
-        # Check expiry
-        expires = data.get("expires", "")
-        if expires:
-            try:
-                exp_date = datetime.date.fromisoformat(expires)
-                if exp_date < datetime.date.today():
-                    log.warning(
-                        "[LICENSE] License expired on %s -- falling back to free tier", expires
-                    )
-                    self._license = _FREE_LICENSE
-                    return
-            except (TypeError, ValueError):
-                # FAIL CLOSED: an unparseable expiry must not be read as
-                # "never expires" (previously the error was swallowed and the
-                # license stayed valid forever).
-                log.warning(
-                    "[LICENSE] Unparseable license expiry %r -- falling back to free tier",
-                    expires,
-                )
-                self._license = _FREE_LICENSE
-                return
-
-        self._license = LicenseInfo(
-            tier=data.get("tier", "free"),
-            org=data.get("org", ""),
-            issued=data.get("issued", ""),
-            expires=expires,
-            quota=data.get("quota", 0),
-            features=data.get("features", []),
-        )
-        self._validated_at = time.time()
-        if self._license.quota:
-            self._quota = self._license.quota
-        log.info(
-            "[LICENSE] Loaded %s license for %s (expires %s)",
-            self._license.tier,
-            self._license.org,
-            self._license.expires,
+        *,
+        storage_backend: Any = None,
+        keyring: Mapping[str, str] | None = None,
+    ) -> None:
+        super().__init__(
+            product=PRODUCT,
+            pro_features=PRO_FEATURES,
+            storage_backend=storage_backend,
+            keyring=keyring,
         )
 
-    @property
-    def license(self) -> LicenseInfo:
-        """Get current license info, re-validating if cache expired."""
-        with self._lock:
-            if self._license is None:
-                return _FREE_LICENSE
-            # Re-validate from env if cache expired
-            if time.time() - self._validated_at > _VALIDATION_CACHE_TTL:
-                raw = os.getenv("OUBLIETTE_LICENSE_KEY", "")
-                if raw:
-                    self._load_license(raw)
-            return self._license
 
-    # ------------------------------------------------------------------
-    # Feature gating (soft enforcement)
-    # ------------------------------------------------------------------
-
-    def check_feature(self, feature: str) -> bool:
-        """Check if a feature is available. Logs warning if not.
-
-        Returns True if feature is allowed (always True, but logs warning).
-        """
-        lic = self.license
-        if lic.tier == "enterprise":
-            return True
-        if feature in PRO_FEATURES and not lic.has_feature(feature):
-            log.warning("[LICENSE] Feature '%s' requires Pro tier (current: %s)", feature, lic.tier)
-            return False
-        return True
-
-    # ------------------------------------------------------------------
-    # Usage metering
-    # ------------------------------------------------------------------
-
-    def _month_key(self) -> str:
-        return datetime.date.today().strftime("%Y-%m")
-
-    def record_usage(self, feature: str = "analyze") -> None:
-        """Record a usage event. Thread-safe."""
-        with self._lock:
-            month = self._month_key()
-            if month not in self._usage:
-                self._usage[month] = {"total": 0, "by_feature": {}}
-                self._warned_80 = False
-                self._warned_100 = False
-            self._usage[month]["total"] += 1
-            self._usage[month]["by_feature"][feature] = (
-                self._usage[month]["by_feature"].get(feature, 0) + 1
-            )
-
-            total = self._usage[month]["total"]
-            if self._quota > 0:
-                pct = total / self._quota
-                if pct >= 1.0 and not self._warned_100:
-                    log.warning(
-                        "[LICENSE] Monthly quota reached: %d/%d (100%%). "
-                        "Usage continues but upgrade recommended.",
-                        total,
-                        self._quota,
-                    )
-                    self._warned_100 = True
-                elif pct >= 0.8 and not self._warned_80:
-                    log.warning(
-                        "[LICENSE] Approaching monthly quota: %d/%d (80%%)",
-                        total,
-                        self._quota,
-                    )
-                    self._warned_80 = True
-
-    def get_usage(self, month: str | None = None) -> dict[str, Any]:
-        """Get usage summary for a given month (default: current)."""
-        with self._lock:
-            key = month or self._month_key()
-            usage = self._usage.get(key, {"total": 0, "by_feature": {}})
-            return {
-                "month": key,
-                "total": usage["total"],
-                "by_feature": dict(usage["by_feature"]),
-                "quota": self._quota,
-                "tier": self.license.tier,
-            }
-
-    def get_usage_all(self) -> dict[str, dict[str, Any]]:
-        """Get usage for all tracked months."""
-        with self._lock:
-            return {k: dict(v) for k, v in self._usage.items()}
-
-
-# ======================================================================
-# Feature Gate -- simplified tier-based access control
-# ======================================================================
-
-
-class FeatureGate:
+class FeatureGate(_license_core.FeatureGate):
     """Controls access to Pro features based on license key.
 
     Provides a simple boolean check for whether a feature is available
-    under the current license tier.  Integrates with :class:`Shield` via
-    the ``feature_gate`` constructor parameter.
+    under the current license tier.
 
     Tiers:
         - **community**: ``analyze``, ``health``, ``basic_session``
@@ -325,7 +129,7 @@ class FeatureGate:
             ``OUBLIETTE_LICENSE_KEY`` environment variable.
         license_manager: Optional :class:`LicenseManager` to
             delegate validation to.  When provided, the gate uses
-            the manager's tier information after validation.  This is
+            the manager's (Dungeon-scoped) tier after validation.  This is
             the only path that verifies the license signature.
         insecure_simple_mode: DEV/TEST ONLY.  Without a manager the key
             cannot be verified, so the gate stays at ``community``.  Set
@@ -359,98 +163,95 @@ class FeatureGate:
     def __init__(
         self,
         license_key: str | None = None,
-        license_manager: LicenseManager | None = None,
+        license_manager: _license_core.LicenseManager | None = None,
         *,
         insecure_simple_mode: bool | None = None,
-    ):
-        self.license_key = license_key or os.getenv("OUBLIETTE_LICENSE_KEY", "")
-        self._license_manager = license_manager
+        community_features: Iterable[str] | None = None,
+        pro_features: Iterable[str] | None = None,
+    ) -> None:
         if insecure_simple_mode is None:
             insecure_simple_mode = os.getenv(
                 "OUBLIETTE_INSECURE_DEV_FEATURE_GATE", ""
             ).strip().lower() in ("1", "true", "yes")
-        self._insecure_simple_mode = insecure_simple_mode
-        self._validated = False
-        self._tier = "community"
+        super().__init__(
+            license_key,
+            license_manager,
+            community_features=community_features,
+            pro_features=pro_features,
+            insecure_simple_mode=insecure_simple_mode,
+        )
 
-    def validate(self) -> bool:
-        """Validate the license key and determine the tier.
 
-        If a ``LicenseManager`` was provided, delegates to its
-        validation logic and reads the resulting tier.  Without a
-        manager the key cannot be verified, so the gate fails closed to
-        ``community`` unless ``insecure_simple_mode`` is enabled.
+class LicenseRequiredError(PermissionError):
+    """A Dungeon Pro feature was requested without the entitlement for it.
 
-        Returns:
-            ``True`` if a Pro or Enterprise key was validated.
-        """
-        if self._license_manager is not None:
-            lic = self._license_manager.license
-            if lic.tier in ("pro", "enterprise"):
-                self._tier = lic.tier
-                self._validated = True
-            else:
-                self._tier = "community"
-                self._validated = False
-            return self._validated
+    Raised instead of silently degrading, so a caller that asked for a Pro
+    feature (for example the full 72-scenario suite) never receives the free
+    behaviour while believing it got the paid one.
 
-        # FAIL CLOSED: no manager means no signature verification, so an
-        # unverified key must not grant Pro. The old "any non-empty key =
-        # pro" behaviour survives only behind an explicit dev/test opt-in.
-        if self._insecure_simple_mode and self.license_key:
-            log.warning(
-                "[LICENSE] FeatureGate insecure simple mode is enabled -- any "
-                "non-empty key grants Pro. Do NOT use in production."
-            )
-            self._tier = "pro"
-            self._validated = True
-        else:
-            self._tier = "community"
-            self._validated = False
-        return self._validated
+    Attributes:
+        feature: The missing entitlement (a name in :data:`PRO_FEATURES`).
+        tier: The verified tier that was in effect (``free`` when no valid
+            Dungeon-scoped key was found).
+    """
 
-    def is_allowed(self, feature: str) -> bool:
-        """Check if *feature* is available under the current tier.
+    def __init__(self, feature: str, tier: str, message: str) -> None:
+        super().__init__(message)
+        self.feature = feature
+        self.tier = tier
 
-        Community features are always allowed.  Pro features require
-        a validated Pro or Enterprise license.
 
-        Args:
-            feature: Feature name to check.
+def require_feature(
+    feature: str,
+    *,
+    action: str,
+    license_manager: _license_core.LicenseManager | None = None,
+) -> str:
+    """Fail closed unless ``feature`` is licensed for Dungeon.
 
-        Returns:
-            ``True`` if the feature is accessible.
-        """
-        if feature in self.COMMUNITY_FEATURES:
-            return True
-        if self._tier in ("pro", "enterprise") and feature in self.PRO_FEATURES:
-            return True
-        return False
+    Grants when the verified, Dungeon-scoped license is ``enterprise``, or is
+    ``pro`` and lists ``feature`` (bare or as ``dungeon:<feature>``). Otherwise the only
+    way through is the explicit DEV/TEST opt-in shared with
+    :class:`FeatureGate`: ``OUBLIETTE_INSECURE_DEV_FEATURE_GATE=true`` plus a
+    non-empty ``OUBLIETTE_LICENSE_KEY``, which logs a warning.
 
-    def require(self, feature: str) -> None:
-        """Raise ``PermissionError`` if *feature* is not allowed."""
-        if not self.is_allowed(feature):
-            raise PermissionError(
-                f"Feature '{feature}' requires a Pro license "
-                f"(current tier: {self._tier}). "
-                "Set OUBLIETTE_LICENSE_KEY or contact sales@oubliettesecurity.com"
-            )
+    Args:
+        feature: Entitlement name; must be one of :data:`PRO_FEATURES`.
+        action: What the caller tried to do, used in the error message.
+        license_manager: Manager to consult. Defaults to a new
+            :class:`LicenseManager` reading ``OUBLIETTE_LICENSE_KEY``.
 
-    @property
-    def tier(self) -> str:
-        """Return the current license tier."""
-        return self._tier
+    Returns:
+        ``"license"`` or ``"insecure-dev-opt-in"``: how access was granted.
 
-    @property
-    def validated(self) -> bool:
-        """Return whether a license has been successfully validated."""
-        return self._validated
-
-    def to_dict(self) -> dict[str, Any]:
-        """Serialize gate state for API responses."""
-        return {
-            "tier": self._tier,
-            "validated": self._validated,
-            "community_features": sorted(self.COMMUNITY_FEATURES),
-            "pro_features": sorted(self.PRO_FEATURES),
-        }
+    Raises:
+        LicenseRequiredError: The entitlement is missing (a ``PermissionError``).
+        ValueError: ``feature`` is not a Dungeon Pro feature (a programming error).
+    """
+    if feature not in PRO_FEATURES:
+        raise ValueError(f"{feature!r} is not a Dungeon Pro feature")
+    mgr = license_manager if license_manager is not None else LicenseManager()
+    lic = mgr.license
+    if lic.tier in ("pro", "enterprise") and lic.has_feature(feature):
+        return "license"
+    # No manager on purpose: this is exactly FeatureGate's documented dev/test
+    # opt-in (any non-empty key counts as Pro), off unless explicitly enabled.
+    if FeatureGate().validate():
+        log.warning(
+            "[LICENSE] '%s' granted by OUBLIETTE_INSECURE_DEV_FEATURE_GATE without a "
+            "verified license. Do NOT use in production.",
+            feature,
+        )
+        return "insecure-dev-opt-in"
+    message = (
+        f"{action} requires Dungeon Pro: missing the '{feature}' entitlement "
+        f"(current tier: {lic.tier}). Set OUBLIETTE_LICENSE_KEY to a valid Dungeon "
+        f"Pro license key (its products must include 'dungeon' and it must grant "
+        f"'{feature}' or be enterprise), or contact sales@oubliettesecurity.com."
+    )
+    if importlib.util.find_spec("cryptography") is None:
+        message += (
+            " License keys cannot be verified without the 'cryptography' package: "
+            "pip install 'oubliette-dungeon[licensing]'."
+        )
+    raise LicenseRequiredError(feature, lic.tier, message)

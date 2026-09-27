@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oubliette-dungeon"
-version = "1.0.3"
+version = "1.1.0"
 description = "Standalone AI Red Team Engine - automated adversarial testing for LLM applications"
 readme = "README.md"
 license = "Apache-2.0"
@@ -37,10 +37,13 @@ pyrit = ["pyrit>=0.8,<0.10"]
 deepteam = ["deepteam>=1.0"]
 inspect = ["inspect-ai>=0.3"]
 shield = ["oubliette-shield>=1.0"]
+# Ed25519 license verification (Dungeon Pro features such as --suite full).
+licensing = ["cryptography>=48.0.1"]
 all = [
     "flask>=2.3",
     "fpdf2>=2.8.0",
     "oubliette-shield>=1.0",
+    "cryptography>=48.0.1",
 ]
 dev = [
     "pytest>=7.0",
@@ -48,13 +51,15 @@ dev = [
     "ruff>=0.1",
     "build",
     "twine",
+    # Ed25519 license verification, so the licensing tests run instead of skipping.
+    "cryptography>=48.0.1",
 ]
 
 # Full test environment: dev tools + integration deps the test suite imports
 # (flask for the dashboard/API tests, inspect-ai for the inspect adapter tests).
 # `uv pip install -e ".[test]"` gives a clean green with no manual --with flags.
 test = [
-    "oubliette-dungeon[dev,flask,inspect]",
+    "oubliette-dungeon[dev,flask,inspect,licensing]",
     # tests/test_packaging_boundary.py resolves the package list with
     # setuptools; uv venvs do not ship it, and a silently skipped boundary
     # guard is exactly the failure mode that test exists to prevent.

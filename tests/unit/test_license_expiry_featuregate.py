@@ -1,7 +1,9 @@
 """Fail-closed regression tests for license expiry parsing and FeatureGate.
 
 - A correctly signed license whose ``expires`` cannot be parsed must fall back
-  to the free tier (it was previously treated as never expiring).
+  to the free tier (it was previously treated as never expiring). Since schema
+  v2, an empty or missing ``expires`` also gives the free tier: there are no
+  perpetual keys.
 - ``FeatureGate`` without a ``LicenseManager`` cannot verify a key, so it must
   stay at ``community`` unless the explicit dev/test opt-in is enabled.
 """
@@ -10,15 +12,17 @@ from __future__ import annotations
 
 import base64
 import datetime
-import hashlib
-import hmac
 import json
 
 import pytest
 
+pytest.importorskip("cryptography")
+
+from oubliette_dungeon._license_core import canonical_payload, generate_keypair
 from oubliette_dungeon.license import FeatureGate, LicenseManager
 
 PRO_FEATURE = sorted(FeatureGate.PRO_FEATURES)[0]
+FAR_FUTURE = (datetime.date.today() + datetime.timedelta(days=365)).isoformat()
 
 
 @pytest.fixture(autouse=True)
@@ -32,33 +36,36 @@ def _clean_env(monkeypatch):
         monkeypatch.delenv(var, raising=False)
 
 
-SIGNING_KEY = "test-signing-key"
-
-
 @pytest.fixture
 def keypair():
-    # Dungeon verifies HMAC-SHA256; (signing key, verification key) are equal.
-    return SIGNING_KEY, SIGNING_KEY
+    return generate_keypair()
 
 
-def _signed(key: str, **overrides) -> str:
-    """HMAC-sign an arbitrary payload (lets tests use non-string expiries)."""
+def _signed(priv_b64: str, **overrides) -> str:
+    """Ed25519-sign an arbitrary v2 claim set (lets tests use non-string expiries)."""
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
     body = {
+        "v": 2,
+        "kid": "test-2026",
+        "lid": "lid-0001",
+        "products": ["dungeon"],
         "tier": "enterprise",
         "org": "Acme",
         "issued": "2026-01-01",
-        "expires": "",
+        "expires": FAR_FUTURE,
         "quota": 0,
         "features": [],
+        "sig_alg": "ed25519",
     }
     body.update(overrides)
-    payload = json.dumps(body, sort_keys=True, separators=(",", ":"))
-    sig = hmac.new(key.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()
-    return base64.b64encode(json.dumps({**body, "sig": sig}).encode()).decode()
+    priv = Ed25519PrivateKey.from_private_bytes(base64.b64decode(priv_b64))
+    body["sig"] = base64.b64encode(priv.sign(canonical_payload(body))).decode()
+    return base64.b64encode(json.dumps(body).encode()).decode()
 
 
-def _load(key: str, token: str) -> LicenseManager:
-    mgr = LicenseManager(signing_key=key)
+def _load(pub: str, token: str) -> LicenseManager:
+    mgr = LicenseManager(keyring={"test-2026": pub})
     mgr._load_license(token)
     return mgr
 
@@ -72,9 +79,10 @@ def test_future_expiry_is_accepted(keypair):
     assert _load(pub, _signed(priv, expires=future)).license.tier == "enterprise"
 
 
-def test_empty_expiry_is_perpetual(keypair):
+def test_empty_expiry_fails_closed(keypair):
+    """No perpetual keys in schema v2: an empty expiry is rejected."""
     priv, pub = keypair
-    assert _load(pub, _signed(priv, expires="")).license.tier == "enterprise"
+    assert _load(pub, _signed(priv, expires="")).license.tier == "free"
 
 
 def test_past_expiry_is_rejected(keypair):
@@ -162,7 +170,8 @@ def test_featuregate_with_manager_still_grants_verified_license(keypair):
 
 def test_featuregate_with_manager_rejects_forged_license(keypair):
     _priv, pub = keypair
-    mgr = _load(pub, _signed("some-other-key", tier="enterprise"))
+    other_priv, _ = generate_keypair()
+    mgr = _load(pub, _signed(other_priv, tier="enterprise"))
     gate = FeatureGate(license_manager=mgr)
     assert gate.validate() is False
     assert gate.tier == "community"

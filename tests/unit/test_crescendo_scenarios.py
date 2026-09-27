@@ -10,6 +10,11 @@ import yaml
 from oubliette_dungeon.core import ScenarioLoader
 from oubliette_dungeon.core.models import AttackScenario
 
+# crescendo.yaml is Dungeon Pro content (full_scenario_library): every test here
+# runs with a valid Dungeon Pro license (tests/conftest.py). The licensing
+# behaviour itself is covered in test_full_suite_license.py.
+pytestmark = pytest.mark.usefixtures("dungeon_pro")
+
 # ========================================================================
 # Fixtures
 # ========================================================================

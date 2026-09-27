@@ -5,7 +5,47 @@ All notable changes to oubliette-dungeon will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.3] - Unreleased
+## [1.1.0] - 2026-09-27
+
+1.0.3 was never released; its changes ship in this release. The full scenario
+suite becomes a Dungeon Pro feature and licensing moves to product-scoped
+Ed25519 keys, both breaking changes: see *Changed (breaking)*.
+
+### Changed (breaking)
+- **The full scenario suite requires Dungeon Pro.** `--suite full` /
+  `suite="full"` (72 scenarios) needs the `full_scenario_library`
+  entitlement from a verified Dungeon license key: a key scoped to
+  `dungeon` that is either `enterprise` or `pro` granting the feature. So
+  does loading the bundled `crescendo.yaml` by path through
+  `DUNGEON_ALLOW_CUSTOM_SCENARIOS`, including a byte-identical copy of it at
+  another path. Without the entitlement the request is refused, never
+  downgraded to the 57-scenario default:
+  - The CLI prints an error naming the entitlement and exits 1 before any
+    work.
+  - `ScenarioLoader` / `RedTeamOrchestrator` raise
+    `oubliette_dungeon.license.LicenseRequiredError`, a `PermissionError`.
+
+  The default suite needs no license. The dev opt-in
+  (`OUBLIETTE_INSECURE_DEV_FEATURE_GATE=true` plus a non-empty
+  `OUBLIETTE_LICENSE_KEY`) still works.
+- **Product-scoped license keys (schema v2).** Keys are signed with Ed25519
+  and carry a signed `products` list. Dungeon accepts a key only if
+  `"dungeon"` is in that list, so a Shield or Trap key does not unlock
+  Dungeon Pro. Verification runs in `oubliette_dungeon/_license_core.py`,
+  vendored byte-identical from `oubliette-commerce`, which is now the only
+  issuer.
+- **HMAC licenses removed.** This supersedes the HMAC notes below.
+  `LicenseManager(signing_key=...)` and `OUBLIETTE_LICENSE_SIGNING_KEY` are
+  gone. The signature is now `LicenseManager(*, storage_backend=None,
+  keyring=None)`.
+- **No perpetual keys.** `expires` is required, so an empty or missing
+  `expires` gives the free tier. Pre-v2 keys also give the free tier. No
+  licenses had been issued, so this is a clean cutover.
+
+### Removed
+- `oubliette_dungeon.license_issuer` and `oubliette_dungeon.license_webhook`.
+  Issuing and the Gumroad/Paddle sale webhook now live only in
+  `oubliette-commerce`.
 
 ### Added
 - **Named scenario suites: 57 scenarios by default, 72 with `--suite full`.**
@@ -18,7 +58,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exactly as before. `--suite default` (57) is the default. Unknown suite
   names fail closed (CLI usage error, exit 2; `ValueError` from the Python
   API), and `--suite` with `--scenarios` (or `suite=` with `scenario_file=`)
-  is rejected.
+  is rejected. `full` requires Dungeon Pro (see *Changed (breaking)*).
+- `licensing` extra (`cryptography>=48.0.1`), also included in `dev`, `test`
+  and `all`.
+- `oubliette_dungeon.license.require_feature()` and `LicenseRequiredError`.
+- `license_manager=` keyword on `ScenarioLoader` and `RedTeamOrchestrator`.
 
 ### Security
 - **License verification fails closed.** `LicenseManager` previously skipped

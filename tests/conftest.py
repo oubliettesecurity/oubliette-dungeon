@@ -128,3 +128,86 @@ def sample_result():
         "detected_indicators": ["password"],
         "timestamp": datetime.now().isoformat(),
     }
+
+
+# --------------------------------------------------------------- licensing
+# The full scenario suite (and crescendo.yaml by path) is Dungeon Pro. Tests
+# that load it request ``dungeon_pro``: a throwaway Ed25519 key is installed as
+# the only trusted keyring entry and a Dungeon-scoped Pro key granting
+# ``full_scenario_library`` is put in OUBLIETTE_LICENSE_KEY. No private key is
+# stored in the repository.
+
+LICENSE_ENV_VARS = (
+    "OUBLIETTE_LICENSE_KEY",
+    "OUBLIETTE_LICENSE_SIGNING_KEY",
+    "OUBLIETTE_LICENSE_PUBLIC_KEY",
+    "OUBLIETTE_INSECURE_DEV_FEATURE_GATE",
+)
+
+
+@pytest.fixture(autouse=True)
+def _clean_license_env(monkeypatch):
+    """No test inherits a license (or the dev opt-in) from the environment."""
+    for var in LICENSE_ENV_VARS:
+        monkeypatch.delenv(var, raising=False)
+
+
+@pytest.fixture(scope="session")
+def license_keypair():
+    pytest.importorskip("cryptography")
+    from oubliette_dungeon._license_core import generate_keypair
+
+    return generate_keypair()
+
+
+@pytest.fixture
+def sign_dungeon_license(license_keypair):
+    """Factory: sign a schema-v2 claim set with the throwaway key."""
+    import base64
+    import datetime
+    import json
+
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    from oubliette_dungeon._license_core import canonical_payload
+
+    far_future = (datetime.date.today() + datetime.timedelta(days=365)).isoformat()
+
+    def _sign(**overrides):
+        claims = {
+            "v": 2,
+            "kid": "test-2026",
+            "lid": "lid-0001",
+            "products": ["dungeon"],
+            "tier": "pro",
+            "org": "Acme",
+            "issued": "2026-01-01",
+            "expires": far_future,
+            "quota": 0,
+            "features": ["full_scenario_library"],
+            "sig_alg": "ed25519",
+        }
+        claims.update(overrides)
+        signer = Ed25519PrivateKey.from_private_bytes(base64.b64decode(license_keypair[0]))
+        claims["sig"] = base64.b64encode(signer.sign(canonical_payload(claims))).decode()
+        return base64.b64encode(json.dumps(claims).encode()).decode()
+
+    return _sign
+
+
+@pytest.fixture
+def trust_test_key(monkeypatch, license_keypair):
+    """Make the throwaway key the only trusted keyring entry for this test."""
+    from types import MappingProxyType
+
+    from oubliette_dungeon import _license_core
+
+    monkeypatch.setattr(
+        _license_core, "PRODUCTION_KEYRING", MappingProxyType({"test-2026": license_keypair[1]})
+    )
+
+
+@pytest.fixture
+def dungeon_pro(monkeypatch, trust_test_key, sign_dungeon_license):
+    """A valid Dungeon Pro license granting full_scenario_library."""
+    monkeypatch.setenv("OUBLIETTE_LICENSE_KEY", sign_dungeon_license())

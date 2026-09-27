@@ -1,19 +1,25 @@
-"""Verify the ported revenue SDK works in Dungeon (issuer -> validator round-trip)."""
+"""Dungeon's license SDK: Dungeon-specific Pro features and a signed round trip.
 
-import hashlib
-import hmac as _hmac
+Issuing (and the Gumroad/Paddle sale webhook) lives only in
+oubliette-commerce; these tests sign schema-v2 keys locally with a throwaway
+Ed25519 key (fixtures in tests/conftest.py).
+"""
 
+import pytest
+
+pytest.importorskip("cryptography")
+
+from oubliette_dungeon._license_core import generate_keypair
 from oubliette_dungeon.license import PRO_FEATURES, LicenseManager
-from oubliette_dungeon.license_issuer import issue_license
-from oubliette_dungeon.license_webhook import license_for_sale
 
 
-def test_issued_pro_key_validates():
-    key = issue_license(org="Acme Corp", tier="pro", signing_key="dungeon-secret")
-    mgr = LicenseManager(signing_key="dungeon-secret")
-    mgr._load_license(key)
+def test_issued_pro_key_validates(license_keypair, sign_dungeon_license):
+    mgr = LicenseManager(keyring={"test-2026": license_keypair[1]})
+    mgr._load_license(sign_dungeon_license(org="Acme Corp", features=["scheduler"]))
     assert mgr.license.tier == "pro"
     assert mgr.license.org == "Acme Corp"
+    assert mgr.check_feature("scheduler") is True
+    assert mgr.check_feature("full_scenario_library") is False
 
 
 def test_pro_features_are_dungeon_specific():
@@ -22,26 +28,14 @@ def test_pro_features_are_dungeon_specific():
     assert "scan_output" not in PRO_FEATURES  # that was Shield's, not Dungeon's
 
 
-def test_wrong_key_falls_back_to_free():
-    key = issue_license(org="Acme", tier="pro", signing_key="right")
-    mgr = LicenseManager(signing_key="wrong")
-    mgr._load_license(key)
+def test_wrong_key_falls_back_to_free(sign_dungeon_license):
+    _, other_pub = generate_keypair()
+    mgr = LicenseManager(keyring={"test-2026": other_pub})
+    mgr._load_license(sign_dungeon_license())
     assert mgr.license.tier == "free"
 
 
-def test_webhook_issues_validating_key():
-    body = b"product_permalink=oubliette-dungeon-pro&email=a@b.com&full_name=Acme"
-    secret = "wh-endpoint-secret"
-    signature = _hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-    res = license_for_sale(
-        {"product_permalink": "oubliette-dungeon-pro", "email": "a@b.com", "full_name": "Acme"},
-        {"oubliette-dungeon-pro": {"tier": "pro"}},
-        "dungeon-secret",
-        webhook_secret=secret,
-        raw_body=body,
-        signature=signature,
-    )
-    assert res is not None and res["tier"] == "pro"
-    mgr = LicenseManager(signing_key="dungeon-secret")
-    mgr._load_license(res["license_key"])
-    assert mgr.license.tier == "pro"
+def test_trap_key_falls_back_to_free(license_keypair, sign_dungeon_license):
+    mgr = LicenseManager(keyring={"test-2026": license_keypair[1]})
+    mgr._load_license(sign_dungeon_license(products=["trap"], tier="enterprise"))
+    assert mgr.license.tier == "free"
