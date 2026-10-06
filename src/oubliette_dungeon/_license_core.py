@@ -68,9 +68,10 @@ PAID_TIERS: frozenset[str] = frozenset({"enterprise", "pro"})
 # old kid only once no license signed with it is still in use.
 PRODUCTION_KEYRING: Mapping[str, str] = MappingProxyType(
     {
-        # The Ed25519 license key the suite already embeds (regenerated
-        # 2026-07-03).
-        "oubliette-2026-07": "Unm7yP9qaz6wHIGKiVKq8z5rQL05lEplzUZx2D1lMOE=",
+        # Production license-signing key, generated 2026-10-06. It replaced
+        # kid "oubliette-2026-07", which was removed outright because no
+        # license was ever issued under it.
+        "oubliette-2026-10": "g2pDYyl9UlVWe3OS9yFKq5gjdkX7vG+NxEVqD/AeT3o=",
     }
 )
 

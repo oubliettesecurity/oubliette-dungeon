@@ -9,7 +9,7 @@ from pathlib import Path
 
 from oubliette_dungeon import _license_core
 
-LICENSE_CORE_SHA256 = "663bf24e8af9126e07b041cb374f421e809a1f3407d084bbe0c186d4f2598b71"
+LICENSE_CORE_SHA256 = "5131cbdec0233a1289be97f7bbd146cac56a406558a9b437c1b1251f3a650dd4"
 
 
 def test_license_core_matches_pinned_hash():

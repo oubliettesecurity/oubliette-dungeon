@@ -65,6 +65,12 @@ Ed25519 keys, both breaking changes: see *Changed (breaking)*.
 - `license_manager=` keyword on `ScenarioLoader` and `RedTeamOrchestrator`.
 
 ### Security
+- **New production license-signing key.** The embedded keyring
+  (`PRODUCTION_KEYRING`) now trusts only kid `oubliette-2026-10`, generated
+  2026-10-06. Kid `oubliette-2026-07` is removed outright: no license was ever
+  issued under it, so no customer key is affected, and a token naming it now
+  gives the free tier. `_license_core.py` stays byte-identical across Commerce,
+  Shield, Trap and Dungeon.
 - **License verification fails closed.** `LicenseManager` previously skipped
   HMAC verification entirely when no signing key was configured, so any
   base64 JSON blob claiming `"tier": "enterprise"` was trusted. With no
