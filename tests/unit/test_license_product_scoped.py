@@ -172,6 +172,21 @@ def test_production_keyring_rejects_throwaway_signatures(keypair):
     assert mgr.license is FREE_LICENSE
 
 
+def test_production_keyring_is_the_2026_10_key_only():
+    """Pin the trusted production key; a change here must be deliberate."""
+    assert dict(PRODUCTION_KEYRING) == {
+        "oubliette-2026-10": "g2pDYyl9UlVWe3OS9yFKq5gjdkX7vG+NxEVqD/AeT3o=",
+    }
+
+
+def test_retired_kid_2026_07_fails_closed(keypair):
+    """Kid oubliette-2026-07 was removed (never issued); a token naming it is free."""
+    assert "oubliette-2026-07" not in PRODUCTION_KEYRING
+    mgr = LicenseManager()
+    mgr._load_license(_sign(keypair[0], _claims(kid="oubliette-2026-07")))
+    assert mgr.license is FREE_LICENSE
+
+
 def test_no_public_key_env_override(keypair, monkeypatch):
     monkeypatch.setenv("OUBLIETTE_LICENSE_PUBLIC_KEY", keypair[1])
     monkeypatch.setenv("OUBLIETTE_LICENSE_KEY", _sign(keypair[0], _claims()))
